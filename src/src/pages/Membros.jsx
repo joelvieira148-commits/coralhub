@@ -13,7 +13,7 @@ import {
   User,
   X,
 } from 'lucide-react';
-import { supabaseClient } from '@/api/supabaseClient';
+import { firebaseClient } from '@/api/firebaseClient';
 import CoralLayout from '@/components/coral/CoralLayout';
 import useCoralContext, { clearCoralContextCache } from '@/hooks/useCoralContext';
 import { clearCurrentUserCoralMembership, getMemberEmail, normalizeEmail } from '@/lib/coral-membership';
@@ -62,7 +62,7 @@ export default function Membros() {
 
   useEffect(() => {
     if (!coral) return;
-    supabaseClient.entities.Membro.filter({ coral_id: coral.id }).then(setMembros);
+    firebaseClient.entities.Membro.filter({ coral_id: coral.id }).then(setMembros);
   }, [coral]);
 
   const filtered = membros.filter((item) => {
@@ -104,7 +104,7 @@ export default function Membros() {
     setUploadingFoto(true);
 
     try {
-      const { url, size } = await uploadProfilePhoto(supabaseClient, file);
+      const { url, size } = await uploadProfilePhoto(firebaseClient, file);
       const espaco = verificarEspaco(coral, size);
 
       if (!espaco.ok) {
@@ -133,12 +133,12 @@ export default function Membros() {
         user_email: editForm.user_email,
       };
 
-      const updated = await supabaseClient.entities.Membro.update(editando, payload);
+      const updated = await firebaseClient.entities.Membro.update(editando, payload);
       const updatedWithPhoto = { ...updated, ...getMemberPhotoFields(editForm.foto_url) };
       setMembros((prev) => prev.map((item) => (item.id === editando ? updatedWithPhoto : item)));
 
       if (novosBytes > 0) {
-        const updatedCoral = await supabaseClient.entities.Coral.update(coral.id, {
+        const updatedCoral = await firebaseClient.entities.Coral.update(coral.id, {
           armazenamento_usado_bytes: (coral.armazenamento_usado_bytes || 0) + novosBytes,
         });
         setCoral(updatedCoral);
@@ -164,11 +164,11 @@ export default function Membros() {
     if (!confirm(`Excluir ${nome} do coral? Ele tera que fazer todo o cadastro novamente para entrar.`)) return;
 
     try {
-      await Promise.all(idsParaExcluir.map((id) => supabaseClient.entities.Membro.delete(id)));
+      await Promise.all(idsParaExcluir.map((id) => firebaseClient.entities.Membro.delete(id)));
       setMembros((prev) => prev.filter((item) => !idsParaExcluir.includes(item.id)));
 
       if (memberEmail && normalizeEmail(user?.email) === memberEmail) {
-        await clearCurrentUserCoralMembership(supabaseClient, user);
+        await clearCurrentUserCoralMembership(firebaseClient, user);
         clearCoralContextCache();
         window.location.replace('/onboarding');
       }

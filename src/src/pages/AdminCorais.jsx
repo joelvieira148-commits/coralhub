@@ -16,7 +16,7 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { supabaseClient } from '@/api/supabaseClient';
+import { firebaseClient } from '@/api/firebaseClient';
 import AdminPasswordGate from '@/components/coral/AdminPasswordGate';
 import { isAdminUser } from '@/lib/admin-access';
 import { publicarCoraisNoCatalogo, removerCoralDoCatalogo } from '@/lib/coral-directory';
@@ -44,7 +44,7 @@ export default function AdminCorais() {
 
   useEffect(() => {
     async function load() {
-      const me = await supabaseClient.auth.me();
+      const me = await firebaseClient.auth.me();
       setUser(me);
 
       if (!isAdminUser(me)) {
@@ -53,13 +53,13 @@ export default function AdminCorais() {
       }
 
       const [allCorais, allMembros] = await Promise.all([
-        supabaseClient.entities.Coral.list(),
-        supabaseClient.entities.Membro.list(),
+        firebaseClient.entities.Coral.list(),
+        firebaseClient.entities.Membro.list(),
       ]);
 
       setCorais(allCorais);
       setMembros(allMembros);
-      publicarCoraisNoCatalogo(supabaseClient, allCorais).catch((error) => {
+      publicarCoraisNoCatalogo(firebaseClient, allCorais).catch((error) => {
         console.warn('Falha ao sincronizar catalogo de corais:', error);
       });
       setLoading(false);
@@ -98,7 +98,7 @@ export default function AdminCorais() {
   const sincronizarCadastro = async () => {
     setSincronizando(true);
     try {
-      await publicarCoraisNoCatalogo(supabaseClient, corais);
+      await publicarCoraisNoCatalogo(firebaseClient, corais);
       alert('Nomes publicados para o cadastro dos membros.');
     } catch (error) {
       console.warn('Falha ao publicar nomes para cadastro:', error);
@@ -110,9 +110,9 @@ export default function AdminCorais() {
 
   const salvar = async (coralId) => {
     setSalvando(true);
-    const updated = await supabaseClient.entities.Coral.update(coralId, form);
+    const updated = await firebaseClient.entities.Coral.update(coralId, form);
     setCorais((prev) => prev.map((coral) => (coral.id === coralId ? updated : coral)));
-    publicarCoraisNoCatalogo(supabaseClient, [updated]).catch((error) => {
+    publicarCoraisNoCatalogo(firebaseClient, [updated]).catch((error) => {
       console.warn('Falha ao atualizar catalogo de corais:', error);
     });
     setSalvando(false);
@@ -121,8 +121,8 @@ export default function AdminCorais() {
 
   const excluirRegistrosDoCoral = async (entityName, coralId) => {
     try {
-      const registros = await supabaseClient.entities[entityName].filter({ coral_id: coralId });
-      await Promise.all(registros.map((registro) => supabaseClient.entities[entityName].delete(registro.id)));
+      const registros = await firebaseClient.entities[entityName].filter({ coral_id: coralId });
+      await Promise.all(registros.map((registro) => firebaseClient.entities[entityName].delete(registro.id)));
       return registros.length;
     } catch (error) {
       console.warn(`Falha ao excluir registros de ${entityName}:`, error);
@@ -148,8 +148,8 @@ export default function AdminCorais() {
         excluirRegistrosDoCoral('Aviso', coral.id),
       ]);
 
-      await removerCoralDoCatalogo(supabaseClient, coral.id);
-      await supabaseClient.entities.Coral.delete(coral.id);
+      await removerCoralDoCatalogo(firebaseClient, coral.id);
+      await firebaseClient.entities.Coral.delete(coral.id);
 
       setCorais((prev) => prev.filter((item) => item.id !== coral.id));
       setMembros((prev) => prev.filter((item) => item.coral_id !== coral.id));

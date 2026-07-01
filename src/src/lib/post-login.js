@@ -1,4 +1,4 @@
-import { supabaseClient } from '@/api/supabaseClient';
+import { firebaseClient } from '@/api/firebaseClient';
 import { clearCoralMembershipFields } from '@/lib/coral-membership';
 
 const normalizePath = (value = '/mural') => {
@@ -38,17 +38,17 @@ const pathForExistingUser = (preferredPath) => {
 };
 
 export const getPostLoginPath = async (preferredPath = '/mural') => {
-  const user = await supabaseClient.auth.me();
+  const user = await firebaseClient.auth.me();
 
   const [corais, membrosPorUserEmail, membrosPorEmail] = await Promise.all([
-    safeFilter(supabaseClient.entities.Coral, { maestro_email: user.email }),
-    safeFilter(supabaseClient.entities.Membro, { user_email: user.email }),
-    safeFilter(supabaseClient.entities.Membro, { email: user.email }),
+    safeFilter(firebaseClient.entities.Coral, { maestro_email: user.email }),
+    safeFilter(firebaseClient.entities.Membro, { user_email: user.email }),
+    safeFilter(firebaseClient.entities.Membro, { email: user.email }),
   ]);
 
   if (corais.length > 0) {
     const coral = corais[0];
-    supabaseClient.auth.updateMe({
+    firebaseClient.auth.updateMe({
       active_coral_id: coral.id,
       active_coral_role: 'maestro',
       active_coral_nome: coral.nome || '',
@@ -66,7 +66,7 @@ export const getPostLoginPath = async (preferredPath = '/mural') => {
   const membro = membrosPorUserEmail[0] || membrosPorEmail[0];
   if (membro) {
     const role = membro.cargo || 'membro';
-    supabaseClient.auth.updateMe({
+    firebaseClient.auth.updateMe({
       active_coral_id: membro.coral_id || '',
       active_coral_role: role,
       active_member_id: membro.id || '',
@@ -81,7 +81,7 @@ export const getPostLoginPath = async (preferredPath = '/mural') => {
   }
 
   if (user?.active_coral_id || user?.active_member_id || user?.active_coral_role) {
-    supabaseClient.auth.updateMe(clearCoralMembershipFields).catch((error) => {
+    firebaseClient.auth.updateMe(clearCoralMembershipFields).catch((error) => {
       console.warn('Falha ao limpar cadastro antigo do perfil:', error);
     });
   }

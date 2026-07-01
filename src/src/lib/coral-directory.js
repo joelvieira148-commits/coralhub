@@ -168,8 +168,8 @@ const isDirectoryRecord = (item) =>
   item?.coral_id === DIRECTORY_CORAL_ID ||
   Boolean(item?.coral_ref_id);
 
-const carregarDiretorioPorAvisos = async (supabaseClient) => {
-  const aviso = supabaseClient.entities[DIRECTORY_ENTITY];
+const carregarDiretorioPorAvisos = async (firebaseClient) => {
+  const aviso = firebaseClient.entities[DIRECTORY_ENTITY];
   const items = [
     ...(await tryFilter(aviso, { publicacao_tipo: DIRECTORY_TYPE }, '-updated_date', 500, 0, DIRECTORY_FIELDS)),
     ...(await tryFilter(aviso, { tipo: DIRECTORY_TYPE }, '-updated_date', 500, 0, DIRECTORY_FIELDS)),
@@ -180,8 +180,8 @@ const carregarDiretorioPorAvisos = async (supabaseClient) => {
   return items.filter(isDirectoryRecord).map(parseDirectoryRecord);
 };
 
-const carregarCoraisDaEntidade = async (supabaseClient, entityName) => {
-  const entity = supabaseClient.entities[entityName];
+const carregarCoraisDaEntidade = async (firebaseClient, entityName) => {
+  const entity = firebaseClient.entities[entityName];
   const fontes = [
     await tryList(entity, 'nome', 500, 0, PUBLIC_FIELDS),
     await tryList(entity, '-created_date', 500, 0, PUBLIC_FIELDS),
@@ -193,11 +193,11 @@ const carregarCoraisDaEntidade = async (supabaseClient, entityName) => {
   return dedupeCorais(fontes.flat());
 };
 
-export const carregarCoraisAtivos = async (supabaseClient) =>
-  carregarCoraisDaEntidade(supabaseClient, PRIMARY_ENTITY);
+export const carregarCoraisAtivos = async (firebaseClient) =>
+  carregarCoraisDaEntidade(firebaseClient, PRIMARY_ENTITY);
 
-export const carregarCoraisParaCadastro = async (supabaseClient) => {
-  const coraisAtivos = await carregarCoraisAtivos(supabaseClient);
+export const carregarCoraisParaCadastro = async (firebaseClient) => {
+  const coraisAtivos = await carregarCoraisAtivos(firebaseClient);
 
   if (coraisAtivos.length > 0) {
     return salvarCoraisNoCache(coraisAtivos);
@@ -206,7 +206,7 @@ export const carregarCoraisParaCadastro = async (supabaseClient) => {
   const fontes = [];
 
   for (const entityName of LEGACY_SOURCE_ENTITIES) {
-    const entity = supabaseClient.entities[entityName];
+    const entity = firebaseClient.entities[entityName];
     fontes.push(await tryList(entity, 'nome', 500, 0, PUBLIC_FIELDS));
     fontes.push(await tryList(entity, '-created_date', 500, 0, PUBLIC_FIELDS));
     fontes.push(await tryFilter(entity, {}, 'nome', 500, 0, PUBLIC_FIELDS));
@@ -214,21 +214,21 @@ export const carregarCoraisParaCadastro = async (supabaseClient) => {
     fontes.push(await tryFilter(entity, { maestro_email: ADMIN_EMAIL }, 'nome', 500, 0, PUBLIC_FIELDS));
   }
 
-  fontes.push(await tryList(supabaseClient.entities[PUBLIC_ENTITY], 'nome', 500, 0, PUBLIC_FIELDS));
-  fontes.push(await tryFilter(supabaseClient.entities[PUBLIC_ENTITY], {}, 'nome', 500, 0, PUBLIC_FIELDS));
-  fontes.push(await carregarDiretorioPorAvisos(supabaseClient));
+  fontes.push(await tryList(firebaseClient.entities[PUBLIC_ENTITY], 'nome', 500, 0, PUBLIC_FIELDS));
+  fontes.push(await tryFilter(firebaseClient.entities[PUBLIC_ENTITY], {}, 'nome', 500, 0, PUBLIC_FIELDS));
+  fontes.push(await carregarDiretorioPorAvisos(firebaseClient));
 
   return salvarCoraisNoCache(fontes.flat());
 };
 
-export const publicarCoraisNoCatalogo = async (supabaseClient, items) => {
+export const publicarCoraisNoCatalogo = async (firebaseClient, items) => {
   const corais = salvarCoraisNoCache(items);
   if (corais.length === 0) return corais;
 
   let existentes = [];
 
   try {
-    existentes = await supabaseClient.entities[PUBLIC_ENTITY].list('nome', 500, 0, PUBLIC_FIELDS);
+    existentes = await firebaseClient.entities[PUBLIC_ENTITY].list('nome', 500, 0, PUBLIC_FIELDS);
   } catch (error) {
     console.warn('Falha ao carregar catalogo de corais:', error);
   }
@@ -242,7 +242,7 @@ export const publicarCoraisNoCatalogo = async (supabaseClient, items) => {
   let avisosDiretorio = [];
 
   try {
-    avisosDiretorio = await carregarDiretorioPorAvisos(supabaseClient);
+    avisosDiretorio = await carregarDiretorioPorAvisos(firebaseClient);
   } catch (error) {
     console.warn('Falha ao carregar diretorio por avisos:', error);
   }
@@ -266,13 +266,13 @@ export const publicarCoraisNoCatalogo = async (supabaseClient, items) => {
 
       try {
         if (existente?.id && existente.id !== coral.id) {
-          await supabaseClient.entities[PUBLIC_ENTITY].update(existente.id, payload);
+          await firebaseClient.entities[PUBLIC_ENTITY].update(existente.id, payload);
         } else {
-          const encontrados = await tryFilter(supabaseClient.entities[PUBLIC_ENTITY], { coral_id: coral.id }, 'nome', 1, 0, PUBLIC_FIELDS);
+          const encontrados = await tryFilter(firebaseClient.entities[PUBLIC_ENTITY], { coral_id: coral.id }, 'nome', 1, 0, PUBLIC_FIELDS);
           if (encontrados[0]?.id) {
-            await supabaseClient.entities[PUBLIC_ENTITY].update(encontrados[0].id, payload);
+            await firebaseClient.entities[PUBLIC_ENTITY].update(encontrados[0].id, payload);
           } else {
-            await supabaseClient.entities[PUBLIC_ENTITY].create(payload);
+            await firebaseClient.entities[PUBLIC_ENTITY].create(payload);
           }
         }
       } catch (error) {
@@ -304,9 +304,9 @@ export const publicarCoraisNoCatalogo = async (supabaseClient, items) => {
         const avisoId = existenteAviso?.record_id || existenteAviso?.aviso_id;
 
         if (avisoId) {
-          await supabaseClient.entities[DIRECTORY_ENTITY].update(avisoId, avisoPayload);
+          await firebaseClient.entities[DIRECTORY_ENTITY].update(avisoId, avisoPayload);
         } else {
-          await supabaseClient.entities[DIRECTORY_ENTITY].create(avisoPayload);
+          await firebaseClient.entities[DIRECTORY_ENTITY].create(avisoPayload);
         }
       } catch (error) {
         console.warn('Falha ao publicar coral em avisos:', error);
@@ -317,20 +317,20 @@ export const publicarCoraisNoCatalogo = async (supabaseClient, items) => {
   return corais;
 };
 
-export const removerCoralDoCatalogo = async (supabaseClient, coralId) => {
+export const removerCoralDoCatalogo = async (firebaseClient, coralId) => {
   const id = asText(coralId);
   if (!id) return;
 
   removerCoralDoCache(id);
 
   const publicos = [
-    ...(await tryFilter(supabaseClient.entities[PUBLIC_ENTITY], { coral_id: id }, 'nome', 100, 0, PUBLIC_FIELDS)),
-    ...(await tryFilter(supabaseClient.entities[PUBLIC_ENTITY], { id }, 'nome', 100, 0, PUBLIC_FIELDS)),
+    ...(await tryFilter(firebaseClient.entities[PUBLIC_ENTITY], { coral_id: id }, 'nome', 100, 0, PUBLIC_FIELDS)),
+    ...(await tryFilter(firebaseClient.entities[PUBLIC_ENTITY], { id }, 'nome', 100, 0, PUBLIC_FIELDS)),
   ];
 
   const avisos = [
-    ...(await tryFilter(supabaseClient.entities[DIRECTORY_ENTITY], { coral_ref_id: id }, '-updated_date', 100, 0, DIRECTORY_FIELDS)),
-    ...(await carregarDiretorioPorAvisos(supabaseClient)).filter((item) => item.coral_id === id || item.id === id),
+    ...(await tryFilter(firebaseClient.entities[DIRECTORY_ENTITY], { coral_ref_id: id }, '-updated_date', 100, 0, DIRECTORY_FIELDS)),
+    ...(await carregarDiretorioPorAvisos(firebaseClient)).filter((item) => item.coral_id === id || item.id === id),
   ];
 
   await Promise.all(
@@ -347,11 +347,11 @@ export const removerCoralDoCatalogo = async (supabaseClient, coralId) => {
           : PUBLIC_ENTITY;
 
         try {
-          await supabaseClient.entities[entityName].delete(recordId);
+          await firebaseClient.entities[entityName].delete(recordId);
         } catch (error) {
           console.warn('Falha ao remover coral do catalogo:', error);
           try {
-            await supabaseClient.entities[entityName].update(recordId, { ativo: false });
+            await firebaseClient.entities[entityName].update(recordId, { ativo: false });
           } catch (updateError) {
             console.warn('Falha ao desativar coral no catalogo:', updateError);
           }

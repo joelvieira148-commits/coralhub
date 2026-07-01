@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { supabaseClient } from '@/api/supabaseClient';
+import { firebaseClient } from '@/api/firebaseClient';
 import {
   clearCurrentUserCoralMembership,
   hasCoralMembershipData,
@@ -92,12 +92,12 @@ const getActiveRoleFromCargo = (cargo) => {
 };
 
 const carregarContextoCoral = async () => {
-  const me = await supabaseClient.auth.me();
+  const me = await firebaseClient.auth.me();
   const contexto = { ...emptyContext, user: me };
 
   let corais = [];
   try {
-    corais = await supabaseClient.entities.Coral.filter({ maestro_email: me.email });
+    corais = await firebaseClient.entities.Coral.filter({ maestro_email: me.email });
   } catch (error) {
     console.warn('Falha ao carregar corais do maestro:', error);
   }
@@ -106,7 +106,7 @@ const carregarContextoCoral = async () => {
     const coral = corais[0];
     contexto.coral = coral;
     contexto.isMaestro = true;
-    contexto.user = await syncCurrentUserCoralMembership(supabaseClient, me, {
+    contexto.user = await syncCurrentUserCoralMembership(firebaseClient, me, {
       active_coral_id: coral.id,
       active_coral_role: 'maestro',
       active_coral_nome: coral.nome || '',
@@ -115,7 +115,7 @@ const carregarContextoCoral = async () => {
       member_nome: me.full_name || me.email || '',
       member_naipe: '',
     });
-    publicarCoraisNoCatalogo(supabaseClient, [coral]).catch((error) => {
+    publicarCoraisNoCatalogo(firebaseClient, [coral]).catch((error) => {
       console.warn('Falha ao publicar coral no catalogo:', error);
     });
     return contexto;
@@ -124,9 +124,9 @@ const carregarContextoCoral = async () => {
   let membros = [];
   let membrosCarregados = false;
   try {
-    membros = await supabaseClient.entities.Membro.filter({ user_email: me.email });
+    membros = await firebaseClient.entities.Membro.filter({ user_email: me.email });
     if (membros.length === 0) {
-      membros = await supabaseClient.entities.Membro.filter({ email: me.email });
+      membros = await firebaseClient.entities.Membro.filter({ email: me.email });
     }
     membrosCarregados = true;
   } catch (error) {
@@ -145,7 +145,7 @@ const carregarContextoCoral = async () => {
     : null;
   if (!membroDoCadastro && membrosCarregados) {
     if (hasCoralMembershipData(me)) {
-      contexto.user = await clearCurrentUserCoralMembership(supabaseClient, me);
+      contexto.user = await clearCurrentUserCoralMembership(firebaseClient, me);
     }
 
     return contexto;
@@ -161,7 +161,7 @@ const carregarContextoCoral = async () => {
   contexto.membro = membroAtual;
   contexto.isMaestro = activeRole === 'maestro';
   const coralId = membroAtual.coral_id || me.active_coral_id;
-  contexto.user = await syncCurrentUserCoralMembership(supabaseClient, me, {
+  contexto.user = await syncCurrentUserCoralMembership(firebaseClient, me, {
     active_coral_id: coralId,
     active_coral_role: activeRole,
     active_member_id: membroAtual.id || '',
@@ -172,7 +172,7 @@ const carregarContextoCoral = async () => {
 
   let coralData = [];
   try {
-    coralData = await supabaseClient.entities.Coral.filter({ id: coralId });
+    coralData = await firebaseClient.entities.Coral.filter({ id: coralId });
   } catch (error) {
     console.warn('Falha ao carregar coral do membro:', error);
   }
@@ -182,7 +182,7 @@ const carregarContextoCoral = async () => {
     return contexto;
   }
 
-  const diretorio = await carregarCoraisParaCadastro(supabaseClient);
+  const diretorio = await carregarCoraisParaCadastro(firebaseClient);
   const coralDoDiretorio = diretorio.find((item) => item.id === coralId || item.coral_id === coralId);
 
   if (coralId) {

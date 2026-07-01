@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Music, User, ArrowLeft, Camera, RefreshCw } from 'lucide-react';
-import { supabaseClient } from '@/api/supabaseClient';
+import { firebaseClient } from '@/api/firebaseClient';
 import { NAIPES } from '@/utils/coralTheme';
 import { carregarCoraisParaCadastro, publicarCoraisNoCatalogo } from '@/lib/coral-directory';
 import { getMemberPhotoFields } from '@/lib/member-photo';
@@ -37,7 +37,7 @@ export default function Onboarding() {
     setCoraisError('');
 
     try {
-      const lista = await carregarCoraisParaCadastro(supabaseClient);
+      const lista = await carregarCoraisParaCadastro(firebaseClient);
       setCorais(lista);
 
       if (lista.length === 0) {
@@ -63,7 +63,7 @@ export default function Onboarding() {
     setFormError('');
 
     try {
-      const { url } = await uploadProfilePhoto(supabaseClient, file);
+      const { url } = await uploadProfilePhoto(firebaseClient, file);
       setter(url);
     } catch (error) {
       console.error('Erro ao enviar foto:', error);
@@ -89,8 +89,8 @@ export default function Onboarding() {
     setFormError('');
 
     try {
-      const user = await supabaseClient.auth.me();
-      const coral = await supabaseClient.entities.Coral.create({
+      const user = await firebaseClient.auth.me();
+      const coral = await firebaseClient.entities.Coral.create({
         nome: nomeCoralForm,
         cidade: cidadeForm,
         maestro_email: user.email,
@@ -102,8 +102,8 @@ export default function Onboarding() {
       const fotoMaestroParaUsuario = fotoMaestroUrl && !fotoMaestroUrl.startsWith('data:')
         ? fotoMaestroFields
         : {};
-      await publicarCoraisNoCatalogo(supabaseClient, [coral]);
-      await supabaseClient.entities.Membro.create({
+      await publicarCoraisNoCatalogo(firebaseClient, [coral]);
+      await firebaseClient.entities.Membro.create({
         nome: user.full_name || user.email,
         email: user.email,
         coral_id: coral.id,
@@ -112,7 +112,7 @@ export default function Onboarding() {
         ...fotoMaestroFields,
         ativo: true,
       });
-      await supabaseClient.auth.updateMe({
+      await firebaseClient.auth.updateMe({
         active_coral_id: coral.id,
         active_coral_role: 'maestro',
         ...fotoMaestroParaUsuario,
@@ -158,12 +158,12 @@ export default function Onboarding() {
 
     try {
       const coralEscolhido = corais.find((coral) => coral.id === coralIdForm);
-      const user = await supabaseClient.auth.me();
+      const user = await firebaseClient.auth.me();
       const fotoMembroFields = getMemberPhotoFields(fotoMembroUrl);
       const fotoMembroParaUsuario = fotoMembroUrl && !fotoMembroUrl.startsWith('data:')
         ? { member_foto_url: fotoMembroUrl, ...fotoMembroFields }
         : {};
-      const membroCriado = await supabaseClient.entities.Membro.create({
+      const membroCriado = await firebaseClient.entities.Membro.create({
         nome: nomeForm,
         email: user.email,
         telefone: telefoneForm,
@@ -185,7 +185,7 @@ export default function Onboarding() {
         ...fotoMembroParaUsuario,
       };
       const userAtualizado = { ...user, ...userUpdate };
-      await supabaseClient.auth.updateMe(userUpdate);
+      await firebaseClient.auth.updateMe(userUpdate);
       saveCoralContextCache({
         user: userAtualizado,
         coral: {

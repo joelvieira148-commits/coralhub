@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FileMusic, HelpCircle, Mail, Music, Users } from 'lucide-react';
-import { supabaseClient } from '@/api/supabaseClient';
+import { firebaseClient } from '@/api/firebaseClient';
 import { redirectToEmailLogin, redirectToLogin } from '@/lib/auth-redirect';
 import { getPostLoginPath } from '@/lib/post-login';
 
@@ -9,7 +9,7 @@ export default function Landing() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    supabaseClient.auth.isAuthenticated().then((auth) => {
+    firebaseClient.auth.isAuthenticated().then((auth) => {
       if (auth) {
         getPostLoginPath('/mural')
           .then((path) => navigate(path, { replace: true }))

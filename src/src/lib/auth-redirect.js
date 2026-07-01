@@ -34,7 +34,7 @@ export const redirectToEmailLogin = (fromUrl = DEFAULT_RETURN_PATH) => {
   goToLogin(fromUrl, { mode: 'email' });
 };
 
-export const getSupabaseLoginUrl = (fromUrl = DEFAULT_RETURN_PATH) => {
+export const getFirebaseLoginUrl = (fromUrl = DEFAULT_RETURN_PATH) => {
   const params = new URLSearchParams({ from_url: toReturnPath(fromUrl) });
   return `/login?${params.toString()}`;
 };

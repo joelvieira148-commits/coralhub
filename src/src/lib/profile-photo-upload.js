@@ -94,7 +94,7 @@ export const createProfilePhotoDataUrl = async (file) => {
   return readAsDataUrl(tinyFile);
 };
 
-export const uploadProfilePhoto = async (supabaseClient, file) => {
+export const uploadProfilePhoto = async (firebaseClient, file) => {
   if (!isImageFile(file)) {
     throw new Error('Escolha uma imagem valida para a foto.');
   }
@@ -108,7 +108,7 @@ export const uploadProfilePhoto = async (supabaseClient, file) => {
   }
 
   try {
-    const { file_url } = await supabaseClient.integrations.Core.UploadFile({ file: preparedFile });
+    const { file_url } = await firebaseClient.integrations.Core.UploadFile({ file: preparedFile });
 
     if (!file_url) {
       throw new Error('Upload sem URL de arquivo.');

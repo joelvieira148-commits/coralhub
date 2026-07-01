@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { supabaseClient, isSupabaseConfigured } from '@/api/supabaseClient';
+import { firebaseClient, isFirebaseConfigured } from '@/api/firebaseClient';
 import { redirectToLogin } from '@/lib/auth-redirect';
 import { clearAppSession, logoutToApp } from '@/lib/logout';
 
@@ -13,8 +13,8 @@ export const AuthProvider = ({ children }) => {
   const [authError, setAuthError] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [appPublicSettings, setAppPublicSettings] = useState({
-    id: 'supabase',
-    public_settings: 'supabase',
+    id: 'firebase',
+    public_settings: 'firebase',
   });
 
   useEffect(() => {
@@ -26,20 +26,20 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingPublicSettings(false);
       setAuthError(null);
 
-      if (!isSupabaseConfigured) {
+      if (!isFirebaseConfigured) {
         setUser(null);
         setIsAuthenticated(false);
         setAuthChecked(true);
         setIsLoadingAuth(false);
         setAuthError({
-          type: 'supabase_config_missing',
-          message: 'Supabase nao configurado.',
+          type: 'firebase_config_missing',
+          message: 'Firebase nao configurado.',
         });
         return;
       }
 
       try {
-        const initialUser = await supabaseClient.auth.completeRedirectLogin().catch(() => null);
+        const initialUser = await firebaseClient.auth.completeRedirectLogin().catch(() => null);
 
         if (!cancelled && initialUser) {
           setUser(initialUser);
@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }) => {
           setIsLoadingAuth(false);
         }
 
-        unsubscribe = supabaseClient.auth.onAuthStateChanged((currentUser, error) => {
+        unsubscribe = firebaseClient.auth.onAuthStateChanged((currentUser, error) => {
           if (cancelled) return;
 
           if (error) {
@@ -75,7 +75,7 @@ export const AuthProvider = ({ children }) => {
         });
       } catch (error) {
         if (cancelled) return;
-        console.error('Supabase auth check failed:', error);
+        console.error('Firebase auth check failed:', error);
         setUser(null);
         setIsAuthenticated(false);
         setAuthChecked(true);
@@ -98,7 +98,7 @@ export const AuthProvider = ({ children }) => {
   const checkUserAuth = useCallback(async () => {
     try {
       setIsLoadingAuth(true);
-      const currentUser = await supabaseClient.auth.me();
+      const currentUser = await firebaseClient.auth.me();
       setUser(currentUser);
       setIsAuthenticated(true);
       setAuthError(null);
@@ -139,10 +139,10 @@ export const AuthProvider = ({ children }) => {
   }, [checkUserAuth]);
 
   const checkAppState = async () => {
-    if (!isSupabaseConfigured) {
+    if (!isFirebaseConfigured) {
       setAuthError({
-        type: 'supabase_config_missing',
-        message: 'Supabase nao configurado.',
+        type: 'firebase_config_missing',
+        message: 'Firebase nao configurado.',
       });
       return;
     }
@@ -158,7 +158,7 @@ export const AuthProvider = ({ children }) => {
     if (shouldRedirect) {
       await logoutToApp('/');
     } else {
-      await supabaseClient.auth.signOutOnly();
+      await firebaseClient.auth.signOutOnly();
     }
   };
 

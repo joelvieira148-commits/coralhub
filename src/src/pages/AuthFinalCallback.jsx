@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { supabaseClient } from '@/api/supabaseClient';
+import { firebaseClient } from '@/api/firebaseClient';
 import { getPostLoginPath } from '@/lib/post-login';
 
 const getSafeReturnPath = (value) => {
@@ -25,9 +25,9 @@ export default function AuthFinalCallback() {
       let returnPath = requestedPath;
 
       try {
-        const result = await supabaseClient.auth.handleOAuthCallbackUrl(window.location.href)
+        const result = await firebaseClient.auth.handleOAuthCallbackUrl(window.location.href)
           .catch(async (error) => {
-            const user = await supabaseClient.auth.completeRedirectLogin();
+            const user = await firebaseClient.auth.completeRedirectLogin();
             if (!user) throw error;
             return { user, returnPath: requestedPath };
           });

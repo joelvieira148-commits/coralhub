@@ -60,7 +60,7 @@ export const assertFileKind = (file, kind) => {
   }
 };
 
-export const uploadCoralFile = async (supabaseClient, file, { kind } = {}) => {
+export const uploadCoralFile = async (firebaseClient, file, { kind } = {}) => {
   if (!file) {
     throw new Error('Escolha um arquivo para enviar.');
   }
@@ -72,7 +72,7 @@ export const uploadCoralFile = async (supabaseClient, file, { kind } = {}) => {
   const uploadFile = kind === 'image'
     ? await prepareImageForCloud(file)
     : normalizeUploadFile(file, kind);
-  const upload = await supabaseClient.integrations.Core.UploadFile({ file: uploadFile });
+  const upload = await firebaseClient.integrations.Core.UploadFile({ file: uploadFile });
   const file_url = upload?.file_url;
 
   if (!file_url) {

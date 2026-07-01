@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom';
-import { supabaseClient } from '@/api/supabaseClient';
+import { firebaseClient } from '@/api/firebaseClient';
 import { useQuery } from '@tanstack/react-query';
 import { isAdminUser } from '@/lib/admin-access';
 
@@ -12,7 +12,7 @@ export default function PageNotFound({}) {
         queryKey: ['user'],
         queryFn: async () => {
             try {
-                const user = await supabaseClient.auth.me();
+                const user = await firebaseClient.auth.me();
                 return { user, isAuthenticated: true };
             } catch (error) {
                 return { user: null, isAuthenticated: false };

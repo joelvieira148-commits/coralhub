@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Upload, Music, X, Plus, Pencil, Trash2, Building2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { supabaseClient } from '@/api/supabaseClient';
+import { firebaseClient } from '@/api/firebaseClient';
 import CoralLayout from '@/components/coral/CoralLayout';
 import useCoralContext from '@/hooks/useCoralContext';
 import AudioPlayer from '@/components/coral/AudioPlayer';
@@ -45,7 +45,7 @@ export default function Biblioteca() {
 
   useEffect(() => {
     if (!coral) return;
-    supabaseClient.entities.Musica.filter({ coral_id: coral.id }).then(setMusicas);
+    firebaseClient.entities.Musica.filter({ coral_id: coral.id }).then(setMusicas);
   }, [coral]);
 
   const abrirNova = () => {
@@ -77,7 +77,7 @@ export default function Biblioteca() {
     }
     setFiles(p => ({ ...p, [key]: { file, name: file.name, uploading: true } }));
     try {
-      const upload = await uploadCoralFile(supabaseClient, file, { kind });
+      const upload = await uploadCoralFile(firebaseClient, file, { kind });
       setFiles(p => ({
         ...p,
         [key]: {
@@ -120,17 +120,17 @@ export default function Biblioteca() {
     };
 
     if (editando) {
-      const updated = await supabaseClient.entities.Musica.update(editando.id, payload);
+      const updated = await firebaseClient.entities.Musica.update(editando.id, payload);
       setMusicas(prev => prev.map(m => m.id === editando.id ? updated : m));
     } else {
-      const nova = await supabaseClient.entities.Musica.create(payload);
+      const nova = await firebaseClient.entities.Musica.create(payload);
       setMusicas(prev => [nova, ...prev]);
     }
 
     // Atualiza o contador de armazenamento do coral
     const novosBytes = Object.values(files).filter(f => f.size).reduce((s, f) => s + f.size, 0);
     if (novosBytes > 0) {
-      const updatedCoral = await supabaseClient.entities.Coral.update(coral.id, {
+      const updatedCoral = await firebaseClient.entities.Coral.update(coral.id, {
         armazenamento_usado_bytes: (coral.armazenamento_usado_bytes || 0) + novosBytes,
       });
       setCoral(updatedCoral);
@@ -150,7 +150,7 @@ export default function Biblioteca() {
 
   const excluir = async (id) => {
     if (!confirm('Excluir esta música?')) return;
-    await supabaseClient.entities.Musica.delete(id);
+    await firebaseClient.entities.Musica.delete(id);
     setMusicas(prev => prev.filter(m => m.id !== id));
     if (selecionada?.id === id) setSelecionada(null);
   };

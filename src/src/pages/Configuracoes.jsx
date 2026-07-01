@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Save } from 'lucide-react';
-import { supabaseClient } from '@/api/supabaseClient';
+import { firebaseClient } from '@/api/firebaseClient';
 import CoralLayout from '@/components/coral/CoralLayout';
 import useCoralContext from '@/hooks/useCoralContext';
 import { TEMAS } from '@/utils/coralTheme';
@@ -57,7 +57,7 @@ export default function Configuracoes() {
     }
     setUploadingLogo(true);
     try {
-      const upload = await uploadCoralFile(supabaseClient, file, { kind: 'image' });
+      const upload = await uploadCoralFile(firebaseClient, file, { kind: 'image' });
       setForm(p => ({ ...p, logo_url: upload.file_url }));
       setNovosBytes(b => b + upload.file_size);
     } catch (error) {
@@ -76,7 +76,7 @@ export default function Configuracoes() {
     }
     setUploadingCapa(true);
     try {
-      const upload = await uploadCoralFile(supabaseClient, file, { kind: 'image' });
+      const upload = await uploadCoralFile(firebaseClient, file, { kind: 'image' });
       setForm(p => ({ ...p, capa_url: upload.file_url }));
       setNovosBytes(b => b + upload.file_size);
     } catch (error) {
@@ -95,9 +95,9 @@ export default function Configuracoes() {
     if (novosBytes > 0) {
       payload.armazenamento_usado_bytes = (coral.armazenamento_usado_bytes || 0) + novosBytes;
     }
-    const updated = await supabaseClient.entities.Coral.update(coral.id, payload);
+    const updated = await firebaseClient.entities.Coral.update(coral.id, payload);
     setCoral(updated);
-    publicarCoraisNoCatalogo(supabaseClient, [updated]).catch((error) => {
+    publicarCoraisNoCatalogo(firebaseClient, [updated]).catch((error) => {
       console.warn('Falha ao atualizar catalogo de corais:', error);
     });
     setNovosBytes(0);

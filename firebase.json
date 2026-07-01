@@ -1,0 +1,23 @@
+{
+  "hosting": {
+    "public": "src/dist",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "firestore": {
+    "rules": "firebaseconf/firestore",
+    "indexes": "firebaseconf/firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "firebaseconf/storage.firebase"
+  }
+}

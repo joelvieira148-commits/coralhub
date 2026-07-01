@@ -1,9 +1,9 @@
-import { supabaseClient } from '@/api/supabaseClient';
+import { firebaseClient } from '@/api/firebaseClient';
 import { clearAdminSessions } from '@/lib/admin-access';
 import { clearCoralContextCache } from '@/hooks/useCoralContext';
 
 const SESSION_KEYS = [
-  'supabase_access_token',
+  'firebase_access_token',
   'token',
   'coralhub_local_user_v1',
   'coralhub_local_token_v1',
@@ -25,9 +25,9 @@ export const logoutToApp = async (redirectPath = '/') => {
   clearAppSession();
 
   try {
-    await supabaseClient.auth.signOutOnly();
+    await firebaseClient.auth.signOutOnly();
   } catch (error) {
-    console.warn('Falha ao sair do Supabase:', error);
+    console.warn('Falha ao sair do Firebase:', error);
   }
 
   if (typeof window !== 'undefined') {

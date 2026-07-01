@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Music, X, Pencil, Trash2, Upload, ChevronDown, ChevronUp, Building2, Plus } from 'lucide-react';
-import { supabaseClient } from '@/api/supabaseClient';
+import { firebaseClient } from '@/api/firebaseClient';
 import AudioPlayer from '@/components/coral/AudioPlayer';
 import AdminPasswordGate from '@/components/coral/AdminPasswordGate';
 import PartituraViewer from '@/components/coral/PartituraViewer';
@@ -30,15 +30,15 @@ export default function AdminBiblioteca() {
 
   useEffect(() => {
     async function load() {
-      const me = await supabaseClient.auth.me();
+      const me = await firebaseClient.auth.me();
       setUser(me);
       if (!isAdminUser(me)) {
         navigate('/biblioteca', { replace: true });
         return;
       }
-      const allCorais = await supabaseClient.entities.Coral.list();
+      const allCorais = await firebaseClient.entities.Coral.list();
       setCorais(allCorais);
-      publicarCoraisNoCatalogo(supabaseClient, allCorais).catch((error) => {
+      publicarCoraisNoCatalogo(firebaseClient, allCorais).catch((error) => {
         console.warn('Falha ao sincronizar catalogo de corais:', error);
       });
       setLoading(false);
@@ -48,7 +48,7 @@ export default function AdminBiblioteca() {
 
   const loadMusicasDoCoral = async (coralId) => {
     if (musicasPorCoral[coralId]) return; // já carregado
-    const musicas = await supabaseClient.entities.Musica.filter({ coral_id: coralId });
+    const musicas = await firebaseClient.entities.Musica.filter({ coral_id: coralId });
     setMusicasPorCoral(prev => ({ ...prev, [coralId]: musicas }));
   };
 
@@ -84,7 +84,7 @@ export default function AdminBiblioteca() {
     const kind = key === 'partitura' ? 'pdf' : 'audio';
     setFiles(p => ({ ...p, [key]: { file, name: file.name, uploading: true } }));
     try {
-      const upload = await uploadCoralFile(supabaseClient, file, { kind });
+      const upload = await uploadCoralFile(firebaseClient, file, { kind });
       setFiles(p => ({
         ...p,
         [key]: {
@@ -125,13 +125,13 @@ export default function AdminBiblioteca() {
     };
 
     if (editando) {
-      const updated = await supabaseClient.entities.Musica.update(editando.id, payload);
+      const updated = await firebaseClient.entities.Musica.update(editando.id, payload);
       setMusicasPorCoral(prev => ({
         ...prev,
         [coralDoForm.id]: (prev[coralDoForm.id] || []).map(m => m.id === editando.id ? updated : m)
       }));
     } else {
-      const nova = await supabaseClient.entities.Musica.create(payload);
+      const nova = await firebaseClient.entities.Musica.create(payload);
       setMusicasPorCoral(prev => ({
         ...prev,
         [coralDoForm.id]: [nova, ...(prev[coralDoForm.id] || [])]
@@ -153,7 +153,7 @@ export default function AdminBiblioteca() {
 
   const excluir = async (musicaId, coralId) => {
     if (!confirm('Excluir esta música?')) return;
-    await supabaseClient.entities.Musica.delete(musicaId);
+    await firebaseClient.entities.Musica.delete(musicaId);
     setMusicasPorCoral(prev => ({
       ...prev,
       [coralId]: prev[coralId].filter(m => m.id !== musicaId)

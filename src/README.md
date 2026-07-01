@@ -5,58 +5,61 @@ biblioteca de partituras e audios por naipe.
 
 ## Nuvem
 
-O projeto usa Vercel + Supabase:
+O projeto usa Vercel + Firebase:
 
 - Vercel: hospedagem do app web;
-- Supabase Auth: login com Google e e-mail/senha;
-- Supabase Postgres: banco de dados;
-- Supabase Storage: fotos, videos, partituras e musicas em nuvem.
+- Firebase Authentication: login com e-mail e senha;
+- Cloud Firestore: banco de dados dos corais, membros, avisos, agenda e musicas;
+- Firebase Storage: fotos, videos, partituras e musicas em nuvem.
 
-## Configuracao Supabase
+## Configuracao Firebase
 
-1. Crie um projeto no Supabase.
-2. No SQL Editor do Supabase, rode o arquivo `supabase/schema.sql`.
-3. Em Authentication, ative Email/Password e Google.
-4. Em Authentication > URL Configuration, adicione estes redirects:
+1. No Firebase Console, abra o projeto `coralhub-8aed5`.
+2. Em Authentication > Sign-in method, ative Email/Password.
+3. Crie/ative o Cloud Firestore.
+4. Crie/ative o Firebase Storage.
+5. Publique as regras com o Firebase CLI ou copie os arquivos abaixo no console:
 
 ```text
-http://localhost:5173/**
-https://seu-app.vercel.app/**
-coralhub://auth/callback
+firebaseconf/firestore
+firebaseconf/storage.firebase
 ```
 
-5. Crie o arquivo `.env.local` na raiz deste projeto:
+6. Crie o arquivo `.env.local` na raiz deste projeto:
 
 ```env
-VITE_SUPABASE_URL=https://seu-projeto.supabase.co
-VITE_SUPABASE_ANON_KEY=sua_anon_key
-VITE_SUPABASE_STORAGE_BUCKET=coralhub
+VITE_FIREBASE_API_KEY=AIzaSyAXYefCFjclmfC1-eX8XybKWuKwoFj1jmw
+VITE_FIREBASE_AUTH_DOMAIN=coralhub-8aed5.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=coralhub-8aed5
+VITE_FIREBASE_STORAGE_BUCKET=coralhub-8aed5.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=1041382843109
+VITE_FIREBASE_APP_ID=1:1041382843109:web:081fe941fa21759b916a0c
+VITE_FIREBASE_MEASUREMENT_ID=G-H621TYSTJM
 ```
 
 ## Configuracao Vercel
 
 Na Vercel, configure as mesmas variaveis:
 
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
-- `VITE_SUPABASE_STORAGE_BUCKET`
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_PROJECT_ID`
+- `VITE_FIREBASE_STORAGE_BUCKET`
+- `VITE_FIREBASE_MESSAGING_SENDER_ID`
+- `VITE_FIREBASE_APP_ID`
+- `VITE_FIREBASE_MEASUREMENT_ID`
 
-O arquivo `vercel.json` ja deixa o Vite funcionando como SPA.
+O arquivo `vercel.json` ja deixa o Vite funcionando como SPA, evitando erro 404 ao abrir rotas internas.
 
-No Google Cloud Console, o OAuth do Google tambem precisa aceitar o callback do Supabase:
+## Publicar pelo Firebase Hosting
 
-```text
-https://xaerweeqwmuvvlaybyaw.supabase.co/auth/v1/callback
+```bash
+npm install -g firebase-tools
+firebase login
+npm install
+npm run build
+firebase deploy
 ```
-
-Links rapidos deste projeto:
-
-- SQL Editor: `https://supabase.com/dashboard/project/xaerweeqwmuvvlaybyaw/sql/new`
-- Auth URL Configuration: `https://supabase.com/dashboard/project/xaerweeqwmuvvlaybyaw/auth/url-configuration`
-- Auth Providers: `https://supabase.com/dashboard/project/xaerweeqwmuvvlaybyaw/auth/providers`
-
-Se o Google mostrar `Unsupported provider: provider is not enabled`, abra Auth Providers,
-ative Google e preencha Client ID e Client Secret criados no Google Cloud Console.
 
 ## Desenvolvimento
 
@@ -76,7 +79,7 @@ npm run dev
 
 - `src/pages`: telas principais
 - `src/components`: componentes de interface e componentes do coral
-- `src/api`: cliente Supabase
+- `src/api`: cliente Firebase
 - `src/lib`: contexto de autenticacao e utilitarios
 - `src/hooks`: hooks compartilhados
 - `src/utils`: utilitarios do dominio do coral

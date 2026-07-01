@@ -13,7 +13,7 @@ import {
   Video,
   X,
 } from 'lucide-react';
-import { supabaseClient } from '@/api/supabaseClient';
+import { firebaseClient } from '@/api/firebaseClient';
 import CoralLayout from '@/components/coral/CoralLayout';
 import useCoralContext from '@/hooks/useCoralContext';
 import { isAdminUser } from '@/lib/admin-access';
@@ -245,7 +245,7 @@ export default function Mural() {
   useEffect(() => {
     if (!coral) return;
 
-    supabaseClient.entities.Aviso.filter({ coral_id: coral.id }).then((data) => {
+    firebaseClient.entities.Aviso.filter({ coral_id: coral.id }).then((data) => {
       setAvisos(ordenarAvisos(data.map(normalizeAviso)));
     });
   }, [coral]);
@@ -309,7 +309,7 @@ export default function Mural() {
     setUploadingMidia(true);
 
     try {
-      const upload = await uploadCoralFile(supabaseClient, file, { kind });
+      const upload = await uploadCoralFile(firebaseClient, file, { kind });
       setForm((prev) => ({
         ...prev,
         midia_url: upload.file_url,
@@ -383,15 +383,15 @@ export default function Mural() {
     };
 
     if (editando) {
-      const updated = await supabaseClient.entities.Aviso.update(editando.id, payload);
+      const updated = await firebaseClient.entities.Aviso.update(editando.id, payload);
       setAvisos((prev) => ordenarAvisos(prev.map((aviso) => (aviso.id === editando.id ? normalizeAviso(updated) : aviso))));
     } else {
-      const novo = await supabaseClient.entities.Aviso.create(payload);
+      const novo = await firebaseClient.entities.Aviso.create(payload);
       setAvisos((prev) => ordenarAvisos([normalizeAviso(novo), ...prev]));
     }
 
     if (novosBytes > 0) {
-      const updatedCoral = await supabaseClient.entities.Coral.update(coral.id, {
+      const updatedCoral = await firebaseClient.entities.Coral.update(coral.id, {
         armazenamento_usado_bytes: (coral.armazenamento_usado_bytes || 0) + novosBytes,
       });
       setCoral(updatedCoral);
@@ -408,7 +408,7 @@ export default function Mural() {
 
   const excluir = async (id) => {
     if (!confirm('Excluir esta publicacao?')) return;
-    await supabaseClient.entities.Aviso.delete(id);
+    await firebaseClient.entities.Aviso.delete(id);
     setAvisos((prev) => prev.filter((aviso) => aviso.id !== id));
   };
 

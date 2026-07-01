@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Music, FileMusic, TrendingUp } from 'lucide-react';
-import { supabaseClient } from '@/api/supabaseClient';
+import { firebaseClient } from '@/api/firebaseClient';
 import CoralLayout from '@/components/coral/CoralLayout';
 import useCoralContext from '@/hooks/useCoralContext';
 import { NAIPES, getNaipeInfo } from '@/utils/coralTheme';
@@ -21,8 +21,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!coral) return;
-    supabaseClient.entities.Membro.filter({ coral_id: coral.id }).then(setMembros);
-    supabaseClient.entities.Musica.filter({ coral_id: coral.id }).then(setMusicas);
+    firebaseClient.entities.Membro.filter({ coral_id: coral.id }).then(setMembros);
+    firebaseClient.entities.Musica.filter({ coral_id: coral.id }).then(setMusicas);
   }, [coral]);
 
   if (loading) return (

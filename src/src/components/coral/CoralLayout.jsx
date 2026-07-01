@@ -14,7 +14,7 @@ import {
   Shield,
   Users,
 } from 'lucide-react';
-import { isUsingLocalSupabase } from '@/api/supabaseClient';
+import { isUsingLocalFirebase } from '@/api/firebaseClient';
 import { isAdminUser } from '@/lib/admin-access';
 import { logoutToApp } from '@/lib/logout';
 
@@ -121,7 +121,7 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
       </header>
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-5 pb-24 md:pb-6">
-        {isUsingLocalSupabase && (
+        {isUsingLocalFirebase && (
           <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <span>Modo local ativo: uploads e cadastros ficam somente neste aparelho.</span>

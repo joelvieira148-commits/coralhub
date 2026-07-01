@@ -1,7 +1,7 @@
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
-import { supabaseClient, isSupabaseConfigured } from '@/api/supabaseClient';
+import { firebaseClient, isFirebaseConfigured } from '@/api/firebaseClient';
 import { getPostLoginPath } from '@/lib/post-login';
 
 const processedAuthUrls = new Set();
@@ -32,7 +32,7 @@ const navigateInsideApp = (path = '/mural') => {
 };
 
 const completeNativeAuth = async (url) => {
-  if (!url || !isSupabaseConfigured || !/^coralhub:\/\/auth\/callback/i.test(url)) {
+  if (!url || !isFirebaseConfigured || !/^coralhub:\/\/auth\/callback/i.test(url)) {
     return;
   }
 
@@ -43,7 +43,7 @@ const completeNativeAuth = async (url) => {
   processedAuthUrls.add(url);
 
   try {
-    const result = await supabaseClient.auth.handleOAuthCallbackUrl(url);
+    const result = await firebaseClient.auth.handleOAuthCallbackUrl(url);
     await Browser.close().catch(() => null);
 
     if (typeof window !== 'undefined') {
@@ -60,7 +60,7 @@ const completeNativeAuth = async (url) => {
     await Browser.close().catch(() => null);
 
     try {
-      const user = await supabaseClient.auth.completeRedirectLogin();
+      const user = await firebaseClient.auth.completeRedirectLogin();
       if (user) {
         const postLoginPath = await getPostLoginPath('/mural').catch(() => '/onboarding');
         window.dispatchEvent(new CustomEvent('coralhub:auth-complete', { detail: { user, returnPath: postLoginPath } }));

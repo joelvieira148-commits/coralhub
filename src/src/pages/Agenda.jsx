@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, X, Calendar, Clock, MapPin, Pencil, Trash2, Music, Users, Presentation, HelpCircle } from 'lucide-react';
-import { supabaseClient } from '@/api/supabaseClient';
+import { firebaseClient } from '@/api/firebaseClient';
 import CoralLayout from '@/components/coral/CoralLayout';
 import useCoralContext from '@/hooks/useCoralContext';
 
@@ -40,7 +40,7 @@ export default function Agenda() {
 
   useEffect(() => {
     if (!coral) return;
-    supabaseClient.entities.Evento.filter({ coral_id: coral.id }, 'data').then(data => {
+    firebaseClient.entities.Evento.filter({ coral_id: coral.id }, 'data').then(data => {
       // Ordena por data crescente
       const sorted = [...data].sort((a, b) => new Date(a.data) - new Date(b.data));
       setEventos(sorted);
@@ -65,13 +65,13 @@ export default function Agenda() {
     const payload = { ...form, coral_id: coral.id, autor_nome: membro?.nome || user.email };
 
     if (editando) {
-      const updated = await supabaseClient.entities.Evento.update(editando.id, payload);
+      const updated = await firebaseClient.entities.Evento.update(editando.id, payload);
       setEventos(prev => {
         const list = prev.map(ev => ev.id === editando.id ? updated : ev);
         return list.sort((a, b) => new Date(a.data) - new Date(b.data));
       });
     } else {
-      const novo = await supabaseClient.entities.Evento.create(payload);
+      const novo = await firebaseClient.entities.Evento.create(payload);
       setEventos(prev => [...prev, novo].sort((a, b) => new Date(a.data) - new Date(b.data)));
     }
 
@@ -81,7 +81,7 @@ export default function Agenda() {
 
   const excluir = async (id) => {
     if (!confirm('Excluir este evento?')) return;
-    await supabaseClient.entities.Evento.delete(id);
+    await firebaseClient.entities.Evento.delete(id);
     setEventos(prev => prev.filter(ev => ev.id !== id));
   };
 

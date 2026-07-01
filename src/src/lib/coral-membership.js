@@ -23,7 +23,7 @@ export const hasCoralMembershipData = (user) =>
       user?.member_foto_url
   );
 
-export const clearCurrentUserCoralMembership = async (supabaseClient, user) => {
+export const clearCurrentUserCoralMembership = async (firebaseClient, user) => {
   const clearedUser = {
     ...user,
     ...clearCoralMembershipFields,
@@ -34,7 +34,7 @@ export const clearCurrentUserCoralMembership = async (supabaseClient, user) => {
   }
 
   try {
-    return await supabaseClient.auth.updateMe(clearCoralMembershipFields);
+    return await firebaseClient.auth.updateMe(clearCoralMembershipFields);
   } catch (error) {
     console.warn('Falha ao limpar vinculo do coral no perfil do usuario:', error);
     return clearedUser;
@@ -44,7 +44,7 @@ export const clearCurrentUserCoralMembership = async (supabaseClient, user) => {
 const shouldUpdate = (user, fields) =>
   Object.entries(fields).some(([key, value]) => String(user?.[key] || '') !== String(value || ''));
 
-export const syncCurrentUserCoralMembership = async (supabaseClient, user, fields) => {
+export const syncCurrentUserCoralMembership = async (firebaseClient, user, fields) => {
   const cleanFields = Object.fromEntries(
     Object.entries(fields).map(([key, value]) => [key, value || ''])
   );
@@ -58,7 +58,7 @@ export const syncCurrentUserCoralMembership = async (supabaseClient, user, field
   }
 
   try {
-    return await supabaseClient.auth.updateMe(cleanFields);
+    return await firebaseClient.auth.updateMe(cleanFields);
   } catch (error) {
     console.warn('Falha ao sincronizar vinculo do coral no perfil do usuario:', error);
     return syncedUser;

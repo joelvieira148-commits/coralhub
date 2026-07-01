@@ -1,21 +1,14 @@
 import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Lock, LogIn, Mail, Music, UserPlus } from 'lucide-react';
-import { supabaseClient, isSupabaseConfigured } from '@/api/supabaseClient';
+import { firebaseClient, isFirebaseConfigured } from '@/api/firebaseClient';
 import { getPostLoginPath } from '@/lib/post-login';
-
-const EMAIL_CONFIRMATION_MESSAGE =
-  'Essa conta ainda esta marcada no Supabase como e-mail nao confirmado. Se voce ja desligou "Confirm email", as proximas contas entram direto, mas as contas antigas precisam ser confirmadas uma vez em Authentication > Users ou pelo SQL em supabase/confirmar-emails-antigos.sql.';
 
 const getErrorMessage = (error) => {
   const code = error?.code || '';
 
-  if (/email not confirmed|not confirmed|confirm/i.test(error?.message || '')) {
-    return EMAIL_CONFIRMATION_MESSAGE;
-  }
-
-  if (code === 'invalid_credentials' || /invalid login credentials/i.test(error?.message || '')) {
-    return `E-mail ou senha incorretos. Se essa conta foi criada antes de desligar "Confirm email", ela pode estar sem confirmacao. ${EMAIL_CONFIRMATION_MESSAGE}`;
+  if (code === 'invalid_credentials' || /invalid login credentials|senha incorretos/i.test(error?.message || '')) {
+    return 'E-mail ou senha incorretos.';
   }
 
   if (code === 'user_already_exists' || /already registered/i.test(error?.message || '')) {
@@ -52,7 +45,7 @@ export default function Login() {
     setMessage('');
 
     try {
-      await supabaseClient.auth.loginViaEmailPassword(email, password);
+      await firebaseClient.auth.loginViaEmailPassword(email, password);
       await finishLogin();
     } catch (err) {
       setError(getErrorMessage(err));
@@ -68,19 +61,13 @@ export default function Login() {
     setMessage('');
 
     try {
-      const result = await supabaseClient.auth.register({
+      const result = await firebaseClient.auth.register({
         email,
         password,
         full_name: fullName,
       });
       if (result?.needsEmailConfirmation) {
-        try {
-          await supabaseClient.auth.loginViaEmailPassword(email, password);
-          await finishLogin();
-          return;
-        } catch {
-          setMessage(EMAIL_CONFIRMATION_MESSAGE);
-        }
+        setMessage('Conta criada. Entre com seu e-mail e senha para continuar.');
         setAuthMode('login');
         return;
       }
@@ -110,9 +97,9 @@ export default function Login() {
           </p>
         </div>
 
-        {!isSupabaseConfigured && (
+        {!isFirebaseConfigured && (
           <div className="mb-4 rounded-xl bg-amber-50 border border-amber-100 text-amber-800 text-sm px-4 py-3">
-            Supabase ainda nao esta configurado. Preencha VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no arquivo .env.local.
+            Firebase ainda nao esta configurado. Preencha VITE_FIREBASE_API_KEY e VITE_FIREBASE_PROJECT_ID no arquivo .env.local.
           </div>
         )}
 
@@ -204,7 +191,7 @@ export default function Login() {
           </div>
 
           <button
-            disabled={loading || !isSupabaseConfigured}
+            disabled={loading || !isFirebaseConfigured}
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition-colors disabled:opacity-60"
           >
             {loading
