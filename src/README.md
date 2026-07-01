@@ -54,11 +54,15 @@ O arquivo `vercel.json` ja deixa o Vite funcionando como SPA, evitando erro 404 
 ## Publicar pelo Firebase Hosting
 
 ```bash
-npm install -g firebase-tools
 firebase login
 npm install
-npm run build
-firebase deploy
+npm run firebase:deploy
+```
+
+Para publicar apenas as regras do banco e do storage:
+
+```bash
+npm run firebase:rules
 ```
 
 ## Desenvolvimento
