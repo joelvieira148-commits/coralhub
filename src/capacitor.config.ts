@@ -4,6 +4,10 @@ const config: CapacitorConfig = {
   appId: 'com.coralhub.app',
   appName: 'CoralHub',
   webDir: 'dist',
+  server: {
+    url: 'https://coralhub.vercel.app',
+    cleartext: false,
+  },
   plugins: {
     FirebaseAuthentication: {
       skipNativeAuth: true,
