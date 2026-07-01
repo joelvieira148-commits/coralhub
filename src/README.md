@@ -8,14 +8,14 @@ biblioteca de partituras e audios por naipe.
 O projeto usa Vercel + Firebase:
 
 - Vercel: hospedagem do app web;
-- Firebase Authentication: login com e-mail e senha;
+- Firebase Authentication: login com Google e e-mail/senha;
 - Cloud Firestore: banco de dados dos corais, membros, avisos, agenda e musicas;
 - Firebase Storage: fotos, videos, partituras e musicas em nuvem.
 
 ## Configuracao Firebase
 
 1. No Firebase Console, abra o projeto `coralhub-8aed5`.
-2. Em Authentication > Sign-in method, ative Email/Password.
+2. Em Authentication > Sign-in method, ative Email/Password e Google.
 3. Crie/ative o Cloud Firestore.
 4. Crie/ative o Firebase Storage.
 5. Publique as regras com o Firebase CLI ou copie os arquivos abaixo no console:
@@ -36,6 +36,8 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=1041382843109
 VITE_FIREBASE_APP_ID=1:1041382843109:web:081fe941fa21759b916a0c
 VITE_FIREBASE_MEASUREMENT_ID=G-H621TYSTJM
 ```
+
+Para o Google funcionar na Vercel, confira em Authentication > Settings > Authorized domains se o dominio da Vercel tambem esta autorizado.
 
 ## Configuracao Vercel
 

@@ -3,8 +3,12 @@ import { getAnalytics, isSupported } from 'firebase/analytics';
 import {
   createUserWithEmailAndPassword,
   getAuth,
+  getRedirectResult,
+  GoogleAuthProvider,
   onAuthStateChanged,
   signInWithEmailAndPassword,
+  signInWithPopup,
+  signInWithRedirect,
   signOut,
   updateProfile as updateFirebaseProfile,
 } from 'firebase/auth';
@@ -50,6 +54,13 @@ const firebaseApp = isFirebaseConfigured
 const auth = firebaseApp ? getAuth(firebaseApp) : null;
 const db = firebaseApp ? getFirestore(firebaseApp) : null;
 const storage = firebaseApp ? getStorage(firebaseApp) : null;
+const googleProvider = firebaseApp ? new GoogleAuthProvider() : null;
+
+if (googleProvider) {
+  googleProvider.setCustomParameters({
+    prompt: 'select_account',
+  });
+}
 
 if (firebaseApp && typeof window !== 'undefined') {
   isSupported()
@@ -376,6 +387,18 @@ const mapFirebaseAuthError = (error) => {
     error.message = 'Este e-mail ja esta cadastrado.';
   }
 
+  if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+    error.message = 'Login cancelado.';
+  }
+
+  if (code === 'auth/operation-not-allowed') {
+    error.message = 'Login com Google nao esta ativado no Firebase.';
+  }
+
+  if (code === 'auth/unauthorized-domain') {
+    error.message = 'Este dominio nao esta autorizado no Firebase Authentication.';
+  }
+
   return error;
 };
 
@@ -401,6 +424,17 @@ export const firebaseClient = {
     },
 
     async completeRedirectLogin() {
+      requireFirebase();
+
+      try {
+        const redirectResult = await getRedirectResult(auth);
+        if (redirectResult?.user) {
+          return publicUserFromFirebase(redirectResult.user);
+        }
+      } catch (error) {
+        throw mapFirebaseAuthError(error);
+      }
+
       const authUser = await waitForAuthUser(false);
       return authUser ? publicUserFromFirebase(authUser) : null;
     },
@@ -503,7 +537,28 @@ export const firebaseClient = {
     },
 
     async loginWithGoogle() {
-      throw new Error('Login com Google foi removido. Use e-mail e senha.');
+      requireFirebase();
+
+      try {
+        const credential = await signInWithPopup(auth, googleProvider);
+        return {
+          access_token: credential.user?.accessToken || '',
+          user: credential.user ? await publicUserFromFirebase(credential.user) : null,
+          redirected: false,
+        };
+      } catch (error) {
+        const blockedPopup =
+          error?.code === 'auth/popup-blocked' ||
+          error?.code === 'auth/web-storage-unsupported' ||
+          /popup.*blocked/i.test(error?.message || '');
+
+        if (blockedPopup) {
+          await signInWithRedirect(auth, googleProvider);
+          return { redirected: true };
+        }
+
+        throw mapFirebaseAuthError(error);
+      }
     },
 
     async handleOAuthCallbackUrl() {

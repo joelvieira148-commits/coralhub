@@ -79,6 +79,22 @@ export default function Login() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    setError('');
+    setMessage('');
+
+    try {
+      const result = await firebaseClient.auth.loginWithGoogle();
+      if (!result?.redirected) {
+        await finishLogin();
+      }
+    } catch (err) {
+      setError(getErrorMessage(err));
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 flex items-center justify-center p-6">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-white/40 p-6">
@@ -114,6 +130,16 @@ export default function Login() {
             {message}
           </div>
         )}
+
+        <button
+          type="button"
+          onClick={handleGoogleLogin}
+          disabled={loading || !isFirebaseConfigured}
+          className="w-full mb-5 border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 font-semibold py-3 rounded-xl transition-colors disabled:opacity-60 flex items-center justify-center gap-3"
+        >
+          <span className="text-lg font-bold text-blue-600">G</span>
+          Entrar com Google
+        </button>
 
         <div className="grid grid-cols-2 gap-2 bg-gray-100 rounded-xl p-1 mb-5">
           <button
