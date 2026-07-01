@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Music, X, Pencil, Trash2, Upload, ChevronDown, ChevronUp, Building2, Plus } from 'lucide-react';
 import { firebaseClient } from '@/api/firebaseClient';
 import AudioPlayer from '@/components/coral/AudioPlayer';
+import FixedAudioPlayer from '@/components/coral/FixedAudioPlayer';
 import AdminPasswordGate from '@/components/coral/AdminPasswordGate';
 import PartituraViewer from '@/components/coral/PartituraViewer';
 import { isAdminUser } from '@/lib/admin-access';
@@ -24,6 +25,7 @@ export default function AdminBiblioteca() {
   const [coralDoForm, setCoralDoForm] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [selecionada, setSelecionada] = useState(null);
+  const [currentTrack, setCurrentTrack] = useState(null);
   const [files, setFiles] = useState({});
   const emptyForm = { titulo: '', compositor: '', descricao: '', categoria: 'outro', tom: '' };
   const [form, setForm] = useState(emptyForm);
@@ -159,6 +161,17 @@ export default function AdminBiblioteca() {
       [coralId]: prev[coralId].filter(m => m.id !== musicaId)
     }));
     if (selecionada?.id === musicaId) setSelecionada(null);
+    if (currentTrack?.musicId === musicaId) setCurrentTrack(null);
+  };
+
+  const playTrack = (musica, audioInfo, kind) => {
+    setCurrentTrack({
+      ...audioInfo,
+      id: `${musica.id}-${kind}`,
+      musicId: musica.id,
+      title: musica.titulo || 'Musica',
+      subtitle: audioInfo.label,
+    });
   };
 
   const FileInput = ({ label, fieldKey, accept, existingUrl }) => (
@@ -335,7 +348,13 @@ export default function AdminBiblioteca() {
                                         />
                                       )}
                                       {m.audio_completo_url && (
-                                        <AudioPlayer url={m.audio_completo_url} label="Áudio Completo" allowDownload={true} />
+                                        <AudioPlayer
+                                          url={m.audio_completo_url}
+                                          label="Audio Completo"
+                                          allowDownload={true}
+                                          onPlay={(audioInfo) => playTrack(m, audioInfo, 'completo')}
+                                          isSelected={currentTrack?.id === `${m.id}-completo`}
+                                        />
                                       )}
                                       {NAIPES.filter(n => m[`audio_${n.value}_url`]).map(n => (
                                         <AudioPlayer
@@ -343,6 +362,8 @@ export default function AdminBiblioteca() {
                                           naipe={n.value}
                                           url={m[`audio_${n.value}_url`]}
                                           allowDownload={true}
+                                          onPlay={(audioInfo) => playTrack(m, audioInfo, n.value)}
+                                          isSelected={currentTrack?.id === `${m.id}-${n.value}`}
                                         />
                                       ))}
                                     </div>
@@ -428,6 +449,7 @@ export default function AdminBiblioteca() {
           </div>
         </div>
       )}
+      <FixedAudioPlayer track={currentTrack} onClose={() => setCurrentTrack(null)} />
     </div>
     </AdminPasswordGate>
   );

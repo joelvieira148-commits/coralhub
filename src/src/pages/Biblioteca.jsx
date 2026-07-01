@@ -5,6 +5,7 @@ import { firebaseClient } from '@/api/firebaseClient';
 import CoralLayout from '@/components/coral/CoralLayout';
 import useCoralContext from '@/hooks/useCoralContext';
 import AudioPlayer from '@/components/coral/AudioPlayer';
+import FixedAudioPlayer from '@/components/coral/FixedAudioPlayer';
 import PartituraViewer from '@/components/coral/PartituraViewer';
 import StorageIndicator from '@/components/coral/StorageIndicator';
 import { isAdminUser } from '@/lib/admin-access';
@@ -14,16 +15,6 @@ import { verificarEspaco, formatarBytes } from '@/utils/storage';
 
 const CATEGORIAS = ['sacra', 'popular', 'classica', 'gospel', 'folclorica', 'outro'];
 
-// Mapa de naipe do membro → chave de áudio na música
-const NAIPE_AUDIO_KEY = {
-  soprano1: 'audio_soprano1_url',
-  soprano2: 'audio_soprano2_url',
-  contralto: 'audio_contralto_url',
-  tenor: 'audio_tenor_url',
-  baritono: 'audio_baritono_url',
-  baixo: 'audio_baixo_url',
-};
-
 export default function Biblioteca() {
   const navigate = useNavigate();
   const { user, coral, membro, isMaestro, loading, setCoral } = useCoralContext();
@@ -32,6 +23,7 @@ export default function Biblioteca() {
   const [showForm, setShowForm] = useState(false);
   const [editando, setEditando] = useState(null); // música sendo editada
   const [uploading, setUploading] = useState(false);
+  const [currentTrack, setCurrentTrack] = useState(null);
 
   const emptyForm = { titulo: '', compositor: '', descricao: '', categoria: 'outro', tom: '' };
   const [form, setForm] = useState(emptyForm);
@@ -153,6 +145,7 @@ export default function Biblioteca() {
     await firebaseClient.entities.Musica.delete(id);
     setMusicas(prev => prev.filter(m => m.id !== id));
     if (selecionada?.id === id) setSelecionada(null);
+    if (currentTrack?.musicId === id) setCurrentTrack(null);
   };
 
   if (loading) return (
@@ -177,6 +170,16 @@ export default function Biblioteca() {
       // Membro vê só o próprio naipe
       return NAIPES.filter(n => n.value === naipeDoMembro && m[`audio_${n.value}_url`]);
     }
+  };
+
+  const playTrack = (musica, audioInfo, kind) => {
+    setCurrentTrack({
+      ...audioInfo,
+      id: `${musica.id}-${kind}`,
+      musicId: musica.id,
+      title: musica.titulo || 'Musica',
+      subtitle: audioInfo.label,
+    });
   };
 
   const FileInput = ({ label, fieldKey, accept, existingUrl }) => (
@@ -387,7 +390,13 @@ export default function Biblioteca() {
 
                       {/* Áudio completo — apenas maestro */}
                       {canManageMusic && m.audio_completo_url && (
-                        <AudioPlayer url={m.audio_completo_url} label="Áudio Completo" allowDownload={true} />
+                        <AudioPlayer
+                          url={m.audio_completo_url}
+                          label="Audio Completo"
+                          allowDownload={true}
+                          onPlay={(audioInfo) => playTrack(m, audioInfo, 'completo')}
+                          isSelected={currentTrack?.id === `${m.id}-completo`}
+                        />
                       )}
 
                       {/* Naipes visíveis conforme papel */}
@@ -398,6 +407,8 @@ export default function Biblioteca() {
                             naipe={n.value}
                             url={m[`audio_${n.value}_url`]}
                             allowDownload={canManageMusic}
+                            onPlay={(audioInfo) => playTrack(m, audioInfo, n.value)}
+                            isSelected={currentTrack?.id === `${m.id}-${n.value}`}
                           />
                         ))
                       ) : (
@@ -415,6 +426,7 @@ export default function Biblioteca() {
           })}
         </div>
       )}
+      <FixedAudioPlayer track={currentTrack} onClose={() => setCurrentTrack(null)} />
     </CoralLayout>
   );
 }

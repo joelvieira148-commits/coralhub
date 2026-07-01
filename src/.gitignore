@@ -16,6 +16,8 @@ node_modules
 .tools
 dist
 dist-ssr
+*.apk
+android/app/google-services.json
 *.local
 
 # Editor directories and files
