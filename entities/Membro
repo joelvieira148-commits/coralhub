@@ -1,0 +1,137 @@
+{
+  "name": "Membro",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "telefone": {
+      "type": "string"
+    },
+    "naipe": {
+      "type": "string",
+      "enum": [
+        "soprano1",
+        "soprano2",
+        "contralto",
+        "tenor",
+        "baritono",
+        "baixo"
+      ],
+      "description": "Naipe vocal do membro"
+    },
+    "cargo": {
+      "type": "string",
+      "enum": [
+        "membro",
+        "secretaria",
+        "vice_secretaria",
+        "maestro",
+        "maestrina"
+      ],
+      "default": "membro",
+      "description": "Cargo do membro no coral"
+    },
+    "coral_id": {
+      "type": "string",
+      "description": "ID do coral ao qual pertence"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email da conta do usu\u00e1rio"
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true
+    },
+    "foto_url": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "nome",
+    "email",
+    "cargo",
+    "coral_id"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "data.user_email": "{{user.email}}"
+        },
+        {
+          "$and": [
+            {
+              "data.coral_id": "{{user.data.active_coral_id}}"
+            },
+            {
+              "user.data.active_coral_role": "maestro"
+            }
+          ]
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.coral_id": "{{user.data.active_coral_id}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_email": "{{user.email}}"
+        },
+        {
+          "$and": [
+            {
+              "data.coral_id": "{{user.data.active_coral_id}}"
+            },
+            {
+              "user.data.active_coral_role": "maestro"
+            }
+          ]
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "$and": [
+            {
+              "data.coral_id": "{{user.data.active_coral_id}}"
+            },
+            {
+              "user.data.active_coral_role": "maestro"
+            }
+          ]
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

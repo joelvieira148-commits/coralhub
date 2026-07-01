@@ -1,0 +1,149 @@
+{
+  "name": "Musica",
+  "type": "object",
+  "properties": {
+    "titulo": {
+      "type": "string"
+    },
+    "compositor": {
+      "type": "string"
+    },
+    "coral_id": {
+      "type": "string"
+    },
+    "descricao": {
+      "type": "string"
+    },
+    "partitura_url": {
+      "type": "string",
+      "description": "URL do PDF da partitura"
+    },
+    "audio_soprano1_url": {
+      "type": "string"
+    },
+    "audio_soprano2_url": {
+      "type": "string"
+    },
+    "audio_contralto_url": {
+      "type": "string"
+    },
+    "audio_tenor_url": {
+      "type": "string"
+    },
+    "audio_baritono_url": {
+      "type": "string"
+    },
+    "audio_baixo_url": {
+      "type": "string"
+    },
+    "audio_completo_url": {
+      "type": "string",
+      "description": "\u00c1udio com todos os naipes"
+    },
+    "categoria": {
+      "type": "string",
+      "enum": [
+        "sacra",
+        "popular",
+        "classica",
+        "gospel",
+        "folclorica",
+        "outro"
+      ],
+      "default": "outro"
+    },
+    "tom": {
+      "type": "string"
+    },
+    "uploaded_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "titulo",
+    "coral_id"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.uploaded_by": "{{user.email}}"
+        },
+        {
+          "$and": [
+            {
+              "data.coral_id": "{{user.data.active_coral_id}}"
+            },
+            {
+              "user.data.active_coral_role": "maestro"
+            }
+          ]
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.uploaded_by": "{{user.email}}"
+        },
+        {
+          "data.coral_id": "{{user.data.active_coral_id}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.uploaded_by": "{{user.email}}"
+        },
+        {
+          "$and": [
+            {
+              "data.coral_id": "{{user.data.active_coral_id}}"
+            },
+            {
+              "user.data.active_coral_role": "maestro"
+            }
+          ]
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.uploaded_by": "{{user.email}}"
+        },
+        {
+          "$and": [
+            {
+              "data.coral_id": "{{user.data.active_coral_id}}"
+            },
+            {
+              "user.data.active_coral_role": "maestro"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

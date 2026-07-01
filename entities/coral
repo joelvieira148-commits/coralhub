@@ -1,0 +1,103 @@
+{
+  "name": "Coral",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "description": "Nome do coral"
+    },
+    "maestro_email": {
+      "type": "string",
+      "description": "Email do maestro dono do coral"
+    },
+    "descricao": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o do coral"
+    },
+    "cor_primaria": {
+      "type": "string",
+      "description": "Cor prim\u00e1ria em hex",
+      "default": "#6366f1"
+    },
+    "cor_secundaria": {
+      "type": "string",
+      "description": "Cor secund\u00e1ria em hex",
+      "default": "#818cf8"
+    },
+    "tema": {
+      "type": "string",
+      "enum": [
+        "classico",
+        "moderno",
+        "eclesiastico",
+        "gospel",
+        "contemporaneo"
+      ],
+      "default": "classico"
+    },
+    "logo_url": {
+      "type": "string",
+      "description": "URL da logo do coral"
+    },
+    "capa_url": {
+      "type": "string",
+      "description": "URL da imagem de capa"
+    },
+    "cidade": {
+      "type": "string"
+    },
+    "telefone_contato": {
+      "type": "string"
+    },
+    "armazenamento_usado_bytes": {
+      "type": "number",
+      "default": 0,
+      "description": "Bytes utilizados no armazenamento do coral (limite 1 TB)"
+    }
+  },
+  "required": [
+    "nome",
+    "maestro_email"
+  ],
+  "rls": {
+    "create": {
+      "data.maestro_email": "{{user.email}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.maestro_email": "{{user.email}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.maestro_email": "{{user.email}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.maestro_email": "{{user.email}}"
+        }
+      ]
+    }
+  }
+}

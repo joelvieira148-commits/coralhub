@@ -1,0 +1,9 @@
+Error: The following dependencies are imported but could not be resolved:
+
+  @/App.jsx (imported by C:/Users/joand/OneDrive/Documents/Nova pasta/src/src/main.jsx)
+  @/index.css (imported by C:/Users/joand/OneDrive/Documents/Nova pasta/src/src/main.jsx)
+
+Are they installed?
+    at file:///C:/Users/joand/OneDrive/Documents/Nova%20pasta/src/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14849:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async file:///C:/Users/joand/OneDrive/Documents/Nova%20pasta/src/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:47144:28

@@ -1,0 +1,185 @@
+{
+  "name": "Aviso",
+  "type": "object",
+  "properties": {
+    "titulo": {
+      "type": "string"
+    },
+    "conteudo": {
+      "type": "string"
+    },
+    "coral_id": {
+      "type": "string"
+    },
+    "autor_nome": {
+      "type": "string"
+    },
+    "autor_email": {
+      "type": "string"
+    },
+    "fixado": {
+      "type": "boolean",
+      "default": false
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "info",
+        "urgente",
+        "lembrete"
+      ],
+      "default": "info"
+    },
+    "publicacao_tipo": {
+      "type": "string"
+    },
+    "midia_url": {
+      "type": "string"
+    },
+    "midia_tipo": {
+      "type": "string"
+    },
+    "midia_nome": {
+      "type": "string"
+    },
+    "midia_mime": {
+      "type": "string"
+    },
+    "media_url": {
+      "type": "string"
+    },
+    "media_tipo": {
+      "type": "string"
+    },
+    "media_nome": {
+      "type": "string"
+    },
+    "media_mime": {
+      "type": "string"
+    },
+    "video_url": {
+      "type": "string"
+    },
+    "foto_url": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "titulo",
+    "conteudo",
+    "coral_id"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.autor_email": "{{user.email}}"
+        },
+        {
+          "$and": [
+            {
+              "data.coral_id": "{{user.data.active_coral_id}}"
+            },
+            {
+              "$or": [
+                {
+                  "user.data.active_coral_role": "maestro"
+                },
+                {
+                  "user.data.active_coral_role": "secretaria"
+                },
+                {
+                  "user.data.active_coral_role": "vice_secretaria"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.autor_email": "{{user.email}}"
+        },
+        {
+          "data.coral_id": "{{user.data.active_coral_id}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.autor_email": "{{user.email}}"
+        },
+        {
+          "$and": [
+            {
+              "data.coral_id": "{{user.data.active_coral_id}}"
+            },
+            {
+              "$or": [
+                {
+                  "user.data.active_coral_role": "maestro"
+                },
+                {
+                  "user.data.active_coral_role": "secretaria"
+                },
+                {
+                  "user.data.active_coral_role": "vice_secretaria"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.autor_email": "{{user.email}}"
+        },
+        {
+          "$and": [
+            {
+              "data.coral_id": "{{user.data.active_coral_id}}"
+            },
+            {
+              "$or": [
+                {
+                  "user.data.active_coral_role": "maestro"
+                },
+                {
+                  "user.data.active_coral_role": "secretaria"
+                },
+                {
+                  "user.data.active_coral_role": "vice_secretaria"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

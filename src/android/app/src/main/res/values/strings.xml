@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">CoralHub</string>
+    <string name="title_activity_main">CoralHub</string>
+    <string name="package_name">com.coralhub.app</string>
+    <string name="custom_url_scheme">com.coralhub.app</string>
+</resources>
