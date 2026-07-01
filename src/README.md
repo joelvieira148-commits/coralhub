@@ -39,6 +39,14 @@ VITE_FIREBASE_MEASUREMENT_ID=G-H621TYSTJM
 
 Para o Google funcionar na Vercel, confira em Authentication > Settings > Authorized domains se o dominio da Vercel tambem esta autorizado.
 
+Para o Google funcionar no APK Android:
+
+1. No Firebase Console, registre um app Android com o pacote `com.coralhub.app`.
+2. Adicione o SHA-1 do certificado debug/release no app Android do Firebase.
+3. Baixe o arquivo `google-services.json`.
+4. Coloque o arquivo em `src/android/app/google-services.json`.
+5. Rode `npm run build`, `npx cap sync android` e gere o APK novamente.
+
 ## Configuracao Vercel
 
 Na Vercel, configure as mesmas variaveis:

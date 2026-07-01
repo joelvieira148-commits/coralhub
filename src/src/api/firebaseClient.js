@@ -1,5 +1,7 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getAnalytics, isSupported } from 'firebase/analytics';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
+import { Capacitor } from '@capacitor/core';
 import {
   createUserWithEmailAndPassword,
   getAuth,
@@ -7,6 +9,7 @@ import {
   GoogleAuthProvider,
   onAuthStateChanged,
   signInWithEmailAndPassword,
+  signInWithCredential,
   signInWithPopup,
   signInWithRedirect,
   signOut,
@@ -83,6 +86,9 @@ const requireFirebase = () => {
     throw configurationError();
   }
 };
+
+const isNativeRuntime = () =>
+  typeof window !== 'undefined' && Capacitor.isNativePlatform();
 
 const cleanPayload = (payload = {}) =>
   Object.fromEntries(
@@ -399,6 +405,11 @@ const mapFirebaseAuthError = (error) => {
     error.message = 'Este dominio nao esta autorizado no Firebase Authentication.';
   }
 
+  if (/google-services\.json|default firebaseapp|api_exception|10:/i.test(error?.message || '')) {
+    error.message =
+      'Google no APK ainda precisa do arquivo google-services.json e SHA-1 configurado no Firebase.';
+  }
+
   return error;
 };
 
@@ -538,6 +549,30 @@ export const firebaseClient = {
 
     async loginWithGoogle() {
       requireFirebase();
+
+      if (isNativeRuntime()) {
+        try {
+          const nativeResult = await FirebaseAuthentication.signInWithGoogle({
+            skipNativeAuth: true,
+          });
+          const idToken = nativeResult?.credential?.idToken;
+
+          if (!idToken) {
+            throw new Error('Google nao retornou credencial para entrar no app.');
+          }
+
+          const credential = GoogleAuthProvider.credential(idToken);
+          const userCredential = await signInWithCredential(auth, credential);
+
+          return {
+            access_token: userCredential.user?.accessToken || '',
+            user: userCredential.user ? await publicUserFromFirebase(userCredential.user) : null,
+            redirected: false,
+          };
+        } catch (error) {
+          throw mapFirebaseAuthError(error);
+        }
+      }
 
       try {
         const credential = await signInWithPopup(auth, googleProvider);

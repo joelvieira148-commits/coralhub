@@ -91,6 +91,7 @@ export default function Login() {
       }
     } catch (err) {
       setError(getErrorMessage(err));
+    } finally {
       setLoading(false);
     }
   };
