@@ -5,7 +5,6 @@ import {
   Building2,
   Check,
   Clock,
-  KeyRound,
   Library,
   Mail,
   MapPin,
@@ -134,7 +133,6 @@ export default function AdminCorais() {
     try {
       const updated = await firebaseClient.entities.Coral.update(coral.id, {
         ...getApprovalFields(user?.email || ''),
-        codigo_aprovacao_usado: coral.codigo_aprovacao || '',
         codigo_aprovacao: '',
         ativo: true,
       });
@@ -270,12 +268,6 @@ export default function AdminCorais() {
                         <span className="truncate">{coral.maestro_email}</span>
                       </p>
                     )}
-                    <p className="flex items-center gap-2">
-                      <KeyRound className="w-4 h-4 flex-shrink-0" />
-                      <span className="font-mono font-semibold text-gray-900">
-                        {coral.codigo_aprovacao || 'Sem codigo'}
-                      </span>
-                    </p>
                     {coral.solicitado_em && (
                       <p className="text-xs text-gray-500">
                         Solicitado em {new Date(coral.solicitado_em).toLocaleString('pt-BR')}

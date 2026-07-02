@@ -4,7 +4,7 @@ import { Music, User, ArrowLeft, Camera, MessageCircle, RefreshCw } from 'lucide
 import { firebaseClient } from '@/api/firebaseClient';
 import { NAIPES } from '@/utils/coralTheme';
 import { carregarCoraisParaCadastro } from '@/lib/coral-directory';
-import { CORAL_STATUS, createApprovalCode, isCoralApproved, isCoralPending } from '@/lib/coral-approval';
+import { CORAL_STATUS, isCoralApproved, isCoralPending } from '@/lib/coral-approval';
 import { getMemberPhotoFields } from '@/lib/member-photo';
 import { uploadProfilePhoto } from '@/lib/profile-photo-upload';
 import { saveCoralContextCache } from '@/hooks/useCoralContext';
@@ -74,7 +74,6 @@ export default function Onboarding() {
             active_coral_cidade: aprovado.cidade || '',
             pending_coral_id: '',
             pending_coral_nome: '',
-            pending_coral_code: '',
             active_member_id: '',
             member_nome: user.full_name || user.email || '',
             member_naipe: '',
@@ -159,7 +158,6 @@ export default function Onboarding() {
 
     try {
       const user = await firebaseClient.auth.me();
-      const codigoAprovacao = createApprovalCode();
       const coral = await firebaseClient.entities.Coral.create({
         nome: nomeCoralForm,
         cidade: cidadeForm,
@@ -168,7 +166,6 @@ export default function Onboarding() {
         cor_secundaria: '#a78bfa',
         tema: 'classico',
         status_aprovacao: CORAL_STATUS.pending,
-        codigo_aprovacao: codigoAprovacao,
         solicitado_em: new Date().toISOString(),
       });
       const fotoMaestroFields = getMemberPhotoFields(fotoMaestroUrl);
@@ -189,7 +186,6 @@ export default function Onboarding() {
         active_coral_role: '',
         pending_coral_id: coral.id,
         pending_coral_nome: coral.nome || '',
-        pending_coral_code: codigoAprovacao,
         ...fotoMaestroParaUsuario,
       });
       saveCoralContextCache({
@@ -199,7 +195,6 @@ export default function Onboarding() {
           active_coral_role: '',
           pending_coral_id: coral.id,
           pending_coral_nome: coral.nome || '',
-          pending_coral_code: codigoAprovacao,
           ...fotoMaestroParaUsuario,
         },
         coral: null,
@@ -223,12 +218,11 @@ export default function Onboarding() {
           <Music className="w-12 h-12 text-indigo-600 mx-auto mb-3" />
           <h1 className="text-2xl font-bold text-gray-800">Coral aguardando aprovacao</h1>
           <p className="text-gray-500 mt-3 text-sm">
-            Seu cadastro foi enviado para o admin. Assim que for aprovado, voce podera entrar na plataforma do coral.
+            A aprovacao e somente para maestro ou maestrina criando um coral novo. Membros entram direto escolhendo um coral ja aprovado.
           </p>
           <div className="mt-6 rounded-2xl border border-indigo-100 bg-indigo-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500">Codigo para o admin</p>
-            <p className="mt-2 font-mono text-xl font-bold text-indigo-900">
-              {coralPendente?.codigo_aprovacao || 'Aguardando codigo'}
+            <p className="text-sm font-semibold text-indigo-900">
+              Seu coral foi enviado para o admin aprovar com um clique.
             </p>
           </div>
           <p className="mt-4 text-xs text-gray-400">
@@ -417,6 +411,9 @@ export default function Onboarding() {
           </button>
           <h2 className="text-xl font-bold text-gray-800 mb-1">Entrar em um Coral</h2>
           <p className="text-gray-500 text-sm mb-6">Preencha seus dados para se registrar.</p>
+          <p className="mb-4 rounded-xl bg-purple-50 px-4 py-3 text-sm font-medium text-purple-700">
+            Membro nao precisa de aprovacao: escolha o coral e entre direto.
+          </p>
           <WhatsAppCadastro className="mb-4" />
           {formError && (
             <div className="mb-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
