@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Music, User, ArrowLeft, Camera, RefreshCw } from 'lucide-react';
+import { Music, User, ArrowLeft, Camera, MessageCircle, RefreshCw } from 'lucide-react';
 import { firebaseClient } from '@/api/firebaseClient';
 import { NAIPES } from '@/utils/coralTheme';
 import { carregarCoraisParaCadastro } from '@/lib/coral-directory';
@@ -8,6 +8,9 @@ import { CORAL_STATUS, createApprovalCode, isCoralApproved, isCoralPending } fro
 import { getMemberPhotoFields } from '@/lib/member-photo';
 import { uploadProfilePhoto } from '@/lib/profile-photo-upload';
 import { saveCoralContextCache } from '@/hooks/useCoralContext';
+
+const ADMIN_WHATSAPP_LABEL = '(81) 98551-1614';
+const ADMIN_WHATSAPP_URL = 'https://wa.me/5581985511614';
 
 export default function Onboarding() {
   const [step, setStep] = useState('role'); // role | maestro | membro
@@ -137,6 +140,18 @@ export default function Onboarding() {
     setStep('membro');
   };
 
+  const WhatsAppCadastro = ({ className = '' }) => (
+    <a
+      href={ADMIN_WHATSAPP_URL}
+      target="_blank"
+      rel="noreferrer"
+      className={`flex items-center justify-center gap-2 rounded-xl border border-green-100 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700 hover:bg-green-100 ${className}`}
+    >
+      <MessageCircle className="w-4 h-4" />
+      Duvidas no cadastro? WhatsApp {ADMIN_WHATSAPP_LABEL}
+    </a>
+  );
+
   const criarCoral = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -226,6 +241,7 @@ export default function Onboarding() {
           >
             Verificar aprovacao
           </button>
+          <WhatsAppCadastro className="mt-3" />
         </div>
       </div>
     );
@@ -322,6 +338,7 @@ export default function Onboarding() {
               <p className="text-gray-500 text-sm mt-1">Entrar em um coral existente, ver partituras e ouvir áudios.</p>
             </button>
           </div>
+          <WhatsAppCadastro className="mt-5" />
         </div>
       </div>
     );
@@ -336,6 +353,7 @@ export default function Onboarding() {
           </button>
           <h2 className="text-xl font-bold text-gray-800 mb-1">Criar seu Coral</h2>
           <p className="text-gray-500 text-sm mb-6">Preencha as informações básicas do seu coral.</p>
+          <WhatsAppCadastro className="mb-4" />
           {formError && (
             <div className="mb-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
               {formError}
@@ -399,6 +417,7 @@ export default function Onboarding() {
           </button>
           <h2 className="text-xl font-bold text-gray-800 mb-1">Entrar em um Coral</h2>
           <p className="text-gray-500 text-sm mb-6">Preencha seus dados para se registrar.</p>
+          <WhatsAppCadastro className="mb-4" />
           {formError && (
             <div className="mb-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
               {formError}

@@ -129,20 +129,6 @@ export default function AdminCorais() {
   };
 
   const aprovarCoral = async (coral) => {
-    const codigoDigitado = window.prompt(
-      `Digite o codigo de aprovacao do coral "${coral.nome || 'sem nome'}":`
-    );
-
-    if (!codigoDigitado) return;
-
-    const esperado = String(coral.codigo_aprovacao || '').trim().toUpperCase();
-    const informado = String(codigoDigitado || '').trim().toUpperCase();
-
-    if (!esperado || informado !== esperado) {
-      alert('Codigo incorreto. Confira o codigo enviado pelo maestro.');
-      return;
-    }
-
     setAprovando(coral.id);
 
     try {
