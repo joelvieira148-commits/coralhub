@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Download, Globe2, Music, Smartphone } from 'lucide-react';
+import { Download, Globe2, Music, Share2, Smartphone } from 'lucide-react';
 
 const APK_DOWNLOAD_URL = '/downloads/coralhub.apk';
 
@@ -12,7 +12,7 @@ export default function CadastroPublico() {
         </div>
         <h1 className="text-2xl font-bold text-gray-900">Cadastro CoralHub</h1>
         <p className="mt-2 text-sm text-gray-500">
-          Use pelo navegador sem instalar nada, ou baixe o APK se preferir usar como aplicativo.
+          Use pelo navegador sem instalar nada. Android pode baixar APK; iPhone usa pelo Safari.
         </p>
 
         <div className="mt-7 space-y-3">
@@ -29,8 +29,20 @@ export default function CadastroPublico() {
             className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 font-semibold text-gray-800 hover:bg-gray-50"
           >
             <Download className="h-5 w-5" />
-            Baixar APK
+            Baixar APK para Android
           </a>
+        </div>
+
+        <div className="mt-5 rounded-2xl border border-sky-100 bg-sky-50 p-4 text-left">
+          <div className="flex items-start gap-3">
+            <Share2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-sky-700" />
+            <div>
+              <p className="text-sm font-semibold text-sky-900">iPhone / iPad</p>
+              <p className="mt-1 text-sm text-sky-800">
+                Abra este link no Safari, toque em Compartilhar e depois em Adicionar a Tela de Inicio.
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="mt-6 rounded-2xl bg-purple-50 p-4 text-left">
