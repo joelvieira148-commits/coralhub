@@ -12,6 +12,11 @@ import { saveCoralContextCache } from '@/hooks/useCoralContext';
 const ADMIN_WHATSAPP_LABEL = '(81) 98551-1614';
 const ADMIN_WHATSAPP_URL = 'https://wa.me/5581985511614';
 
+const criarLinkWhatsApp = (mensagem = '') => {
+  if (!mensagem) return ADMIN_WHATSAPP_URL;
+  return `${ADMIN_WHATSAPP_URL}?text=${encodeURIComponent(mensagem)}`;
+};
+
 export default function Onboarding() {
   const [step, setStep] = useState('role'); // role | maestro | membro
   const [loading, setLoading] = useState(false);
@@ -139,9 +144,9 @@ export default function Onboarding() {
     setStep('membro');
   };
 
-  const WhatsAppCadastro = ({ className = '' }) => (
+  const WhatsAppCadastro = ({ className = '', mensagem = '' }) => (
     <a
-      href={ADMIN_WHATSAPP_URL}
+      href={criarLinkWhatsApp(mensagem)}
       target="_blank"
       rel="noreferrer"
       className={`flex items-center justify-center gap-2 rounded-xl border border-green-100 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700 hover:bg-green-100 ${className}`}
@@ -235,7 +240,10 @@ export default function Onboarding() {
           >
             Verificar aprovacao
           </button>
-          <WhatsAppCadastro className="mt-3" />
+          <WhatsAppCadastro
+            className="mt-3"
+            mensagem={`Ola, preciso de aprovacao para o coral: ${coralPendente?.nome || 'meu coral'}.`}
+          />
         </div>
       </div>
     );
