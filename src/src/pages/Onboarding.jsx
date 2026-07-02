@@ -17,6 +17,9 @@ const criarLinkWhatsApp = (mensagem = '') => {
   return `${ADMIN_WHATSAPP_URL}?text=${encodeURIComponent(mensagem)}`;
 };
 
+const criarMensagemAprovacao = (nomeCoral = 'meu coral') =>
+  `Ola, preciso de aprovacao para o coral: ${nomeCoral || 'meu coral'}.`;
+
 export default function Onboarding() {
   const [step, setStep] = useState('role'); // role | maestro | membro
   const [loading, setLoading] = useState(false);
@@ -208,6 +211,9 @@ export default function Onboarding() {
       });
       setCoralPendente(coral);
       setStep('pending');
+      window.setTimeout(() => {
+        window.location.href = criarLinkWhatsApp(criarMensagemAprovacao(coral.nome));
+      }, 300);
     } catch (error) {
       console.error('Erro ao criar coral:', error);
       setFormError('Nao foi possivel criar o coral. Tente novamente.');
@@ -242,7 +248,7 @@ export default function Onboarding() {
           </button>
           <WhatsAppCadastro
             className="mt-3"
-            mensagem={`Ola, preciso de aprovacao para o coral: ${coralPendente?.nome || 'meu coral'}.`}
+            mensagem={criarMensagemAprovacao(coralPendente?.nome)}
           />
         </div>
       </div>
