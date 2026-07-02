@@ -5,6 +5,7 @@ import {
   hasCoralMembershipData,
   syncCurrentUserCoralMembership,
 } from '@/lib/coral-membership';
+import { isCoralApproved } from '@/lib/coral-approval';
 import { carregarCoraisParaCadastro, publicarCoraisNoCatalogo } from '@/lib/coral-directory';
 import { getMemberPhotoFields, getMemberPhotoUrl } from '@/lib/member-photo';
 
@@ -102,8 +103,10 @@ const carregarContextoCoral = async () => {
     console.warn('Falha ao carregar corais do maestro:', error);
   }
 
-  if (corais.length > 0) {
-    const coral = corais[0];
+  const coraisAprovados = corais.filter(isCoralApproved);
+
+  if (coraisAprovados.length > 0) {
+    const coral = coraisAprovados[0];
     contexto.coral = coral;
     contexto.isMaestro = true;
     contexto.user = await syncCurrentUserCoralMembership(firebaseClient, me, {
@@ -178,6 +181,13 @@ const carregarContextoCoral = async () => {
   }
 
   if (coralData.length > 0) {
+    if (!isCoralApproved(coralData[0])) {
+      contexto.membro = null;
+      contexto.isMaestro = false;
+      contexto.user = await clearCurrentUserCoralMembership(firebaseClient, me);
+      return contexto;
+    }
+
     contexto.coral = coralData[0];
     return contexto;
   }

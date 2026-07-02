@@ -4,6 +4,8 @@ import {
   ArrowLeft,
   Building2,
   Check,
+  Clock,
+  KeyRound,
   Library,
   Mail,
   MapPin,
@@ -19,6 +21,7 @@ import {
 import { firebaseClient } from '@/api/firebaseClient';
 import AdminPasswordGate from '@/components/coral/AdminPasswordGate';
 import { isAdminUser } from '@/lib/admin-access';
+import { getApprovalFields, isCoralApproved, isCoralPending } from '@/lib/coral-approval';
 import { publicarCoraisNoCatalogo, removerCoralDoCatalogo } from '@/lib/coral-directory';
 
 const emptyForm = {
@@ -41,6 +44,7 @@ export default function AdminCorais() {
   const [salvando, setSalvando] = useState(false);
   const [sincronizando, setSincronizando] = useState(false);
   const [excluindo, setExcluindo] = useState(null);
+  const [aprovando, setAprovando] = useState(null);
 
   useEffect(() => {
     async function load() {
@@ -59,7 +63,7 @@ export default function AdminCorais() {
 
       setCorais(allCorais);
       setMembros(allMembros);
-      publicarCoraisNoCatalogo(firebaseClient, allCorais).catch((error) => {
+      publicarCoraisNoCatalogo(firebaseClient, allCorais.filter(isCoralApproved)).catch((error) => {
         console.warn('Falha ao sincronizar catalogo de corais:', error);
       });
       setLoading(false);
@@ -68,7 +72,10 @@ export default function AdminCorais() {
     load();
   }, [navigate]);
 
-  const filtered = corais.filter((coral) => {
+  const coraisPendentes = corais.filter(isCoralPending);
+  const coraisAprovados = corais.filter(isCoralApproved);
+
+  const filtered = coraisAprovados.filter((coral) => {
     const termo = search.toLowerCase();
     return [
       coral.nome,
@@ -98,7 +105,7 @@ export default function AdminCorais() {
   const sincronizarCadastro = async () => {
     setSincronizando(true);
     try {
-      await publicarCoraisNoCatalogo(firebaseClient, corais);
+      await publicarCoraisNoCatalogo(firebaseClient, coraisAprovados);
       alert('Nomes publicados para o cadastro dos membros.');
     } catch (error) {
       console.warn('Falha ao publicar nomes para cadastro:', error);
@@ -112,11 +119,49 @@ export default function AdminCorais() {
     setSalvando(true);
     const updated = await firebaseClient.entities.Coral.update(coralId, form);
     setCorais((prev) => prev.map((coral) => (coral.id === coralId ? updated : coral)));
-    publicarCoraisNoCatalogo(firebaseClient, [updated]).catch((error) => {
-      console.warn('Falha ao atualizar catalogo de corais:', error);
-    });
+    if (isCoralApproved(updated)) {
+      publicarCoraisNoCatalogo(firebaseClient, [updated]).catch((error) => {
+        console.warn('Falha ao atualizar catalogo de corais:', error);
+      });
+    }
     setSalvando(false);
     cancelar();
+  };
+
+  const aprovarCoral = async (coral) => {
+    const codigoDigitado = window.prompt(
+      `Digite o codigo de aprovacao do coral "${coral.nome || 'sem nome'}":`
+    );
+
+    if (!codigoDigitado) return;
+
+    const esperado = String(coral.codigo_aprovacao || '').trim().toUpperCase();
+    const informado = String(codigoDigitado || '').trim().toUpperCase();
+
+    if (!esperado || informado !== esperado) {
+      alert('Codigo incorreto. Confira o codigo enviado pelo maestro.');
+      return;
+    }
+
+    setAprovando(coral.id);
+
+    try {
+      const updated = await firebaseClient.entities.Coral.update(coral.id, {
+        ...getApprovalFields(user?.email || ''),
+        codigo_aprovacao_usado: coral.codigo_aprovacao || '',
+        codigo_aprovacao: '',
+        ativo: true,
+      });
+
+      setCorais((prev) => prev.map((item) => (item.id === coral.id ? updated : item)));
+      await publicarCoraisNoCatalogo(firebaseClient, [updated]);
+      alert('Coral aprovado. O maestro ja pode entrar na plataforma.');
+    } catch (error) {
+      console.error('Falha ao aprovar coral:', error);
+      alert('Nao foi possivel aprovar o coral. Tente novamente.');
+    } finally {
+      setAprovando(null);
+    }
   };
 
   const excluirRegistrosDoCoral = async (entityName, coralId) => {
@@ -180,13 +225,16 @@ export default function AdminCorais() {
             <Building2 className="w-5 h-5 text-white/70 flex-shrink-0" />
             <div className="min-w-0">
               <h1 className="font-bold text-sm">Admin · Corais</h1>
-              <p className="text-xs text-white/60">{corais.length} coral{corais.length !== 1 ? 'is' : ''} registrado{corais.length !== 1 ? 's' : ''}</p>
+              <p className="text-xs text-white/60">
+                {coraisAprovados.length} aprovado{coraisAprovados.length !== 1 ? 's' : ''}
+                {coraisPendentes.length > 0 ? ` · ${coraisPendentes.length} pendente${coraisPendentes.length !== 1 ? 's' : ''}` : ''}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={sincronizarCadastro}
-              disabled={sincronizando || corais.length === 0}
+              disabled={sincronizando || coraisAprovados.length === 0}
               className="flex items-center gap-1.5 text-white/75 hover:text-white text-xs transition-colors disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${sincronizando ? 'animate-spin' : ''}`} /> Publicar nomes
@@ -208,6 +256,79 @@ export default function AdminCorais() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-6 pb-16">
+        {coraisPendentes.length > 0 && (
+          <section className="mb-6">
+            <div className="mb-3 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-amber-500" />
+              <h2 className="font-semibold text-gray-800">Corais aguardando aprovacao</h2>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {coraisPendentes.map((coral) => (
+                <div key={coral.id} className="bg-amber-50 border border-amber-200 rounded-2xl p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-gray-900 truncate">{coral.nome || 'Coral sem nome'}</h3>
+                      <p className="mt-1 text-xs text-gray-600">
+                        {coral.cidade || 'Cidade nao informada'}
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-700">
+                      Pendente
+                    </span>
+                  </div>
+
+                  <div className="mt-4 space-y-2 text-sm text-gray-600">
+                    {coral.maestro_email && (
+                      <p className="flex items-center gap-2 min-w-0">
+                        <Mail className="w-4 h-4 flex-shrink-0" />
+                        <span className="truncate">{coral.maestro_email}</span>
+                      </p>
+                    )}
+                    <p className="flex items-center gap-2">
+                      <KeyRound className="w-4 h-4 flex-shrink-0" />
+                      <span className="font-mono font-semibold text-gray-900">
+                        {coral.codigo_aprovacao || 'Sem codigo'}
+                      </span>
+                    </p>
+                    {coral.solicitado_em && (
+                      <p className="text-xs text-gray-500">
+                        Solicitado em {new Date(coral.solicitado_em).toLocaleString('pt-BR')}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => aprovarCoral(coral)}
+                      disabled={aprovando === coral.id}
+                      className="flex items-center justify-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-60"
+                    >
+                      {aprovando === coral.id ? (
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Check className="w-4 h-4" />
+                      )}
+                      Aprovar
+                    </button>
+                    <button
+                      onClick={() => excluirCoral(coral)}
+                      disabled={excluindo === coral.id}
+                      className="flex items-center justify-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-red-600 border border-red-100 hover:bg-red-50 disabled:opacity-60"
+                    >
+                      {excluindo === coral.id ? (
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                      Excluir
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         <div className="relative mb-5">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input

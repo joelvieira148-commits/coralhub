@@ -1,4 +1,5 @@
 import { ADMIN_EMAIL } from '@/lib/admin-access';
+import { isCoralApproved } from '@/lib/coral-approval';
 
 const STORAGE_KEY = 'coralhub_coral_directory_v1';
 const PUBLIC_ENTITY = 'CoralPublico';
@@ -21,6 +22,7 @@ const PUBLIC_FIELDS = [
   'cidade',
   'maestro_email',
   'ativo',
+  'status_aprovacao',
   'updated_date',
 ];
 const DIRECTORY_FIELDS = [
@@ -36,6 +38,7 @@ const DIRECTORY_FIELDS = [
   'tipo',
   'publicacao_tipo',
   'ativo',
+  'status_aprovacao',
   'updated_date',
 ];
 const SOURCE_ENTITIES = ['Coral', 'Corais', 'Vocal', 'Vocais', 'GrupoVocal', 'Grupo', 'Grupos'];
@@ -64,6 +67,7 @@ const parseDirectoryRecord = (record) => {
     nome: record?.coral_nome || payload.nome || record?.nome || record?.titulo,
     cidade: record?.cidade || payload.cidade,
     maestro_email: record?.maestro_email || payload.maestro_email,
+    status_aprovacao: record?.status_aprovacao || payload.status_aprovacao,
   };
 };
 
@@ -91,6 +95,7 @@ export const normalizeCoralOption = (coral) => {
     cidade: asText(source?.cidade),
     maestro_email: asText(source?.maestro_email),
     ativo: source?.ativo !== false,
+    status_aprovacao: asText(source?.status_aprovacao),
     updated_date: source?.updated_date || source?.updated_at || null,
   };
 };
@@ -110,6 +115,7 @@ export const dedupeCorais = (items) => {
 
   return Array.from(map.values())
     .filter((coral) => coral.ativo !== false)
+    .filter(isCoralApproved)
     .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
 };
 
@@ -222,7 +228,7 @@ export const carregarCoraisParaCadastro = async (firebaseClient) => {
 };
 
 export const publicarCoraisNoCatalogo = async (firebaseClient, items) => {
-  const corais = salvarCoraisNoCache(items);
+  const corais = salvarCoraisNoCache((Array.isArray(items) ? items : []).filter(isCoralApproved));
   if (corais.length === 0) return corais;
 
   let existentes = [];
@@ -260,6 +266,7 @@ export const publicarCoraisNoCatalogo = async (firebaseClient, items) => {
         nome: coral.nome,
         cidade: coral.cidade,
         maestro_email: coral.maestro_email,
+        status_aprovacao: coral.status_aprovacao || 'aprovado',
         ativo: coral.ativo !== false,
       };
       const existente = porCoralId.get(coral.id);
@@ -294,6 +301,7 @@ export const publicarCoraisNoCatalogo = async (firebaseClient, items) => {
             nome: coral.nome,
             cidade: coral.cidade,
             maestro_email: coral.maestro_email,
+            status_aprovacao: coral.status_aprovacao || 'aprovado',
           }),
           tipo: DIRECTORY_TYPE,
           publicacao_tipo: DIRECTORY_TYPE,

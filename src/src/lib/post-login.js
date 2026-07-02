@@ -1,4 +1,5 @@
 import { firebaseClient } from '@/api/firebaseClient';
+import { isCoralApproved, isCoralPending } from '@/lib/coral-approval';
 import { clearCoralMembershipFields } from '@/lib/coral-membership';
 
 const normalizePath = (value = '/mural') => {
@@ -46,8 +47,9 @@ export const getPostLoginPath = async (preferredPath = '/mural') => {
     safeFilter(firebaseClient.entities.Membro, { email: user.email }),
   ]);
 
-  if (corais.length > 0) {
-    const coral = corais[0];
+  const coralAprovado = corais.find(isCoralApproved);
+  if (coralAprovado) {
+    const coral = coralAprovado;
     firebaseClient.auth.updateMe({
       active_coral_id: coral.id,
       active_coral_role: 'maestro',
@@ -63,8 +65,20 @@ export const getPostLoginPath = async (preferredPath = '/mural') => {
     return pathForExistingUser(preferredPath, 'maestro');
   }
 
+  if (corais.some(isCoralPending)) {
+    return '/onboarding';
+  }
+
   const membro = membrosPorUserEmail[0] || membrosPorEmail[0];
   if (membro) {
+    const coralDoMembro = membro.coral_id
+      ? (await safeFilter(firebaseClient.entities.Coral, { id: membro.coral_id }))[0]
+      : null;
+
+    if (coralDoMembro && !isCoralApproved(coralDoMembro)) {
+      return '/onboarding';
+    }
+
     const role = membro.cargo || 'membro';
     firebaseClient.auth.updateMe({
       active_coral_id: membro.coral_id || '',

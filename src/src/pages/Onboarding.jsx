@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Music, User, ArrowLeft, Camera, RefreshCw } from 'lucide-react';
 import { firebaseClient } from '@/api/firebaseClient';
 import { NAIPES } from '@/utils/coralTheme';
-import { carregarCoraisParaCadastro, publicarCoraisNoCatalogo } from '@/lib/coral-directory';
+import { carregarCoraisParaCadastro } from '@/lib/coral-directory';
+import { CORAL_STATUS, createApprovalCode, isCoralApproved, isCoralPending } from '@/lib/coral-approval';
 import { getMemberPhotoFields } from '@/lib/member-photo';
 import { uploadProfilePhoto } from '@/lib/profile-photo-upload';
 import { saveCoralContextCache } from '@/hooks/useCoralContext';
@@ -12,6 +13,7 @@ export default function Onboarding() {
   const [step, setStep] = useState('role'); // role | maestro | membro
   const [loading, setLoading] = useState(false);
   const [corais, setCorais] = useState([]);
+  const [coralPendente, setCoralPendente] = useState(null);
   const [coraisLoading, setCoraisLoading] = useState(false);
   const [coraisError, setCoraisError] = useState('');
   const [formError, setFormError] = useState('');
@@ -53,6 +55,58 @@ export default function Onboarding() {
   }, []);
 
   useEffect(() => {
+    let active = true;
+
+    const carregarPendente = async () => {
+      try {
+        const user = await firebaseClient.auth.me();
+        const meusCorais = await firebaseClient.entities.Coral.filter({ maestro_email: user.email });
+        const aprovado = meusCorais.find(isCoralApproved);
+
+        if (active && aprovado) {
+          const userUpdate = {
+            active_coral_id: aprovado.id,
+            active_coral_role: 'maestro',
+            active_coral_nome: aprovado.nome || '',
+            active_coral_cidade: aprovado.cidade || '',
+            pending_coral_id: '',
+            pending_coral_nome: '',
+            pending_coral_code: '',
+            active_member_id: '',
+            member_nome: user.full_name || user.email || '',
+            member_naipe: '',
+          };
+
+          await firebaseClient.auth.updateMe(userUpdate);
+          saveCoralContextCache({
+            user: { ...user, ...userUpdate },
+            coral: aprovado,
+            membro: null,
+            isMaestro: true,
+          });
+          navigate('/mural', { replace: true });
+          return;
+        }
+
+        const pendente = meusCorais.find(isCoralPending);
+
+        if (active && pendente) {
+          setCoralPendente(pendente);
+          setStep('pending');
+        }
+      } catch (error) {
+        console.warn('Falha ao verificar coral pendente:', error);
+      }
+    };
+
+    carregarPendente();
+
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
+
+  useEffect(() => {
     if (step === 'membro') {
       carregarCorais();
     }
@@ -90,6 +144,7 @@ export default function Onboarding() {
 
     try {
       const user = await firebaseClient.auth.me();
+      const codigoAprovacao = createApprovalCode();
       const coral = await firebaseClient.entities.Coral.create({
         nome: nomeCoralForm,
         cidade: cidadeForm,
@@ -97,12 +152,14 @@ export default function Onboarding() {
         cor_primaria: '#6366f1',
         cor_secundaria: '#a78bfa',
         tema: 'classico',
+        status_aprovacao: CORAL_STATUS.pending,
+        codigo_aprovacao: codigoAprovacao,
+        solicitado_em: new Date().toISOString(),
       });
       const fotoMaestroFields = getMemberPhotoFields(fotoMaestroUrl);
       const fotoMaestroParaUsuario = fotoMaestroUrl && !fotoMaestroUrl.startsWith('data:')
         ? fotoMaestroFields
         : {};
-      await publicarCoraisNoCatalogo(firebaseClient, [coral]);
       await firebaseClient.entities.Membro.create({
         nome: user.full_name || user.email,
         email: user.email,
@@ -113,30 +170,29 @@ export default function Onboarding() {
         ativo: true,
       });
       await firebaseClient.auth.updateMe({
-        active_coral_id: coral.id,
-        active_coral_role: 'maestro',
+        active_coral_id: '',
+        active_coral_role: '',
+        pending_coral_id: coral.id,
+        pending_coral_nome: coral.nome || '',
+        pending_coral_code: codigoAprovacao,
         ...fotoMaestroParaUsuario,
       });
       saveCoralContextCache({
         user: {
           ...user,
-          active_coral_id: coral.id,
-          active_coral_role: 'maestro',
+          active_coral_id: '',
+          active_coral_role: '',
+          pending_coral_id: coral.id,
+          pending_coral_nome: coral.nome || '',
+          pending_coral_code: codigoAprovacao,
           ...fotoMaestroParaUsuario,
         },
-        coral,
-        membro: {
-          nome: user.full_name || user.email,
-          email: user.email,
-          coral_id: coral.id,
-          user_email: user.email,
-          cargo: cargoRegente,
-          ...fotoMaestroFields,
-          ativo: true,
-        },
-        isMaestro: true,
+        coral: null,
+        membro: null,
+        isMaestro: false,
       });
-      navigate('/dashboard');
+      setCoralPendente(coral);
+      setStep('pending');
     } catch (error) {
       console.error('Erro ao criar coral:', error);
       setFormError('Nao foi possivel criar o coral. Tente novamente.');
@@ -144,6 +200,36 @@ export default function Onboarding() {
       setLoading(false);
     }
   };
+
+  if (step === 'pending') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 flex items-center justify-center p-6">
+        <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center">
+          <Music className="w-12 h-12 text-indigo-600 mx-auto mb-3" />
+          <h1 className="text-2xl font-bold text-gray-800">Coral aguardando aprovacao</h1>
+          <p className="text-gray-500 mt-3 text-sm">
+            Seu cadastro foi enviado para o admin. Assim que for aprovado, voce podera entrar na plataforma do coral.
+          </p>
+          <div className="mt-6 rounded-2xl border border-indigo-100 bg-indigo-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500">Codigo para o admin</p>
+            <p className="mt-2 font-mono text-xl font-bold text-indigo-900">
+              {coralPendente?.codigo_aprovacao || 'Aguardando codigo'}
+            </p>
+          </div>
+          <p className="mt-4 text-xs text-gray-400">
+            Coral: {coralPendente?.nome || 'Seu coral'}
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-6 w-full rounded-xl bg-indigo-600 py-3 font-semibold text-white hover:bg-indigo-700"
+          >
+            Verificar aprovacao
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const entrarComoMembro = async (e) => {
     e.preventDefault();
