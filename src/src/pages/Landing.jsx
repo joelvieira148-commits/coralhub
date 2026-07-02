@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { FileMusic, HelpCircle, Mail, Music, Users } from 'lucide-react';
+import { FileMusic, HelpCircle, Mail, Music, UserPlus, Users } from 'lucide-react';
 import { firebaseClient } from '@/api/firebaseClient';
 import { redirectToEmailLogin, redirectToLogin } from '@/lib/auth-redirect';
 import { getPostLoginPath } from '@/lib/post-login';
@@ -31,6 +31,12 @@ export default function Landing() {
           <Link to="/ajuda" className="text-white/70 hover:text-white text-sm flex items-center gap-1 transition-colors">
             <HelpCircle className="w-4 h-4" /> Ajuda
           </Link>
+          <Link
+            to="/cadastro"
+            className="hidden sm:flex items-center gap-1 bg-white/10 text-white font-semibold px-4 py-2 rounded-full hover:bg-white/20 transition-colors text-sm"
+          >
+            <UserPlus className="w-4 h-4" /> Cadastro
+          </Link>
           <button
             onClick={() => redirectToLogin('/mural')}
             className="bg-white text-indigo-700 font-semibold px-5 py-2 rounded-full hover:bg-indigo-50 transition-colors text-sm"
@@ -51,6 +57,13 @@ export default function Landing() {
           Gerencie membros, compartilhe partituras e organize os naipes do seu coral em um so lugar.
         </p>
         <div className="flex flex-col sm:flex-row items-center gap-3">
+          <Link
+            to="/cadastro"
+            className="flex items-center gap-3 bg-white/10 text-white font-semibold px-6 py-3.5 rounded-full hover:bg-white/20 transition-all border border-white/20"
+          >
+            <UserPlus className="w-5 h-5" />
+            Cadastro sem APK
+          </Link>
           <button
             onClick={() => redirectToEmailLogin('/mural')}
             className="flex items-center gap-3 bg-white text-indigo-700 font-semibold px-6 py-3.5 rounded-full hover:bg-indigo-50 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5 border border-white"

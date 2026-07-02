@@ -17,6 +17,7 @@ node_modules
 dist
 dist-ssr
 *.apk
+!public/downloads/*.apk
 android/app/google-services.json
 *.local
 

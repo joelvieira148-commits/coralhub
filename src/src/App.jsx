@@ -9,6 +9,7 @@ import { setupNativeAuthListener } from '@/lib/native-app';
 import { getPostLoginPath } from '@/lib/post-login';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import AuthFinalCallback from './pages/AuthFinalCallback';
+import CadastroPublico from './pages/CadastroPublico';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Onboarding from './pages/Onboarding';
@@ -25,7 +26,7 @@ import AdminCorais from './pages/AdminCorais';
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
   const location = useLocation();
-  const isPublicRoute = ['/', '/login', '/ajuda'].includes(location.pathname);
+  const isPublicRoute = ['/', '/login', '/cadastro', '/ajuda'].includes(location.pathname);
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
@@ -57,6 +58,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
+      <Route path="/cadastro" element={<CadastroPublico />} />
       <Route path="/login" element={<Login />} />
       <Route path="/api/apps/auth/callback" element={<AuthFinalCallback />} />
       <Route path="/api/apps/auth/final-callback" element={<AuthFinalCallback />} />

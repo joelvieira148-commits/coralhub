@@ -25,8 +25,9 @@ const getErrorMessage = (error) => {
 export default function Login() {
   const params = new URLSearchParams(window.location.search);
   const fromUrl = params.get('from_url') || '/mural';
+  const initialMode = params.get('mode') === 'register' ? 'register' : 'login';
 
-  const [authMode, setAuthMode] = useState('login');
+  const [authMode, setAuthMode] = useState(initialMode);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

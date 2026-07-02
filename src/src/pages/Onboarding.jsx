@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Music, User, ArrowLeft, Camera, MessageCircle, RefreshCw } from 'lucide-react';
+import { Music, User, ArrowLeft, Camera, Download, MessageCircle, RefreshCw } from 'lucide-react';
 import { firebaseClient } from '@/api/firebaseClient';
 import { NAIPES } from '@/utils/coralTheme';
 import { carregarCoraisParaCadastro } from '@/lib/coral-directory';
@@ -11,6 +11,7 @@ import { saveCoralContextCache } from '@/hooks/useCoralContext';
 
 const ADMIN_WHATSAPP_LABEL = '(81) 98551-1614';
 const ADMIN_WHATSAPP_URL = 'https://wa.me/5581985511614';
+const APK_DOWNLOAD_URL = '/downloads/coralhub.apk';
 
 const criarLinkWhatsApp = (mensagem = '') => {
   if (!mensagem) return ADMIN_WHATSAPP_URL;
@@ -156,6 +157,17 @@ export default function Onboarding() {
     >
       <MessageCircle className="w-4 h-4" />
       Duvidas no cadastro? WhatsApp {ADMIN_WHATSAPP_LABEL}
+    </a>
+  );
+
+  const DownloadApk = ({ className = '' }) => (
+    <a
+      href={APK_DOWNLOAD_URL}
+      download
+      className={`flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-800 hover:bg-gray-50 ${className}`}
+    >
+      <Download className="w-4 h-4" />
+      Baixar APK
     </a>
   );
 
@@ -347,6 +359,7 @@ export default function Onboarding() {
             </button>
           </div>
           <WhatsAppCadastro className="mt-5" />
+          <DownloadApk className="mt-3" />
         </div>
       </div>
     );
