@@ -59,6 +59,9 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/cadastro" element={<CadastroPublico />} />
+      <Route path="/cadastrar" element={<CadastroPublico />} />
+      <Route path="/cadastro-online" element={<CadastroPublico />} />
+      <Route path="/apk" element={<CadastroPublico />} />
       <Route path="/login" element={<Login />} />
       <Route path="/api/apps/auth/callback" element={<AuthFinalCallback />} />
       <Route path="/api/apps/auth/final-callback" element={<AuthFinalCallback />} />
