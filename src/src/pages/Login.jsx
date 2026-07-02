@@ -36,6 +36,11 @@ export default function Login() {
   const [error, setError] = useState('');
 
   const finishLogin = useCallback(async (targetPath = fromUrl) => {
+    if (targetPath === '/onboarding') {
+      window.location.href = '/onboarding';
+      return;
+    }
+
     window.location.href = await getPostLoginPath(targetPath);
   }, [fromUrl]);
 
@@ -72,7 +77,7 @@ export default function Login() {
         setAuthMode('login');
         return;
       }
-      await finishLogin();
+      await finishLogin('/onboarding');
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {

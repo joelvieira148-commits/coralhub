@@ -519,6 +519,8 @@ export const firebaseClient = {
 
       try {
         const credential = await createUserWithEmailAndPassword(auth, email, password);
+        const now = new Date().toISOString();
+        const profileName = full_name || credential.user.email || email;
 
         if (full_name) {
           await updateFirebaseProfile(credential.user, { displayName: full_name });
@@ -539,7 +541,16 @@ export const firebaseClient = {
         );
 
         return {
-          user: await publicUserFromFirebase(credential.user),
+          user: {
+            id: credential.user.uid,
+            uid: credential.user.uid,
+            email: credential.user.email || email,
+            full_name: profileName,
+            photo_url: credential.user.photoURL || '',
+            role: 'user',
+            created_date: now,
+            updated_date: now,
+          },
           needsEmailConfirmation: false,
         };
       } catch (error) {
