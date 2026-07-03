@@ -75,6 +75,13 @@ export const getPostLoginPath = async (preferredPath = '/mural') => {
       ? (await safeFilter(firebaseClient.entities.Coral, { id: membro.coral_id }))[0]
       : null;
 
+    if (membro.coral_id && !coralDoMembro) {
+      firebaseClient.auth.updateMe(clearCoralMembershipFields).catch((error) => {
+        console.warn('Falha ao limpar cadastro antigo do perfil:', error);
+      });
+      return '/onboarding';
+    }
+
     if (coralDoMembro && !isCoralAvailable(coralDoMembro)) {
       return '/onboarding';
     }

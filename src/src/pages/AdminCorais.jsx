@@ -22,6 +22,7 @@ import {
 import { firebaseClient } from '@/api/firebaseClient';
 import AdminPasswordGate from '@/components/coral/AdminPasswordGate';
 import { isAdminUser } from '@/lib/admin-access';
+import { clearCoralContextCache } from '@/hooks/useCoralContext';
 import {
   getApprovalFields,
   getBlockFields,
@@ -32,6 +33,7 @@ import {
   isCoralPending,
 } from '@/lib/coral-approval';
 import { publicarCoraisNoCatalogo, removerCoralDoCatalogo } from '@/lib/coral-directory';
+import { clearCurrentUserCoralMembership, normalizeEmail } from '@/lib/coral-membership';
 
 const emptyForm = {
   nome: '',
@@ -234,6 +236,18 @@ export default function AdminCorais() {
       setCorais((prev) => prev.filter((item) => item.id !== coral.id));
       setMembros((prev) => prev.filter((item) => item.coral_id !== coral.id));
       if (editando === coral.id) cancelar();
+
+      const coralApagadoEraDoUsuario =
+        user?.active_coral_id === coral.id ||
+        normalizeEmail(coral.maestro_email) === normalizeEmail(user?.email);
+
+      if (coralApagadoEraDoUsuario) {
+        await clearCurrentUserCoralMembership(firebaseClient, user);
+        clearCoralContextCache();
+        window.location.replace('/onboarding');
+        return;
+      }
+
       alert('Coral excluido com sucesso.');
     } catch (error) {
       console.error('Falha ao excluir coral:', error);

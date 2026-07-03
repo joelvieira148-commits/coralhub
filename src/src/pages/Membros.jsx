@@ -167,7 +167,11 @@ export default function Membros() {
       await Promise.all(idsParaExcluir.map((id) => firebaseClient.entities.Membro.delete(id)));
       setMembros((prev) => prev.filter((item) => !idsParaExcluir.includes(item.id)));
 
-      if (memberEmail && normalizeEmail(user?.email) === memberEmail) {
+      const membroApagadoEraDoUsuario =
+        (memberEmail && normalizeEmail(user?.email) === memberEmail) ||
+        idsParaExcluir.includes(user?.active_member_id);
+
+      if (membroApagadoEraDoUsuario) {
         await clearCurrentUserCoralMembership(firebaseClient, user);
         clearCoralContextCache();
         window.location.replace('/onboarding');

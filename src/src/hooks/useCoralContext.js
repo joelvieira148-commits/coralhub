@@ -6,7 +6,7 @@ import {
   syncCurrentUserCoralMembership,
 } from '@/lib/coral-membership';
 import { isCoralAvailable } from '@/lib/coral-approval';
-import { carregarCoraisParaCadastro, publicarCoraisNoCatalogo } from '@/lib/coral-directory';
+import { publicarCoraisNoCatalogo } from '@/lib/coral-directory';
 import { getMemberPhotoFields, getMemberPhotoUrl } from '@/lib/member-photo';
 
 const CACHE_KEY = 'coralhub_context_cache_v2';
@@ -63,17 +63,6 @@ export const clearCoralContextCache = () => {
     }
   }
 };
-
-const criarCoralFallback = (coralId, dados = {}) => ({
-  id: coralId,
-  nome: dados.nome || dados.coral_nome || dados.active_coral_nome || 'Meu Coral',
-  cidade: dados.cidade || dados.active_coral_cidade || '',
-  maestro_email: dados.maestro_email || '',
-  cor_primaria: dados.cor_primaria || '#6366f1',
-  cor_secundaria: dados.cor_secundaria || '#a78bfa',
-  tema: dados.tema || 'classico',
-  armazenamento_usado_bytes: dados.armazenamento_usado_bytes || 0,
-});
 
 const criarMembroFallback = (user) => ({
   id: user?.active_member_id || `user-${user?.id || user?.email || 'membro'}`,
@@ -192,11 +181,10 @@ const carregarContextoCoral = async () => {
     return contexto;
   }
 
-  const diretorio = await carregarCoraisParaCadastro(firebaseClient);
-  const coralDoDiretorio = diretorio.find((item) => item.id === coralId || item.coral_id === coralId);
-
   if (coralId) {
-    contexto.coral = criarCoralFallback(coralId, coralDoDiretorio || me);
+    contexto.membro = null;
+    contexto.isMaestro = false;
+    contexto.user = await clearCurrentUserCoralMembership(firebaseClient, me);
   }
 
   return contexto;
