@@ -1,20 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
-import { AlertCircle, Download, ExternalLink, FileText, Loader2 } from 'lucide-react';
+import { AlertCircle, ChevronLeft, ChevronRight, Download, ExternalLink, FileText, Loader2, Minus, Plus } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { openExternalUrl } from '@/lib/native-app';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
-const getRenderWidth = (container, pageWidth) => {
+const MIN_ZOOM = 0.75;
+const MAX_ZOOM = 2;
+const ZOOM_STEP = 0.25;
+
+const getRenderWidth = (container, pageWidth, zoom = 1) => {
   const availableWidth = container?.clientWidth || pageWidth;
-  return Math.max(260, Math.min(availableWidth, 980));
+  return Math.max(260, Math.min(availableWidth, 980)) * zoom;
 };
 
-function PdfPageCanvas({ pdf, pageNumber }) {
+function PdfPageCanvas({ pdf, pageNumber, zoom }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const renderTaskRef = useRef(null);
+  const [rendering, setRendering] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -24,6 +29,7 @@ function PdfPageCanvas({ pdf, pageNumber }) {
     const renderPage = async () => {
       try {
         setError('');
+        setRendering(true);
         renderTaskRef.current?.cancel();
 
         const page = await pdf.getPage(pageNumber);
@@ -34,10 +40,10 @@ function PdfPageCanvas({ pdf, pageNumber }) {
         if (!canvas || !container) return;
 
         const baseViewport = page.getViewport({ scale: 1 });
-        const width = getRenderWidth(container, baseViewport.width);
+        const width = getRenderWidth(container, baseViewport.width, zoom);
         const scale = width / baseViewport.width;
         const viewport = page.getViewport({ scale });
-        const outputScale = window.devicePixelRatio || 1;
+        const outputScale = Math.min(window.devicePixelRatio || 1, 2);
         const context = canvas.getContext('2d');
 
         canvas.width = Math.floor(viewport.width * outputScale);
@@ -57,9 +63,13 @@ function PdfPageCanvas({ pdf, pageNumber }) {
 
         renderTaskRef.current = renderTask;
         await renderTask.promise;
+        if (!cancelled) {
+          setRendering(false);
+        }
       } catch (err) {
         if (cancelled || err?.name === 'RenderingCancelledException') return;
         setError('Nao foi possivel renderizar esta pagina.');
+        setRendering(false);
       }
     };
 
@@ -80,10 +90,18 @@ function PdfPageCanvas({ pdf, pageNumber }) {
       resizeObserver.disconnect();
       renderTaskRef.current?.cancel();
     };
-  }, [pdf, pageNumber]);
+  }, [pdf, pageNumber, zoom]);
 
   return (
-    <div ref={containerRef} className="w-full flex justify-center">
+    <div ref={containerRef} className="relative w-full flex justify-center overflow-auto">
+      {rendering && !error && (
+        <div className="absolute inset-x-0 top-4 z-10 flex justify-center pointer-events-none">
+          <span className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs text-slate-500 shadow">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            Carregando pagina...
+          </span>
+        </div>
+      )}
       {error ? (
         <div className="w-full rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">
           {error}
@@ -98,26 +116,55 @@ function PdfPageCanvas({ pdf, pageNumber }) {
 function PdfDocumentViewer({ url }) {
   const [pdf, setPdf] = useState(null);
   const [pageCount, setPageCount] = useState(0);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [zoom, setZoom] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     let cancelled = false;
-    const loadingTask = pdfjsLib.getDocument({ url });
+    let loadingTask;
 
     setLoading(true);
     setError('');
     setPdf(null);
     setPageCount(0);
+    setPageNumber(1);
+    setZoom(1);
 
-    loadingTask.promise
+    const loadPdf = async () => {
+      const loadOptions = {
+        url,
+        withCredentials: false,
+        disableAutoFetch: false,
+        disableStream: false,
+      };
+
+      try {
+        loadingTask = pdfjsLib.getDocument(loadOptions);
+        return await loadingTask.promise;
+      } catch (firstError) {
+        console.warn('Falha ao carregar PDF com worker, tentando modo compatibilidade:', firstError);
+        loadingTask?.destroy();
+        loadingTask = pdfjsLib.getDocument({
+          ...loadOptions,
+          disableWorker: true,
+          disableStream: true,
+          disableAutoFetch: true,
+        });
+        return loadingTask.promise;
+      }
+    };
+
+    loadPdf()
       .then((loadedPdf) => {
         if (cancelled) return;
         setPdf(loadedPdf);
         setPageCount(loadedPdf.numPages);
       })
-      .catch(() => {
+      .catch((err) => {
         if (cancelled) return;
+        console.error('Falha ao carregar PDF:', err);
         setError('Nao foi possivel carregar o PDF neste dispositivo.');
       })
       .finally(() => {
@@ -128,9 +175,14 @@ function PdfDocumentViewer({ url }) {
 
     return () => {
       cancelled = true;
-      loadingTask.destroy();
+      loadingTask?.destroy();
     };
   }, [url]);
+
+  const previousPage = () => setPageNumber((current) => Math.max(1, current - 1));
+  const nextPage = () => setPageNumber((current) => Math.min(pageCount, current + 1));
+  const zoomOut = () => setZoom((current) => Math.max(MIN_ZOOM, Number((current - ZOOM_STEP).toFixed(2))));
+  const zoomIn = () => setZoom((current) => Math.min(MAX_ZOOM, Number((current + ZOOM_STEP).toFixed(2))));
 
   if (loading) {
     return (
@@ -150,10 +202,60 @@ function PdfDocumentViewer({ url }) {
   }
 
   return (
-    <div className="max-h-[70vh] overflow-y-auto bg-slate-100 p-2 space-y-3">
-      {Array.from({ length: pageCount }, (_, index) => (
-        <PdfPageCanvas key={index + 1} pdf={pdf} pageNumber={index + 1} />
-      ))}
+    <div className="bg-slate-100">
+      <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-white px-2 py-2">
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={previousPage}
+            disabled={pageNumber <= 1}
+            className="rounded-lg border border-slate-200 p-1.5 text-slate-600 disabled:opacity-40"
+            title="Pagina anterior"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="min-w-[84px] text-center text-xs font-semibold text-slate-600">
+            {pageNumber} / {pageCount}
+          </span>
+          <button
+            type="button"
+            onClick={nextPage}
+            disabled={pageNumber >= pageCount}
+            className="rounded-lg border border-slate-200 p-1.5 text-slate-600 disabled:opacity-40"
+            title="Proxima pagina"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={zoomOut}
+            disabled={zoom <= MIN_ZOOM}
+            className="rounded-lg border border-slate-200 p-1.5 text-slate-600 disabled:opacity-40"
+            title="Diminuir"
+          >
+            <Minus className="w-4 h-4" />
+          </button>
+          <span className="min-w-[48px] text-center text-xs font-semibold text-slate-600">
+            {Math.round(zoom * 100)}%
+          </span>
+          <button
+            type="button"
+            onClick={zoomIn}
+            disabled={zoom >= MAX_ZOOM}
+            className="rounded-lg border border-slate-200 p-1.5 text-slate-600 disabled:opacity-40"
+            title="Aumentar"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      <div className="max-h-[70vh] overflow-auto p-2">
+        {pdf && (
+          <PdfPageCanvas pdf={pdf} pageNumber={pageNumber} zoom={zoom} />
+        )}
+      </div>
     </div>
   );
 }
