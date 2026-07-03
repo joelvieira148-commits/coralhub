@@ -21,27 +21,62 @@ const getRenderWidth = (container, pageWidth, zoom = 1) => {
 
 function EmbeddedPdfFallback({ url, reason = '' }) {
   const [viewerUrl, setViewerUrl] = useState(() => getGoogleViewerUrl(url));
+  const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
     setViewerUrl(getGoogleViewerUrl(url));
+    setZoom(1);
   }, [url]);
+
+  const zoomOut = () => setZoom((current) => Math.max(MIN_ZOOM, Number((current - ZOOM_STEP).toFixed(2))));
+  const zoomIn = () => setZoom((current) => Math.min(MAX_ZOOM, Number((current + ZOOM_STEP).toFixed(2))));
 
   return (
     <div className="bg-slate-100">
       <div className="flex items-start gap-2 border-b border-amber-100 bg-amber-50 px-3 py-3 text-xs text-amber-800">
         <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
         <span>
-          {reason || 'Modo compativel aberto dentro da pagina.'}
-          {' '}Se nao aparecer, toque em Abrir.
+          {reason || 'Modo compativel aberto dentro da pagina com zoom.'}
+          {' '}Use + e - para aproximar.
         </span>
       </div>
-      <iframe
-        key={viewerUrl}
-        src={viewerUrl}
-        title="Visualizador de PDF"
-        className="h-[70vh] w-full bg-white"
-        referrerPolicy="no-referrer"
-      />
+      <div className="sticky top-0 z-20 flex items-center justify-end gap-1 border-b border-slate-200 bg-white px-2 py-2">
+        <button
+          type="button"
+          onClick={zoomOut}
+          disabled={zoom <= MIN_ZOOM}
+          className="rounded-lg border border-slate-200 p-1.5 text-slate-600 disabled:opacity-40"
+          title="Diminuir"
+        >
+          <Minus className="w-4 h-4" />
+        </button>
+        <span className="min-w-[48px] text-center text-xs font-semibold text-slate-600">
+          {Math.round(zoom * 100)}%
+        </span>
+        <button
+          type="button"
+          onClick={zoomIn}
+          disabled={zoom >= MAX_ZOOM}
+          className="rounded-lg border border-slate-200 p-1.5 text-slate-600 disabled:opacity-40"
+          title="Aumentar"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+      </div>
+      <div className="h-[70vh] overflow-auto bg-white">
+        <iframe
+          key={viewerUrl}
+          src={viewerUrl}
+          title="Visualizador de PDF"
+          className="bg-white"
+          referrerPolicy="no-referrer"
+          style={{
+            width: `${100 * zoom}%`,
+            height: `${70 * zoom}vh`,
+            border: 0,
+          }}
+        />
+      </div>
     </div>
   );
 }
@@ -196,7 +231,7 @@ function PdfDocumentViewer({ url, forceEmbedded = false }) {
       .catch((err) => {
         if (cancelled) return;
         console.error('Falha ao carregar PDF:', err);
-        setError('Nao foi possivel carregar o PDF neste dispositivo.');
+        setError('Abrindo o PDF dentro da pagina em modo compativel.');
       })
       .finally(() => {
         if (!cancelled) {
