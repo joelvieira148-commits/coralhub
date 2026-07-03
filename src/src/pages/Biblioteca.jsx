@@ -9,7 +9,7 @@ import FixedAudioPlayer from '@/components/coral/FixedAudioPlayer';
 import PartituraViewer from '@/components/coral/PartituraViewer';
 import StorageIndicator from '@/components/coral/StorageIndicator';
 import { isAdminUser } from '@/lib/admin-access';
-import { getUploadErrorMessage, uploadCoralFile } from '@/lib/coral-file-upload';
+import { getUploadErrorMessage, isFileKind, uploadCoralFile } from '@/lib/coral-file-upload';
 import { NAIPES } from '@/utils/coralTheme';
 import { verificarEspaco, formatarBytes } from '@/utils/storage';
 
@@ -61,7 +61,11 @@ export default function Biblioteca() {
   };
 
   const handleFile = async (key, file) => {
-    const kind = key === 'partitura' ? 'pdf' : 'audio';
+    const kind = key === 'partitura' && isFileKind(file, 'image')
+      ? 'image'
+      : key === 'partitura'
+        ? 'pdf'
+        : 'audio';
     const espaco = verificarEspaco(coral, file.size);
     if (!espaco.ok) {
       alert(`Limite de armazenamento atingido (1 TB). Espaço restante: ${formatarBytes(espaco.restante)}.`);
@@ -75,6 +79,7 @@ export default function Biblioteca() {
         [key]: {
           file_url: upload.file_url,
           name: upload.file_name,
+          type: upload.file_type,
           uploading: false,
           size: upload.file_size,
         },
@@ -102,6 +107,7 @@ export default function Biblioteca() {
       coral_id: coral.id,
       uploaded_by: user.email,
       partitura_url: files.partitura?.file_url || base.partitura_url || '',
+      partitura_tipo: files.partitura?.type || base.partitura_tipo || '',
       audio_completo_url: files.audio_completo?.file_url || base.audio_completo_url || '',
       audio_soprano1_url: files.soprano1?.file_url || base.audio_soprano1_url || '',
       audio_soprano2_url: files.soprano2?.file_url || base.audio_soprano2_url || '',
@@ -284,7 +290,7 @@ export default function Biblioteca() {
 
               {/* Partitura e áudio completo */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <FileInput label="📄 Partitura (PDF)" fieldKey="partitura" accept=".pdf" existingUrl={editando?.partitura_url} />
+                <FileInput label="Partitura (PDF ou imagem)" fieldKey="partitura" accept=".pdf,image/*" existingUrl={editando?.partitura_url} />
                 <FileInput label="🎵 Áudio Completo" fieldKey="audio_completo" accept="audio/*" existingUrl={editando?.audio_completo_url} />
               </div>
 
@@ -383,6 +389,7 @@ export default function Biblioteca() {
                       {m.partitura_url && (
                         <PartituraViewer
                           url={m.partitura_url}
+                          fileType={m.partitura_tipo}
                           canDownload={canManageMusic}
                           primary={primary}
                         />

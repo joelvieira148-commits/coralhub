@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AlertCircle, ChevronLeft, ChevronRight, Download, ExternalLink, FileText, Loader2, Minus, Plus } from 'lucide-react';
+import { AlertCircle, ChevronLeft, ChevronRight, Download, ExternalLink, FileImage, FileText, Loader2, Minus, Plus } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { openExternalUrl } from '@/lib/native-app';
@@ -14,6 +14,17 @@ const PDF_LOAD_TIMEOUT_MS = 9000;
 const getGoogleViewerUrl = (url) => (
   `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(url)}`
 );
+
+const isImagePartitura = (url = '', fileType = '') => {
+  if (/^image\//i.test(fileType || '')) return true;
+
+  try {
+    const decoded = decodeURIComponent(String(url).split('?')[0]);
+    return /\.(apng|avif|gif|heic|heif|jpe?g|png|webp)$/i.test(decoded);
+  } catch {
+    return /\.(apng|avif|gif|heic|heif|jpe?g|png|webp)$/i.test(String(url).split('?')[0]);
+  }
+};
 
 const withTimeout = (promise, ms, message) => new Promise((resolve, reject) => {
   const timer = window.setTimeout(() => {
@@ -111,6 +122,63 @@ function EmbeddedPdfFallback({ url, reason = '' }) {
             border: 0,
           }}
         />
+      </div>
+    </div>
+  );
+}
+
+function ImagePartituraViewer({ url }) {
+  const [zoom, setZoom] = useState(1);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setZoom(1);
+    setFailed(false);
+  }, [url]);
+
+  const zoomOut = () => setZoom((current) => Math.max(MIN_ZOOM, Number((current - ZOOM_STEP).toFixed(2))));
+  const zoomIn = () => setZoom((current) => Math.min(MAX_ZOOM, Number((current + ZOOM_STEP).toFixed(2))));
+
+  return (
+    <div className="bg-slate-100">
+      <div className="sticky top-0 z-20 flex items-center justify-end gap-1 border-b border-slate-200 bg-white px-2 py-2">
+        <button
+          type="button"
+          onClick={zoomOut}
+          disabled={zoom <= MIN_ZOOM}
+          className="rounded-lg border border-slate-200 p-1.5 text-slate-600 disabled:opacity-40"
+          title="Diminuir"
+        >
+          <Minus className="w-4 h-4" />
+        </button>
+        <span className="min-w-[48px] text-center text-xs font-semibold text-slate-600">
+          {Math.round(zoom * 100)}%
+        </span>
+        <button
+          type="button"
+          onClick={zoomIn}
+          disabled={zoom >= MAX_ZOOM}
+          className="rounded-lg border border-slate-200 p-1.5 text-slate-600 disabled:opacity-40"
+          title="Aumentar"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+      </div>
+      <div className="max-h-[70vh] overflow-auto bg-white p-2">
+        {failed ? (
+          <div className="flex items-start gap-2 bg-amber-50 px-3 py-4 text-xs text-amber-800">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <span>Nao foi possivel abrir esta imagem dentro da pagina. Toque em Abrir.</span>
+          </div>
+        ) : (
+          <img
+            src={url}
+            alt="Partitura"
+            className="mx-auto block max-w-none rounded bg-white shadow-sm"
+            style={{ width: `${100 * zoom}%` }}
+            onError={() => setFailed(true)}
+          />
+        )}
       </div>
     </div>
   );
@@ -400,7 +468,7 @@ function PdfDocumentViewer({ url, forceEmbedded = false }) {
   );
 }
 
-export default function PartituraViewer({ url, canDownload = false, primary = '#6366f1' }) {
+export default function PartituraViewer({ url, fileType = '', canDownload = false, primary = '#6366f1' }) {
   const [forceEmbedded, setForceEmbedded] = useState(false);
 
   useEffect(() => {
@@ -408,6 +476,7 @@ export default function PartituraViewer({ url, canDownload = false, primary = '#
   }, [url]);
 
   if (!url) return null;
+  const isImage = isImagePartitura(url, fileType);
 
   const handleOpen = () => {
     openExternalUrl(url);
@@ -417,7 +486,8 @@ export default function PartituraViewer({ url, canDownload = false, primary = '#
     <div className="border border-gray-100 rounded-xl overflow-hidden">
       <div className="flex items-center justify-between gap-2 px-3 py-2 bg-gray-50">
         <span className="text-xs font-medium text-gray-600 flex items-center gap-1">
-          <FileText className="w-3 h-3" /> Partitura
+          {isImage ? <FileImage className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
+          Partitura
         </span>
         <div className="flex items-center gap-2">
           <button
@@ -429,15 +499,17 @@ export default function PartituraViewer({ url, canDownload = false, primary = '#
             <ExternalLink className="w-3 h-3" />
             Abrir
           </button>
-          <button
-            type="button"
-            onClick={() => setForceEmbedded((current) => !current)}
-            className="inline-flex items-center gap-1 text-xs font-medium"
-            style={{ color: primary }}
-          >
-            <FileText className="w-3 h-3" />
-            {forceEmbedded ? 'Leitor' : 'Modo compativel'}
-          </button>
+          {!isImage && (
+            <button
+              type="button"
+              onClick={() => setForceEmbedded((current) => !current)}
+              className="inline-flex items-center gap-1 text-xs font-medium"
+              style={{ color: primary }}
+            >
+              <FileText className="w-3 h-3" />
+              {forceEmbedded ? 'Leitor' : 'Modo compativel'}
+            </button>
+          )}
           {canDownload && (
             <a
               href={url}
@@ -451,7 +523,11 @@ export default function PartituraViewer({ url, canDownload = false, primary = '#
           )}
         </div>
       </div>
-      <PdfDocumentViewer url={url} forceEmbedded={forceEmbedded} />
+      {isImage ? (
+        <ImagePartituraViewer url={url} />
+      ) : (
+        <PdfDocumentViewer url={url} forceEmbedded={forceEmbedded} />
+      )}
     </div>
   );
 }

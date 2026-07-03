@@ -7,7 +7,7 @@ import FixedAudioPlayer from '@/components/coral/FixedAudioPlayer';
 import AdminPasswordGate from '@/components/coral/AdminPasswordGate';
 import PartituraViewer from '@/components/coral/PartituraViewer';
 import { isAdminUser } from '@/lib/admin-access';
-import { getUploadErrorMessage, uploadCoralFile } from '@/lib/coral-file-upload';
+import { getUploadErrorMessage, isFileKind, uploadCoralFile } from '@/lib/coral-file-upload';
 import { publicarCoraisNoCatalogo } from '@/lib/coral-directory';
 import { NAIPES } from '@/utils/coralTheme';
 
@@ -83,7 +83,11 @@ export default function AdminBiblioteca() {
   };
 
   const handleFile = async (key, file) => {
-    const kind = key === 'partitura' ? 'pdf' : 'audio';
+    const kind = key === 'partitura' && isFileKind(file, 'image')
+      ? 'image'
+      : key === 'partitura'
+        ? 'pdf'
+        : 'audio';
     setFiles(p => ({ ...p, [key]: { file, name: file.name, uploading: true } }));
     try {
       const upload = await uploadCoralFile(firebaseClient, file, { kind });
@@ -92,6 +96,7 @@ export default function AdminBiblioteca() {
         [key]: {
           file_url: upload.file_url,
           name: upload.file_name,
+          type: upload.file_type,
           uploading: false,
           size: upload.file_size,
         },
@@ -117,6 +122,7 @@ export default function AdminBiblioteca() {
       coral_id: coralDoForm.id,
       uploaded_by: user.email,
       partitura_url: files.partitura?.file_url || base.partitura_url || '',
+      partitura_tipo: files.partitura?.type || base.partitura_tipo || '',
       audio_completo_url: files.audio_completo?.file_url || base.audio_completo_url || '',
       audio_soprano1_url: files.soprano1?.file_url || base.audio_soprano1_url || '',
       audio_soprano2_url: files.soprano2?.file_url || base.audio_soprano2_url || '',
@@ -343,6 +349,7 @@ export default function AdminBiblioteca() {
                                       {m.partitura_url && (
                                         <PartituraViewer
                                           url={m.partitura_url}
+                                          fileType={m.partitura_tipo}
                                           canDownload={true}
                                           primary={primary}
                                         />
@@ -421,7 +428,7 @@ export default function AdminBiblioteca() {
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <FileInput label="📄 Partitura (PDF)" fieldKey="partitura" accept=".pdf" existingUrl={editando?.partitura_url} />
+                <FileInput label="Partitura (PDF ou imagem)" fieldKey="partitura" accept=".pdf,image/*" existingUrl={editando?.partitura_url} />
                 <FileInput label="🎵 Áudio Completo" fieldKey="audio_completo" accept="audio/*" existingUrl={editando?.audio_completo_url} />
               </div>
               <div>
