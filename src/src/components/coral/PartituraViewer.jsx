@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { AlertCircle, ChevronLeft, ChevronRight, Download, ExternalLink, FileImage, FileText, Loader2, Minus, Plus } from 'lucide-react';
-import * as pdfjsLib from 'pdfjs-dist';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import { AlertCircle, Download, ExternalLink, FileImage, FileText, Loader2, Minus, Plus } from 'lucide-react';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
+import pdfjsWorker from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 import { openExternalUrl } from '@/lib/native-app';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -9,7 +9,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 const MIN_ZOOM = 0.75;
 const MAX_ZOOM = 2;
 const ZOOM_STEP = 0.25;
-const PDF_LOAD_TIMEOUT_MS = 9000;
+const PDF_LOAD_TIMEOUT_MS = 20000;
 
 const getGoogleViewerUrl = (url) => (
   `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(url)}`
@@ -285,7 +285,6 @@ function PdfPageCanvas({ pdf, pageNumber, zoom }) {
 function PdfDocumentViewer({ url, forceEmbedded = false }) {
   const [pdf, setPdf] = useState(null);
   const [pageCount, setPageCount] = useState(0);
-  const [pageNumber, setPageNumber] = useState(1);
   const [zoom, setZoom] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -298,42 +297,13 @@ function PdfDocumentViewer({ url, forceEmbedded = false }) {
     setError('');
     setPdf(null);
     setPageCount(0);
-    setPageNumber(1);
     setZoom(1);
 
     const loadPdf = async () => {
-      const loadOptions = {
-        url,
-        withCredentials: false,
-        disableAutoFetch: true,
-        disableStream: true,
-        disableRange: true,
-      };
-
       const loadWithPdfJs = async (options, timeoutMessage) => {
         loadingTask = pdfjsLib.getDocument(options);
         return withTimeout(loadingTask.promise, PDF_LOAD_TIMEOUT_MS, timeoutMessage);
       };
-
-      try {
-        return await loadWithPdfJs(loadOptions, 'Tempo esgotado ao carregar PDF.');
-      } catch (firstError) {
-        console.warn('Falha ao carregar PDF com worker, tentando modo compatibilidade:', firstError);
-        loadingTask?.destroy();
-      }
-
-      try {
-        return await loadWithPdfJs(
-          {
-            ...loadOptions,
-            disableWorker: true,
-          },
-          'Tempo esgotado ao carregar PDF em modo compatibilidade.'
-        );
-      } catch (secondError) {
-        console.warn('Falha ao carregar PDF sem worker, tentando baixar arquivo inteiro:', secondError);
-        loadingTask?.destroy();
-      }
 
       const controller = new AbortController();
       const timer = window.setTimeout(() => controller.abort(), PDF_LOAD_TIMEOUT_MS);
@@ -355,8 +325,24 @@ function PdfDocumentViewer({ url, forceEmbedded = false }) {
           {
             data,
             disableWorker: true,
+            useSystemFonts: true,
           },
           'Tempo esgotado ao renderizar PDF baixado.'
+        );
+      } catch (downloadError) {
+        console.warn('Falha ao baixar PDF, tentando abrir pela URL:', downloadError);
+        loadingTask?.destroy();
+        return await loadWithPdfJs(
+          {
+            url,
+            withCredentials: false,
+            disableWorker: true,
+            disableAutoFetch: true,
+            disableStream: true,
+            disableRange: true,
+            useSystemFonts: true,
+          },
+          'Tempo esgotado ao carregar PDF pela URL.'
         );
       } finally {
         window.clearTimeout(timer);
@@ -386,8 +372,6 @@ function PdfDocumentViewer({ url, forceEmbedded = false }) {
     };
   }, [url]);
 
-  const previousPage = () => setPageNumber((current) => Math.max(1, current - 1));
-  const nextPage = () => setPageNumber((current) => Math.min(pageCount, current + 1));
   const zoomOut = () => setZoom((current) => Math.max(MIN_ZOOM, Number((current - ZOOM_STEP).toFixed(2))));
   const zoomIn = () => setZoom((current) => Math.min(MAX_ZOOM, Number((current + ZOOM_STEP).toFixed(2))));
 
@@ -412,29 +396,9 @@ function PdfDocumentViewer({ url, forceEmbedded = false }) {
   return (
     <div className="bg-slate-100">
       <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-white px-2 py-2">
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={previousPage}
-            disabled={pageNumber <= 1}
-            className="rounded-lg border border-slate-200 p-1.5 text-slate-600 disabled:opacity-40"
-            title="Pagina anterior"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <span className="min-w-[84px] text-center text-xs font-semibold text-slate-600">
-            {pageNumber} / {pageCount}
-          </span>
-          <button
-            type="button"
-            onClick={nextPage}
-            disabled={pageNumber >= pageCount}
-            className="rounded-lg border border-slate-200 p-1.5 text-slate-600 disabled:opacity-40"
-            title="Proxima pagina"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
+        <span className="text-xs font-semibold text-slate-600">
+          {pageCount} pagina{pageCount !== 1 ? 's' : ''}
+        </span>
         <div className="flex items-center gap-1">
           <button
             type="button"
@@ -460,9 +424,14 @@ function PdfDocumentViewer({ url, forceEmbedded = false }) {
         </div>
       </div>
       <div className="max-h-[70vh] overflow-auto p-2">
-        {pdf && (
-          <PdfPageCanvas pdf={pdf} pageNumber={pageNumber} zoom={zoom} />
-        )}
+        {pdf && Array.from({ length: pageCount }, (_, index) => (
+          <div key={index + 1} className="mb-3 last:mb-0">
+            <div className="mb-1 text-center text-[11px] font-semibold text-slate-500">
+              Pagina {index + 1}
+            </div>
+            <PdfPageCanvas pdf={pdf} pageNumber={index + 1} zoom={zoom} />
+          </div>
+        ))}
       </div>
     </div>
   );
