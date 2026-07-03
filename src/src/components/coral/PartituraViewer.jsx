@@ -9,10 +9,22 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 const MIN_ZOOM = 0.75;
 const MAX_ZOOM = 2;
 const ZOOM_STEP = 0.25;
+const PDF_LOAD_TIMEOUT_MS = 9000;
 
 const getGoogleViewerUrl = (url) => (
   `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(url)}`
 );
+
+const withTimeout = (promise, ms, message) => new Promise((resolve, reject) => {
+  const timer = window.setTimeout(() => {
+    reject(new Error(message));
+  }, ms);
+
+  promise
+    .then(resolve)
+    .catch(reject)
+    .finally(() => window.clearTimeout(timer));
+});
 
 const getRenderWidth = (container, pageWidth, zoom = 1) => {
   const availableWidth = container?.clientWidth || pageWidth;
@@ -20,11 +32,16 @@ const getRenderWidth = (container, pageWidth, zoom = 1) => {
 };
 
 function EmbeddedPdfFallback({ url, reason = '' }) {
+  const [mode, setMode] = useState('google');
   const [viewerUrl, setViewerUrl] = useState(() => getGoogleViewerUrl(url));
   const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
-    setViewerUrl(getGoogleViewerUrl(url));
+    setViewerUrl(mode === 'direct' ? url : getGoogleViewerUrl(url));
+  }, [mode, url]);
+
+  useEffect(() => {
+    setMode('google');
     setZoom(1);
   }, [url]);
 
@@ -40,28 +57,46 @@ function EmbeddedPdfFallback({ url, reason = '' }) {
           {' '}Use + e - para aproximar.
         </span>
       </div>
-      <div className="sticky top-0 z-20 flex items-center justify-end gap-1 border-b border-slate-200 bg-white px-2 py-2">
-        <button
-          type="button"
-          onClick={zoomOut}
-          disabled={zoom <= MIN_ZOOM}
-          className="rounded-lg border border-slate-200 p-1.5 text-slate-600 disabled:opacity-40"
-          title="Diminuir"
-        >
-          <Minus className="w-4 h-4" />
-        </button>
-        <span className="min-w-[48px] text-center text-xs font-semibold text-slate-600">
-          {Math.round(zoom * 100)}%
-        </span>
-        <button
-          type="button"
-          onClick={zoomIn}
-          disabled={zoom >= MAX_ZOOM}
-          className="rounded-lg border border-slate-200 p-1.5 text-slate-600 disabled:opacity-40"
-          title="Aumentar"
-        >
-          <Plus className="w-4 h-4" />
-        </button>
+      <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-white px-2 py-2">
+        <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-1">
+          <button
+            type="button"
+            onClick={() => setMode('google')}
+            className={`rounded-md px-2 py-1 text-xs font-semibold ${mode === 'google' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}
+          >
+            Google
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('direct')}
+            className={`rounded-md px-2 py-1 text-xs font-semibold ${mode === 'direct' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}
+          >
+            Direto
+          </button>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={zoomOut}
+            disabled={zoom <= MIN_ZOOM}
+            className="rounded-lg border border-slate-200 p-1.5 text-slate-600 disabled:opacity-40"
+            title="Diminuir"
+          >
+            <Minus className="w-4 h-4" />
+          </button>
+          <span className="min-w-[48px] text-center text-xs font-semibold text-slate-600">
+            {Math.round(zoom * 100)}%
+          </span>
+          <button
+            type="button"
+            onClick={zoomIn}
+            disabled={zoom >= MAX_ZOOM}
+            className="rounded-lg border border-slate-200 p-1.5 text-slate-600 disabled:opacity-40"
+            title="Aumentar"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
       </div>
       <div className="h-[70vh] overflow-auto bg-white">
         <iframe
@@ -202,23 +237,61 @@ function PdfDocumentViewer({ url, forceEmbedded = false }) {
       const loadOptions = {
         url,
         withCredentials: false,
-        disableAutoFetch: false,
-        disableStream: false,
+        disableAutoFetch: true,
+        disableStream: true,
+        disableRange: true,
+      };
+
+      const loadWithPdfJs = async (options, timeoutMessage) => {
+        loadingTask = pdfjsLib.getDocument(options);
+        return withTimeout(loadingTask.promise, PDF_LOAD_TIMEOUT_MS, timeoutMessage);
       };
 
       try {
-        loadingTask = pdfjsLib.getDocument(loadOptions);
-        return await loadingTask.promise;
+        return await loadWithPdfJs(loadOptions, 'Tempo esgotado ao carregar PDF.');
       } catch (firstError) {
         console.warn('Falha ao carregar PDF com worker, tentando modo compatibilidade:', firstError);
         loadingTask?.destroy();
-        loadingTask = pdfjsLib.getDocument({
-          ...loadOptions,
-          disableWorker: true,
-          disableStream: true,
-          disableAutoFetch: true,
+      }
+
+      try {
+        return await loadWithPdfJs(
+          {
+            ...loadOptions,
+            disableWorker: true,
+          },
+          'Tempo esgotado ao carregar PDF em modo compatibilidade.'
+        );
+      } catch (secondError) {
+        console.warn('Falha ao carregar PDF sem worker, tentando baixar arquivo inteiro:', secondError);
+        loadingTask?.destroy();
+      }
+
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => controller.abort(), PDF_LOAD_TIMEOUT_MS);
+
+      try {
+        const response = await fetch(url, {
+          mode: 'cors',
+          credentials: 'omit',
+          cache: 'no-store',
+          signal: controller.signal,
         });
-        return loadingTask.promise;
+
+        if (!response.ok) {
+          throw new Error(`Falha ao baixar PDF: ${response.status}`);
+        }
+
+        const data = await response.arrayBuffer();
+        return await loadWithPdfJs(
+          {
+            data,
+            disableWorker: true,
+          },
+          'Tempo esgotado ao renderizar PDF baixado.'
+        );
+      } finally {
+        window.clearTimeout(timer);
       }
     };
 
