@@ -10,10 +10,41 @@ const MIN_ZOOM = 0.75;
 const MAX_ZOOM = 2;
 const ZOOM_STEP = 0.25;
 
+const getGoogleViewerUrl = (url) => (
+  `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(url)}`
+);
+
 const getRenderWidth = (container, pageWidth, zoom = 1) => {
   const availableWidth = container?.clientWidth || pageWidth;
   return Math.max(260, Math.min(availableWidth, 980)) * zoom;
 };
+
+function EmbeddedPdfFallback({ url, reason = '' }) {
+  const [viewerUrl, setViewerUrl] = useState(() => getGoogleViewerUrl(url));
+
+  useEffect(() => {
+    setViewerUrl(getGoogleViewerUrl(url));
+  }, [url]);
+
+  return (
+    <div className="bg-slate-100">
+      <div className="flex items-start gap-2 border-b border-amber-100 bg-amber-50 px-3 py-3 text-xs text-amber-800">
+        <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+        <span>
+          {reason || 'Modo compativel aberto dentro da pagina.'}
+          {' '}Se nao aparecer, toque em Abrir.
+        </span>
+      </div>
+      <iframe
+        key={viewerUrl}
+        src={viewerUrl}
+        title="Visualizador de PDF"
+        className="h-[70vh] w-full bg-white"
+        referrerPolicy="no-referrer"
+      />
+    </div>
+  );
+}
 
 function PdfPageCanvas({ pdf, pageNumber, zoom }) {
   const containerRef = useRef(null);
@@ -113,7 +144,7 @@ function PdfPageCanvas({ pdf, pageNumber, zoom }) {
   );
 }
 
-function PdfDocumentViewer({ url }) {
+function PdfDocumentViewer({ url, forceEmbedded = false }) {
   const [pdf, setPdf] = useState(null);
   const [pageCount, setPageCount] = useState(0);
   const [pageNumber, setPageNumber] = useState(1);
@@ -184,6 +215,10 @@ function PdfDocumentViewer({ url }) {
   const zoomOut = () => setZoom((current) => Math.max(MIN_ZOOM, Number((current - ZOOM_STEP).toFixed(2))));
   const zoomIn = () => setZoom((current) => Math.min(MAX_ZOOM, Number((current + ZOOM_STEP).toFixed(2))));
 
+  if (forceEmbedded) {
+    return <EmbeddedPdfFallback url={url} />;
+  }
+
   if (loading) {
     return (
       <div className="h-56 flex items-center justify-center bg-slate-50 text-slate-500">
@@ -194,10 +229,7 @@ function PdfDocumentViewer({ url }) {
 
   if (error) {
     return (
-      <div className="flex items-start gap-2 bg-amber-50 text-amber-800 px-3 py-4 text-xs">
-        <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-        <span>{error} Use o botao Abrir para visualizar fora do app.</span>
-      </div>
+      <EmbeddedPdfFallback url={url} reason={error} />
     );
   }
 
@@ -261,6 +293,12 @@ function PdfDocumentViewer({ url }) {
 }
 
 export default function PartituraViewer({ url, canDownload = false, primary = '#6366f1' }) {
+  const [forceEmbedded, setForceEmbedded] = useState(false);
+
+  useEffect(() => {
+    setForceEmbedded(false);
+  }, [url]);
+
   if (!url) return null;
 
   const handleOpen = () => {
@@ -283,6 +321,15 @@ export default function PartituraViewer({ url, canDownload = false, primary = '#
             <ExternalLink className="w-3 h-3" />
             Abrir
           </button>
+          <button
+            type="button"
+            onClick={() => setForceEmbedded((current) => !current)}
+            className="inline-flex items-center gap-1 text-xs font-medium"
+            style={{ color: primary }}
+          >
+            <FileText className="w-3 h-3" />
+            {forceEmbedded ? 'Leitor' : 'Modo compativel'}
+          </button>
           {canDownload && (
             <a
               href={url}
@@ -296,7 +343,7 @@ export default function PartituraViewer({ url, canDownload = false, primary = '#
           )}
         </div>
       </div>
-      <PdfDocumentViewer url={url} />
+      <PdfDocumentViewer url={url} forceEmbedded={forceEmbedded} />
     </div>
   );
 }
