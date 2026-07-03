@@ -4,7 +4,7 @@ import { Music, User, ArrowLeft, Camera, Download, MessageCircle, RefreshCw } fr
 import { firebaseClient } from '@/api/firebaseClient';
 import { NAIPES } from '@/utils/coralTheme';
 import { carregarCoraisParaCadastro } from '@/lib/coral-directory';
-import { CORAL_STATUS, isCoralApproved, isCoralPending } from '@/lib/coral-approval';
+import { CORAL_STATUS, isCoralAvailable, isCoralPending } from '@/lib/coral-approval';
 import { getMemberPhotoFields } from '@/lib/member-photo';
 import { uploadProfilePhoto } from '@/lib/profile-photo-upload';
 import { saveCoralContextCache } from '@/hooks/useCoralContext';
@@ -73,7 +73,7 @@ export default function Onboarding() {
       try {
         const user = await firebaseClient.auth.me();
         const meusCorais = await firebaseClient.entities.Coral.filter({ maestro_email: user.email });
-        const aprovado = meusCorais.find(isCoralApproved);
+        const aprovado = meusCorais.find(isCoralAvailable);
 
         if (active && aprovado) {
           const userUpdate = {

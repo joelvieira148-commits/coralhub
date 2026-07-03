@@ -20,8 +20,28 @@ export const isCoralApproved = (coral) => {
   return !status || status === APPROVED;
 };
 
+export const isCoralBlocked = (coral) =>
+  coral?.bloqueado === true || coral?.ativo === false;
+
+export const isCoralAvailable = (coral) =>
+  isCoralApproved(coral) && !isCoralBlocked(coral);
+
 export const getApprovalFields = (adminEmail = '') => ({
   status_aprovacao: APPROVED,
   aprovado_em: new Date().toISOString(),
   aprovado_por: adminEmail,
+});
+
+export const getBlockFields = (adminEmail = '') => ({
+  bloqueado: true,
+  ativo: false,
+  bloqueado_em: new Date().toISOString(),
+  bloqueado_por: adminEmail,
+});
+
+export const getUnblockFields = (adminEmail = '') => ({
+  bloqueado: false,
+  ativo: true,
+  desbloqueado_em: new Date().toISOString(),
+  desbloqueado_por: adminEmail,
 });

@@ -6,6 +6,7 @@ import {
   Check,
   Clock,
   Library,
+  Lock,
   Mail,
   MapPin,
   Music,
@@ -14,13 +15,22 @@ import {
   RefreshCw,
   Search,
   Trash2,
+  Unlock,
   Users,
   X,
 } from 'lucide-react';
 import { firebaseClient } from '@/api/firebaseClient';
 import AdminPasswordGate from '@/components/coral/AdminPasswordGate';
 import { isAdminUser } from '@/lib/admin-access';
-import { getApprovalFields, isCoralApproved, isCoralPending } from '@/lib/coral-approval';
+import {
+  getApprovalFields,
+  getBlockFields,
+  getUnblockFields,
+  isCoralApproved,
+  isCoralAvailable,
+  isCoralBlocked,
+  isCoralPending,
+} from '@/lib/coral-approval';
 import { publicarCoraisNoCatalogo, removerCoralDoCatalogo } from '@/lib/coral-directory';
 
 const emptyForm = {
@@ -44,6 +54,7 @@ export default function AdminCorais() {
   const [sincronizando, setSincronizando] = useState(false);
   const [excluindo, setExcluindo] = useState(null);
   const [aprovando, setAprovando] = useState(null);
+  const [bloqueando, setBloqueando] = useState(null);
 
   useEffect(() => {
     async function load() {
@@ -62,7 +73,7 @@ export default function AdminCorais() {
 
       setCorais(allCorais);
       setMembros(allMembros);
-      publicarCoraisNoCatalogo(firebaseClient, allCorais.filter(isCoralApproved)).catch((error) => {
+      publicarCoraisNoCatalogo(firebaseClient, allCorais.filter(isCoralAvailable)).catch((error) => {
         console.warn('Falha ao sincronizar catalogo de corais:', error);
       });
       setLoading(false);
@@ -73,6 +84,8 @@ export default function AdminCorais() {
 
   const coraisPendentes = corais.filter(isCoralPending);
   const coraisAprovados = corais.filter(isCoralApproved);
+  const coraisDisponiveis = corais.filter(isCoralAvailable);
+  const coraisBloqueados = coraisAprovados.filter(isCoralBlocked);
 
   const filtered = coraisAprovados.filter((coral) => {
     const termo = search.toLowerCase();
@@ -104,7 +117,7 @@ export default function AdminCorais() {
   const sincronizarCadastro = async () => {
     setSincronizando(true);
     try {
-      await publicarCoraisNoCatalogo(firebaseClient, coraisAprovados);
+      await publicarCoraisNoCatalogo(firebaseClient, coraisDisponiveis);
       alert('Nomes publicados para o cadastro dos membros.');
     } catch (error) {
       console.warn('Falha ao publicar nomes para cadastro:', error);
@@ -118,7 +131,7 @@ export default function AdminCorais() {
     setSalvando(true);
     const updated = await firebaseClient.entities.Coral.update(coralId, form);
     setCorais((prev) => prev.map((coral) => (coral.id === coralId ? updated : coral)));
-    if (isCoralApproved(updated)) {
+    if (isCoralAvailable(updated)) {
       publicarCoraisNoCatalogo(firebaseClient, [updated]).catch((error) => {
         console.warn('Falha ao atualizar catalogo de corais:', error);
       });
@@ -135,6 +148,7 @@ export default function AdminCorais() {
         ...getApprovalFields(user?.email || ''),
         codigo_aprovacao: '',
         ativo: true,
+        bloqueado: false,
       });
 
       setCorais((prev) => prev.map((item) => (item.id === coral.id ? updated : item)));
@@ -145,6 +159,43 @@ export default function AdminCorais() {
       alert('Nao foi possivel aprovar o coral. Tente novamente.');
     } finally {
       setAprovando(null);
+    }
+  };
+
+  const alternarBloqueioCoral = async (coral) => {
+    const bloqueado = isCoralBlocked(coral);
+    const nome = coral.nome || 'este coral';
+
+    if (!bloqueado) {
+      const confirmado = confirm(
+        `Bloquear ${nome}?\n\nO coral nao sera excluido, mas maestros e membros nao conseguirao acessar ate voce desbloquear.`
+      );
+
+      if (!confirmado) return;
+    }
+
+    setBloqueando(coral.id);
+
+    try {
+      const updated = await firebaseClient.entities.Coral.update(
+        coral.id,
+        bloqueado ? getUnblockFields(user?.email || '') : getBlockFields(user?.email || '')
+      );
+
+      setCorais((prev) => prev.map((item) => (item.id === coral.id ? updated : item)));
+
+      if (bloqueado) {
+        await publicarCoraisNoCatalogo(firebaseClient, [updated]);
+        alert('Coral desbloqueado. O acesso foi liberado novamente.');
+      } else {
+        await removerCoralDoCatalogo(firebaseClient, coral.id);
+        alert('Coral bloqueado. O acesso foi suspenso sem apagar os dados.');
+      }
+    } catch (error) {
+      console.error('Falha ao alterar bloqueio do coral:', error);
+      alert('Nao foi possivel alterar o bloqueio. Tente novamente.');
+    } finally {
+      setBloqueando(null);
     }
   };
 
@@ -211,6 +262,7 @@ export default function AdminCorais() {
               <h1 className="font-bold text-sm">Admin · Corais</h1>
               <p className="text-xs text-white/60">
                 {coraisAprovados.length} aprovado{coraisAprovados.length !== 1 ? 's' : ''}
+                {coraisBloqueados.length > 0 ? ` · ${coraisBloqueados.length} bloqueado${coraisBloqueados.length !== 1 ? 's' : ''}` : ''}
                 {coraisPendentes.length > 0 ? ` · ${coraisPendentes.length} pendente${coraisPendentes.length !== 1 ? 's' : ''}` : ''}
               </p>
             </div>
@@ -218,7 +270,7 @@ export default function AdminCorais() {
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={sincronizarCadastro}
-              disabled={sincronizando || coraisAprovados.length === 0}
+              disabled={sincronizando || coraisDisponiveis.length === 0}
               className="flex items-center gap-1.5 text-white/75 hover:text-white text-xs transition-colors disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${sincronizando ? 'animate-spin' : ''}`} /> Publicar nomes
@@ -328,9 +380,10 @@ export default function AdminCorais() {
               const totalMembros = membros.filter((membro) => membro.coral_id === coral.id).length;
               const primary = coral.cor_primaria || '#6366f1';
               const isEditing = editando === coral.id;
+              const bloqueado = isCoralBlocked(coral);
 
               return (
-                <div key={coral.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div key={coral.id} className={`bg-white rounded-2xl shadow-sm border overflow-hidden ${bloqueado ? 'border-red-200' : 'border-gray-100'}`}>
                   <div className="p-4">
                     {isEditing ? (
                       <div className="space-y-3">
@@ -407,11 +460,36 @@ export default function AdminCorais() {
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <h2 className="font-semibold text-gray-800 truncate">{coral.nome}</h2>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <h2 className="font-semibold text-gray-800 truncate">{coral.nome}</h2>
+                              {bloqueado && (
+                                <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700">
+                                  Bloqueado
+                                </span>
+                              )}
+                            </div>
                             <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
                               <Users className="w-3.5 h-3.5" /> {totalMembros} membro{totalMembros !== 1 ? 's' : ''}
                             </p>
                           </div>
+                          <button
+                            onClick={() => alternarBloqueioCoral(coral)}
+                            disabled={bloqueando === coral.id}
+                            className={`p-1.5 rounded-lg transition-colors flex-shrink-0 disabled:opacity-50 ${
+                              bloqueado
+                                ? 'text-green-600 hover:bg-green-50'
+                                : 'text-gray-400 hover:text-amber-700 hover:bg-amber-50'
+                            }`}
+                            title={bloqueado ? 'Desbloquear coral' : 'Bloquear coral'}
+                          >
+                            {bloqueando === coral.id ? (
+                              <RefreshCw className="w-4 h-4 animate-spin" />
+                            ) : bloqueado ? (
+                              <Unlock className="w-4 h-4" />
+                            ) : (
+                              <Lock className="w-4 h-4" />
+                            )}
+                          </button>
                           <button
                             onClick={() => iniciarEdicao(coral)}
                             className="p-1.5 text-gray-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors flex-shrink-0"
