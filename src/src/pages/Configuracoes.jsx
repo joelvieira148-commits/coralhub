@@ -115,9 +115,10 @@ export default function Configuracoes() {
   if (!coral) return null;
 
   const primary = form.cor_primaria || '#6366f1';
+  const previewCoral = { ...coral, ...form };
 
   return (
-    <CoralLayout coral={coral} user={user} isMaestro={isMaestro}>
+    <CoralLayout coral={previewCoral} user={user} isMaestro={isMaestro}>
       <h2 className="text-xl font-bold text-gray-800 mb-6">Configurações do Coral</h2>
 
       <form onSubmit={salvar} className="space-y-6">
@@ -142,17 +143,22 @@ export default function Configuracoes() {
 
             {/* Capa */}
             <div className="flex-1">
+              <p className="mb-2 text-xs font-medium text-gray-600">Imagem do topo do coral</p>
               <div
                 className="w-full h-24 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden bg-gray-50 cursor-pointer hover:border-indigo-300 transition-colors relative"
               >
                 {form.capa_url
                   ? <img src={form.capa_url} className="w-full h-full object-cover" alt="Capa" />
-                  : <span className="text-gray-400 text-sm">Clique para alterar a capa</span>}
+                  : <span className="text-gray-400 text-sm">Clique para colocar a imagem no topo</span>}
                 <label className="absolute inset-0 cursor-pointer">
                   <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && handleCapa(e.target.files[0])} />
                 </label>
               </div>
-              {uploadingCapa && <p className="text-xs text-gray-400 mt-1">Enviando imagem de capa...</p>}
+              {uploadingCapa ? (
+                <p className="text-xs text-gray-400 mt-1">Enviando imagem para o topo...</p>
+              ) : (
+                <p className="text-xs text-gray-400 mt-1">Depois de escolher, ela aparece no topo. Toque em salvar para gravar.</p>
+              )}
             </div>
           </div>
 

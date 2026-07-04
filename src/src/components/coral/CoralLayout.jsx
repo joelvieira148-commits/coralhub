@@ -25,6 +25,9 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
 
   const primary = coral?.cor_primaria || '#6366f1';
   const secondary = coral?.cor_secundaria || '#818cf8';
+  const headerBackground = coral?.capa_url
+    ? `linear-gradient(rgba(15, 23, 42, 0.58), rgba(15, 23, 42, 0.78)), url("${coral.capa_url}") center/cover no-repeat`
+    : `linear-gradient(135deg, ${primary}, ${secondary})`;
 
   const baseNavItems = isMaestro
     ? [
@@ -52,7 +55,7 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <header
         className="text-white shadow-lg sticky top-0 z-40"
-        style={{ background: `linear-gradient(135deg, ${primary}, ${secondary})` }}
+        style={{ background: headerBackground }}
       >
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
