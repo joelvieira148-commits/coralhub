@@ -21,6 +21,14 @@ const PRESET_CORES = [
   { primary: '#0ea5e9', secondary: '#38bdf8', label: 'Ciano' },
 ];
 
+const POSICOES_CAPA = [
+  { value: 'center center', label: 'Centro' },
+  { value: 'center top', label: 'Topo' },
+  { value: 'center bottom', label: 'Baixo' },
+  { value: 'left center', label: 'Esquerda' },
+  { value: 'right center', label: 'Direita' },
+];
+
 export default function Configuracoes() {
   const navigate = useNavigate();
   const { user, coral, isMaestro, loading, setCoral } = useCoralContext();
@@ -46,6 +54,7 @@ export default function Configuracoes() {
       tema: coral.tema || 'classico',
       logo_url: coral.logo_url || '',
       capa_url: coral.capa_url || '',
+      capa_posicao: coral.capa_posicao || 'center center',
     });
   }, [loading, isMaestro, coral]);
 
@@ -77,7 +86,7 @@ export default function Configuracoes() {
     setUploadingCapa(true);
     try {
       const upload = await uploadCoralFile(firebaseClient, file, { kind: 'image' });
-      setForm(p => ({ ...p, capa_url: upload.file_url }));
+      setForm(p => ({ ...p, capa_url: upload.file_url, capa_posicao: 'center center' }));
       setNovosBytes(b => b + upload.file_size);
     } catch (error) {
       console.error('Erro ao enviar capa:', error);
@@ -148,16 +157,44 @@ export default function Configuracoes() {
                 className="w-full h-24 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden bg-gray-50 cursor-pointer hover:border-indigo-300 transition-colors relative"
               >
                 {form.capa_url
-                  ? <img src={form.capa_url} className="w-full h-full object-cover" alt="Capa" />
+                  ? (
+                    <img
+                      src={form.capa_url}
+                      className="w-full h-full object-cover"
+                      style={{ objectPosition: form.capa_posicao || 'center center' }}
+                      alt="Capa"
+                    />
+                  )
                   : <span className="text-gray-400 text-sm">Clique para colocar a imagem no topo</span>}
                 <label className="absolute inset-0 cursor-pointer">
                   <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && handleCapa(e.target.files[0])} />
                 </label>
               </div>
+              {form.capa_url && (
+                <div className="mt-3">
+                  <p className="mb-2 text-xs font-medium text-gray-600">Ajuste da imagem no topo</p>
+                  <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
+                    {POSICOES_CAPA.map((posicao) => (
+                      <button
+                        key={posicao.value}
+                        type="button"
+                        onClick={() => setForm(p => ({ ...p, capa_posicao: posicao.value }))}
+                        className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+                          (form.capa_posicao || 'center center') === posicao.value
+                            ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                            : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        {posicao.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               {uploadingCapa ? (
                 <p className="text-xs text-gray-400 mt-1">Enviando imagem para o topo...</p>
               ) : (
-                <p className="text-xs text-gray-400 mt-1">Depois de escolher, ela aparece no topo. Toque em salvar para gravar.</p>
+                <p className="text-xs text-gray-400 mt-1">Use Centro quando a imagem tiver palavras. Toque em salvar para gravar.</p>
               )}
             </div>
           </div>
