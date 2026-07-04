@@ -336,8 +336,12 @@ export default function Onboarding() {
       <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 flex items-center justify-center p-6">
         <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
           <div className="text-center mb-8">
-            <Music className="w-12 h-12 text-indigo-600 mx-auto mb-3" />
-            <h1 className="text-2xl font-bold text-gray-800">Bem-vindo ao CoralHub!</h1>
+            <img
+              src="/app-icon.png"
+              alt="Maestro Coral"
+              className="mx-auto mb-3 h-20 w-20 rounded-2xl object-cover shadow-lg"
+            />
+            <h1 className="text-2xl font-bold text-gray-800">Bem-vindo ao Maestro Coral!</h1>
             <p className="text-gray-500 mt-2">Como você vai usar a plataforma?</p>
           </div>
           <div className="grid grid-cols-1 gap-4">

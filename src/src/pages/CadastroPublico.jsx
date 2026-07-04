@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Download, Globe2, Music, Share2, Smartphone } from 'lucide-react';
+import { Download, Globe2, Share2, Smartphone } from 'lucide-react';
 
 const APK_DOWNLOAD_URL = '/downloads/coralhub.apk';
 
@@ -7,10 +7,12 @@ export default function CadastroPublico() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 flex items-center justify-center p-6">
       <div className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-2xl">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100 text-indigo-700">
-          <Music className="h-8 w-8" />
-        </div>
-        <h1 className="text-2xl font-bold text-gray-900">Cadastro CoralHub</h1>
+        <img
+          src="/app-icon.png"
+          alt="Maestro Coral"
+          className="mx-auto mb-4 h-20 w-20 rounded-2xl object-cover shadow-lg"
+        />
+        <h1 className="text-2xl font-bold text-gray-900">Cadastro Maestro Coral</h1>
         <p className="mt-2 text-sm text-gray-500">
           Use pelo navegador sem instalar nada. Android pode baixar APK; iPhone usa pelo Safari.
         </p>

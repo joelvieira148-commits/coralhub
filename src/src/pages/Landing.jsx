@@ -47,11 +47,13 @@ export default function Landing() {
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center text-center px-6 py-20">
-        <div className="mb-6 w-24 h-24 rounded-full shadow-2xl border-4 border-white/30 bg-white/15 flex items-center justify-center">
-          <Music className="w-12 h-12 text-white" />
-        </div>
+        <img
+          src="/app-icon.png"
+          alt="Maestro Coral"
+          className="mb-6 h-28 w-28 rounded-[2rem] border-4 border-white/30 object-cover shadow-2xl"
+        />
         <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
-          Sua plataforma<br />para corais
+          Plataforma<br />Maestro Coral
         </h1>
         <p className="text-lg text-white/70 max-w-xl mb-10">
           Gerencie membros, compartilhe partituras e organize os naipes do seu coral em um so lugar.
