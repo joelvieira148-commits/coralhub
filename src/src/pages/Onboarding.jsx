@@ -333,8 +333,13 @@ export default function Onboarding() {
 
   if (step === 'role') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 flex items-center justify-center p-6">
-        <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
+      <div
+        className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center p-6"
+        style={{
+          backgroundImage: 'linear-gradient(rgba(20, 16, 51, 0.72), rgba(74, 12, 77, 0.78)), url("/app-icon.png")',
+        }}
+      >
+        <div className="bg-white/95 rounded-3xl p-8 max-w-md w-full shadow-2xl backdrop-blur">
           <div className="text-center mb-8">
             <img
               src="/app-icon.png"

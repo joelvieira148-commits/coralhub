@@ -5,8 +5,13 @@ const APK_DOWNLOAD_URL = '/downloads/coralhub.apk';
 
 export default function CadastroPublico() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 flex items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-2xl">
+    <div
+      className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center p-6"
+      style={{
+        backgroundImage: 'linear-gradient(rgba(20, 16, 51, 0.72), rgba(74, 12, 77, 0.78)), url("/app-icon.png")',
+      }}
+    >
+      <div className="w-full max-w-md rounded-3xl bg-white/95 p-8 text-center shadow-2xl backdrop-blur">
         <img
           src="/app-icon.png"
           alt="Maestro Coral"

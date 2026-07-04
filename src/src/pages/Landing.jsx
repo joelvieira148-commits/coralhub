@@ -19,7 +19,12 @@ export default function Landing() {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 flex flex-col">
+    <div
+      className="min-h-screen bg-cover bg-center bg-no-repeat flex flex-col"
+      style={{
+        backgroundImage: 'linear-gradient(rgba(18, 14, 47, 0.76), rgba(74, 12, 77, 0.82)), url("/app-icon.png")',
+      }}
+    >
       <header className="px-6 py-5 flex items-center justify-between max-w-7xl mx-auto w-full">
         <div className="flex items-center gap-2 text-white">
           <div className="w-9 h-9 rounded-full bg-white/15 border border-white/20 flex items-center justify-center">
