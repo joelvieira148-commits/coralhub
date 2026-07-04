@@ -15,6 +15,16 @@ const getGoogleViewerUrl = (url) => (
   `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(url)}`
 );
 
+const getPdfProxyUrl = (url) => {
+  const proxyPath = `/api/pdf-proxy?url=${encodeURIComponent(url)}`;
+
+  if (typeof window === 'undefined') {
+    return proxyPath;
+  }
+
+  return new URL(proxyPath, window.location.origin).href;
+};
+
 const isImagePartitura = (url = '', fileType = '') => {
   if (/^image\//i.test(fileType || '')) return true;
 
@@ -44,11 +54,12 @@ const getRenderWidth = (container, pageWidth, zoom = 1) => {
 
 function EmbeddedPdfFallback({ url, reason = '' }) {
   const [mode, setMode] = useState('google');
-  const [viewerUrl, setViewerUrl] = useState(() => getGoogleViewerUrl(url));
+  const [viewerUrl, setViewerUrl] = useState(() => getGoogleViewerUrl(getPdfProxyUrl(url)));
   const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
-    setViewerUrl(mode === 'direct' ? url : getGoogleViewerUrl(url));
+    const proxiedUrl = getPdfProxyUrl(url);
+    setViewerUrl(mode === 'direct' ? proxiedUrl : getGoogleViewerUrl(proxiedUrl));
   }, [mode, url]);
 
   useEffect(() => {
@@ -305,22 +316,40 @@ function PdfDocumentViewer({ url, forceEmbedded = false }) {
         return withTimeout(loadingTask.promise, PDF_LOAD_TIMEOUT_MS, timeoutMessage);
       };
 
-      const controller = new AbortController();
-      const timer = window.setTimeout(() => controller.abort(), PDF_LOAD_TIMEOUT_MS);
+      const fetchPdfBytes = async () => {
+        const urlsToTry = [getPdfProxyUrl(url), url];
+        let lastError;
 
-      try {
-        const response = await fetch(url, {
-          mode: 'cors',
-          credentials: 'omit',
-          cache: 'no-store',
-          signal: controller.signal,
-        });
+        for (const pdfUrl of urlsToTry) {
+          const controller = new AbortController();
+          const timer = window.setTimeout(() => controller.abort(), PDF_LOAD_TIMEOUT_MS);
 
-        if (!response.ok) {
-          throw new Error(`Falha ao baixar PDF: ${response.status}`);
+          try {
+            const response = await fetch(pdfUrl, {
+              mode: 'cors',
+              credentials: 'omit',
+              cache: 'no-store',
+              signal: controller.signal,
+            });
+
+            if (!response.ok) {
+              throw new Error(`Falha ao baixar PDF: ${response.status}`);
+            }
+
+            return response.arrayBuffer();
+          } catch (error) {
+            lastError = error;
+            console.warn('Falha ao baixar PDF por este caminho:', pdfUrl, error);
+          } finally {
+            window.clearTimeout(timer);
+          }
         }
 
-        const data = await response.arrayBuffer();
+        throw lastError || new Error('Nao foi possivel baixar o PDF.');
+      };
+
+      try {
+        const data = await fetchPdfBytes();
         return await loadWithPdfJs(
           {
             data,
@@ -332,9 +361,10 @@ function PdfDocumentViewer({ url, forceEmbedded = false }) {
       } catch (downloadError) {
         console.warn('Falha ao baixar PDF, tentando abrir pela URL:', downloadError);
         loadingTask?.destroy();
+        const proxiedUrl = getPdfProxyUrl(url);
         return await loadWithPdfJs(
           {
-            url,
+            url: proxiedUrl,
             withCredentials: false,
             disableWorker: true,
             disableAutoFetch: true,
@@ -342,10 +372,8 @@ function PdfDocumentViewer({ url, forceEmbedded = false }) {
             disableRange: true,
             useSystemFonts: true,
           },
-          'Tempo esgotado ao carregar PDF pela URL.'
+          'Tempo esgotado ao carregar PDF pela URL interna.'
         );
-      } finally {
-        window.clearTimeout(timer);
       }
     };
 
