@@ -1,5 +1,5 @@
-﻿import { useState } from 'react';
-import { ChevronDown, ChevronUp, Music, LogIn, Mic2 } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronDown, ChevronUp, LogIn, Mic2, Music } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const faqs = [
@@ -8,36 +8,40 @@ const faqs = [
     icon: LogIn,
     itens: [
       {
-        pergunta: 'Como faÃ§o para criar minha conta?',
-        resposta: 'Clique em "Entrar / Cadastrar" na pagina inicial e use seu e-mail e senha. Na primeira entrada, voce escolhe se vai cadastrar Maestro/Maestrina ou Membro.'
+        pergunta: 'Como faço para criar minha conta?',
+        resposta: 'Clique em "Entrar / Cadastrar" na página inicial e use seu e-mail e senha. No primeiro acesso, você escolhe se vai entrar como Maestro/Maestrina ou como Membro.',
       },
       {
-        pergunta: 'Sou Maestro ou Membro? Qual escolher?',
-        resposta: 'Escolha Maestro se vocÃª vai criar e gerenciar um coral â€” vocÃª poderÃ¡ cadastrar membros, fazer uploads de mÃºsicas e personalizar o visual. Escolha Membro se vocÃª vai participar de um coral jÃ¡ existente, acessar partituras e ouvir os Ã¡udios do seu naipe.'
+        pergunta: 'Devo escolher Maestro ou Membro?',
+        resposta: 'Escolha Maestro/Maestrina se você vai criar e administrar um coral. Escolha Membro se você vai participar de um coral já cadastrado para acessar músicas, partituras e áudios do seu naipe.',
       },
       {
-        pergunta: 'Posso mudar de Maestro para Membro depois?',
-        resposta: 'Por enquanto, o perfil Ã© definido no primeiro acesso. Se precisar alterar, entre em contato com o suporte.'
+        pergunta: 'Posso mudar meu tipo de cadastro depois?',
+        resposta: 'Se precisar mudar de Maestro para Membro, ou de Membro para Maestro, fale com o administrador para ajustar seu cadastro.',
       },
-    ]
+    ],
   },
   {
     categoria: 'Para Maestros',
     icon: Music,
     itens: [
       {
-        pergunta: 'Como adiciono mÃºsicas ao coral?',
-        resposta: 'Acesse a pÃ¡gina "Música" e clique em "Nova MÃºsica". VocÃª pode subir a partitura em PDF e Ã¡udios separados para cada naipe (Soprano, Contralto, Tenor, BarÃ­tono, Baixo).'
+        pergunta: 'Como adiciono músicas ao coral?',
+        resposta: 'Acesse a página "Música" e toque em "Nova Música". Você pode enviar a partitura em PDF ou imagem, além dos áudios separados por naipe.',
       },
       {
         pergunta: 'Como gerencio os membros do meu coral?',
-        resposta: 'Acesse a pÃ¡gina "Membros" para ver todos os integrantes organizados por naipe. VocÃª pode editar o nome, telefone e naipe de cada membro, alÃ©m de removÃª-los se necessÃ¡rio.'
+        resposta: 'Acesse a página "Membros" para ver os integrantes organizados por naipe. Você pode editar nome, telefone, endereço, e-mail, voz e função de cada membro.',
       },
       {
-        pergunta: 'Como personalizo as cores e logo do coral?',
-        resposta: 'VÃ¡ em "ConfiguraÃ§Ãµes" e escolha entre as paletas de cores prÃ©-definidas ou insira cÃ³digos de cor personalizados. VocÃª tambÃ©m pode fazer upload da logo e de uma imagem de capa.'
+        pergunta: 'Como personalizo a imagem do coral?',
+        resposta: 'Vá em "Configurações" para alterar nome, cores, logo e imagem do topo. A imagem do topo aparece no cabeçalho onde fica o nome do coral.',
       },
-    ]
+      {
+        pergunta: 'Por que meu coral precisa de aprovação?',
+        resposta: 'A aprovação é necessária apenas para Maestro ou Maestrina que está criando uma nova plataforma de coral. Depois de aprovado pelo admin, o coral fica liberado para os membros escolherem no cadastro.',
+      },
+    ],
   },
   {
     categoria: 'Para Membros',
@@ -45,52 +49,49 @@ const faqs = [
     itens: [
       {
         pergunta: 'Como entro em um coral?',
-        resposta: 'No primeiro acesso, escolha "Sou Membro", preencha seus dados e selecione o coral na lista. O maestro jÃ¡ deve ter criado o coral para que ele apareÃ§a na lista.'
+        resposta: 'No primeiro acesso, escolha "Sou Membro", preencha seus dados e selecione o nome do coral na lista. O coral precisa estar aprovado para aparecer.',
       },
       {
-        pergunta: 'Como ouÃ§o o Ã¡udio do meu naipe?',
-        resposta: 'Acesse Música, clique em "Abrir" em qualquer mÃºsica e vocÃª verÃ¡ players de Ã¡udio separados para cada naipe. Basta clicar no botÃ£o play do seu naipe.'
+        pergunta: 'Como ouço o áudio do meu naipe?',
+        resposta: 'Acesse "Música", abra uma música e toque no botão de play do áudio do seu naipe. O player fica fixo para você pausar, avançar, voltar ou repetir.',
       },
       {
-        pergunta: 'Posso baixar as partituras?',
-        resposta: 'Sim! Ao abrir uma mÃºsica em Música, vocÃª verÃ¡ o botÃ£o "Baixar" ao lado da partitura. Os Ã¡udios tambÃ©m tÃªm botÃ£o de download.'
+        pergunta: 'Posso ver e baixar partituras?',
+        resposta: 'Sim. Ao abrir uma música, você pode visualizar a partitura dentro da página. Quando permitido pelo maestro, também aparece a opção de baixar.',
       },
-    ]
+    ],
   },
 ];
 
 export default function Ajuda() {
   const [abertos, setAbertos] = useState({});
 
-  const toggle = (key) => setAbertos(p => ({ ...p, [key]: !p[key] }));
+  const toggle = (key) => setAbertos((prev) => ({ ...prev, [key]: !prev[key] }));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800">
-      {/* Header */}
       <header className="px-6 py-5 flex items-center justify-between max-w-4xl mx-auto w-full">
         <Link to="/" className="flex items-center gap-2 text-white hover:opacity-80 transition-opacity">
           <Music className="w-6 h-6" />
-          <span className="text-lg font-bold">CoralHub</span>
+          <span className="text-lg font-bold">Maestro Coral</span>
         </Link>
         <Link
           to="/"
           className="text-white/70 hover:text-white text-sm transition-colors"
         >
-          â† Voltar
+          Voltar
         </Link>
       </header>
 
       <main className="max-w-4xl mx-auto px-6 pb-16">
-        {/* Title */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-2xl mb-4">
             <Music className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">Central de Ajuda</h1>
-          <p className="text-white/60 text-lg">Encontre respostas para as principais dÃºvidas sobre o CoralHub.</p>
+          <p className="text-white/60 text-lg">Encontre respostas para as principais dúvidas sobre o Maestro Coral.</p>
         </div>
 
-        {/* FAQ sections */}
         <div className="space-y-8">
           {faqs.map(({ categoria, icon: Icon, itens }) => (
             <div key={categoria}>
@@ -99,12 +100,14 @@ export default function Ajuda() {
                 <h2 className="text-white font-semibold text-lg">{categoria}</h2>
               </div>
               <div className="space-y-2">
-                {itens.map((item, i) => {
-                  const key = `${categoria}-${i}`;
+                {itens.map((item, index) => {
+                  const key = `${categoria}-${index}`;
                   const open = abertos[key];
+
                   return (
                     <div key={key} className="bg-white/10 backdrop-blur rounded-2xl overflow-hidden">
                       <button
+                        type="button"
                         onClick={() => toggle(key)}
                         className="w-full flex items-center justify-between px-5 py-4 text-left gap-3 hover:bg-white/5 transition-colors"
                       >
@@ -126,15 +129,16 @@ export default function Ajuda() {
           ))}
         </div>
 
-        {/* Contact */}
         <div className="mt-12 bg-white/10 backdrop-blur rounded-2xl p-6 text-center">
-          <h3 className="text-white font-semibold mb-2">NÃ£o encontrou o que precisava?</h3>
-          <p className="text-white/60 text-sm mb-4">Entre em contato com o suporte pelo email abaixo.</p>
+          <h3 className="text-white font-semibold mb-2">Não encontrou o que precisava?</h3>
+          <p className="text-white/60 text-sm mb-4">Entre em contato pelo WhatsApp para tirar dúvidas sobre cadastro e uso da plataforma.</p>
           <a
-            href="mailto:suporte@coralhub.com"
+            href="https://wa.me/5581985511614"
+            target="_blank"
+            rel="noreferrer"
             className="inline-block bg-white text-indigo-700 font-semibold px-6 py-2.5 rounded-full hover:bg-indigo-50 transition-colors text-sm"
           >
-            suporte@coralhub.com
+            Falar no WhatsApp
           </a>
         </div>
       </main>
