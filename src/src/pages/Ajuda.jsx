@@ -27,7 +27,7 @@ const faqs = [
     itens: [
       {
         pergunta: 'Como adiciono mÃºsicas ao coral?',
-        resposta: 'Acesse a pÃ¡gina "Biblioteca" e clique em "Nova MÃºsica". VocÃª pode subir a partitura em PDF e Ã¡udios separados para cada naipe (Soprano, Contralto, Tenor, BarÃ­tono, Baixo).'
+        resposta: 'Acesse a pÃ¡gina "Música" e clique em "Nova MÃºsica". VocÃª pode subir a partitura em PDF e Ã¡udios separados para cada naipe (Soprano, Contralto, Tenor, BarÃ­tono, Baixo).'
       },
       {
         pergunta: 'Como gerencio os membros do meu coral?',
@@ -49,11 +49,11 @@ const faqs = [
       },
       {
         pergunta: 'Como ouÃ§o o Ã¡udio do meu naipe?',
-        resposta: 'Acesse a Biblioteca, clique em "Abrir" em qualquer mÃºsica e vocÃª verÃ¡ players de Ã¡udio separados para cada naipe. Basta clicar no botÃ£o play do seu naipe.'
+        resposta: 'Acesse Música, clique em "Abrir" em qualquer mÃºsica e vocÃª verÃ¡ players de Ã¡udio separados para cada naipe. Basta clicar no botÃ£o play do seu naipe.'
       },
       {
         pergunta: 'Posso baixar as partituras?',
-        resposta: 'Sim! Ao abrir uma mÃºsica na Biblioteca, vocÃª verÃ¡ o botÃ£o "Baixar" ao lado da partitura. Os Ã¡udios tambÃ©m tÃªm botÃ£o de download.'
+        resposta: 'Sim! Ao abrir uma mÃºsica em Música, vocÃª verÃ¡ o botÃ£o "Baixar" ao lado da partitura. Os Ã¡udios tambÃ©m tÃªm botÃ£o de download.'
       },
     ]
   },

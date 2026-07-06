@@ -6,7 +6,6 @@ import {
   Calendar,
   HelpCircle,
   Home,
-  Library,
   LogOut,
   MoreHorizontal,
   Music,
@@ -17,6 +16,7 @@ import {
 import { isUsingLocalFirebase } from '@/api/firebaseClient';
 import { isAdminUser } from '@/lib/admin-access';
 import { logoutToApp } from '@/lib/logout';
+import TrebleClefIcon from '@/components/coral/TrebleClefIcon';
 
 export default function CoralLayout({ coral, user, isMaestro, membro, children }) {
   const location = useLocation();
@@ -42,14 +42,14 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
     ? [
         { to: '/mural', icon: Home, label: 'Início' },
         { to: '/membros', icon: Users, label: 'Membros' },
-        { to: '/biblioteca', icon: Library, label: 'Biblioteca' },
+        { to: '/biblioteca', icon: TrebleClefIcon, label: 'Música' },
         { to: '/agenda', icon: Calendar, label: 'Agenda' },
         { to: '/configuracoes', icon: Settings, label: 'Config.' },
       ]
     : [
         { to: '/mural', icon: Home, label: 'Início' },
         { to: '/membros', icon: Users, label: 'Membros' },
-        { to: '/biblioteca', icon: Library, label: 'Biblioteca' },
+        { to: '/biblioteca', icon: TrebleClefIcon, label: 'Música' },
         { to: '/agenda', icon: Calendar, label: 'Agenda' },
       ];
 

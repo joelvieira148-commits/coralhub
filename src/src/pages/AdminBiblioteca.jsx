@@ -215,7 +215,7 @@ export default function AdminBiblioteca() {
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5 text-white/70" />
             <div>
-              <h1 className="font-bold text-sm">Admin · Biblioteca Global</h1>
+              <h1 className="font-bold text-sm">Admin · Música Global</h1>
               <p className="text-xs text-white/60">{corais.length} coral{corais.length !== 1 ? 'is' : ''} registrado{corais.length !== 1 ? 's' : ''}</p>
             </div>
           </div>

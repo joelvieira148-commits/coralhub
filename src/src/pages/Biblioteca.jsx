@@ -212,7 +212,7 @@ export default function Biblioteca() {
     <CoralLayout coral={coral} user={user} isMaestro={canManageMusic}>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-bold text-gray-800">Biblioteca Musical</h2>
+          <h2 className="text-xl font-bold text-gray-800">Música</h2>
           <p className="text-sm text-gray-500">
             {musicas.length} música{musicas.length !== 1 ? 's' : ''}
             {!canManageMusic && naipeDoMembro && (

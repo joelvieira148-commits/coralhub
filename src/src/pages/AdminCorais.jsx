@@ -5,7 +5,6 @@ import {
   Building2,
   Check,
   Clock,
-  Library,
   Lock,
   Mail,
   MapPin,
@@ -34,6 +33,7 @@ import {
 } from '@/lib/coral-approval';
 import { publicarCoraisNoCatalogo, removerCoralDoCatalogo } from '@/lib/coral-directory';
 import { clearCurrentUserCoralMembership, normalizeEmail } from '@/lib/coral-membership';
+import TrebleClefIcon from '@/components/coral/TrebleClefIcon';
 
 const emptyForm = {
   nome: '',
@@ -293,7 +293,7 @@ export default function AdminCorais() {
               onClick={() => navigate('/admin/biblioteca')}
               className="hidden sm:flex items-center gap-1.5 text-white/75 hover:text-white text-xs transition-colors"
             >
-              <Library className="w-4 h-4" /> Biblioteca
+              <TrebleClefIcon className="w-4 h-4 text-base" /> Música
             </button>
             <button
               onClick={() => navigate('/mural')}
