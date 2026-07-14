@@ -36,6 +36,7 @@ export default function Configuracoes() {
   const [salvando, setSalvando] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingCapa, setUploadingCapa] = useState(false);
+  const [uploadingBemVindo, setUploadingBemVindo] = useState(false);
   const [senhaAtual, setSenhaAtual] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
   const [msgSenha, setMsgSenha] = useState('');
@@ -55,6 +56,8 @@ export default function Configuracoes() {
       logo_url: coral.logo_url || '',
       capa_url: coral.capa_url || '',
       capa_posicao: coral.capa_posicao || 'center center',
+      bem_vindo_url: coral.bem_vindo_url || '',
+      bem_vindo_posicao: coral.bem_vindo_posicao || 'center center',
     });
   }, [loading, isMaestro, coral]);
 
@@ -93,6 +96,25 @@ export default function Configuracoes() {
       alert(getUploadErrorMessage(error, 'a capa'));
     } finally {
       setUploadingCapa(false);
+    }
+  };
+
+  const handleBemVindo = async (file) => {
+    const espaco = verificarEspaco(coral, file.size);
+    if (!espaco.ok) {
+      alert(`Limite de armazenamento atingido (1 TB). Espaco restante: ${formatarBytes(espaco.restante)}.`);
+      return;
+    }
+    setUploadingBemVindo(true);
+    try {
+      const upload = await uploadCoralFile(firebaseClient, file, { kind: 'image' });
+      setForm(p => ({ ...p, bem_vindo_url: upload.file_url, bem_vindo_posicao: 'center center' }));
+      setNovosBytes(b => b + upload.file_size);
+    } catch (error) {
+      console.error('Erro ao enviar imagem de boas-vindas:', error);
+      alert(getUploadErrorMessage(error, 'a imagem de boas-vindas'));
+    } finally {
+      setUploadingBemVindo(false);
     }
   };
 
@@ -197,6 +219,54 @@ export default function Configuracoes() {
                 <p className="text-xs text-gray-400 mt-1">Use Centro quando a imagem tiver palavras. Toque em salvar para gravar.</p>
               )}
             </div>
+
+            {/* Boas-vindas */}
+            <div className="flex-1">
+              <p className="mb-2 text-xs font-medium text-gray-600">Imagem do Seja bem-vindo</p>
+              <div
+                className="w-full h-24 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden bg-gray-50 cursor-pointer hover:border-indigo-300 transition-colors relative"
+              >
+                {form.bem_vindo_url
+                  ? (
+                    <img
+                      src={form.bem_vindo_url}
+                      className="w-full h-full object-cover"
+                      style={{ objectPosition: form.bem_vindo_posicao || 'center center' }}
+                      alt="Imagem do Seja bem-vindo"
+                    />
+                  )
+                  : <span className="text-gray-400 text-sm">Clique para trocar so o fundo do Seja bem-vindo</span>}
+                <label className="absolute inset-0 cursor-pointer">
+                  <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && handleBemVindo(e.target.files[0])} />
+                </label>
+              </div>
+              {form.bem_vindo_url && (
+                <div className="mt-3">
+                  <p className="mb-2 text-xs font-medium text-gray-600">Ajuste da imagem do Seja bem-vindo</p>
+                  <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
+                    {POSICOES_CAPA.map((posicao) => (
+                      <button
+                        key={posicao.value}
+                        type="button"
+                        onClick={() => setForm(p => ({ ...p, bem_vindo_posicao: posicao.value }))}
+                        className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+                          (form.bem_vindo_posicao || 'center center') === posicao.value
+                            ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                            : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        {posicao.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {uploadingBemVindo ? (
+                <p className="text-xs text-gray-400 mt-1">Enviando imagem do Seja bem-vindo...</p>
+              ) : (
+                <p className="text-xs text-gray-400 mt-1">Essa imagem nao mexe no topo do coral.</p>
+              )}
+            </div>
           </div>
 
           {/* Cores */}
@@ -283,7 +353,7 @@ export default function Configuracoes() {
 
         <button
           type="submit"
-          disabled={salvando || uploadingLogo || uploadingCapa}
+          disabled={salvando || uploadingLogo || uploadingCapa || uploadingBemVindo}
           className="w-full flex items-center justify-center gap-2 text-white font-semibold py-3 rounded-xl transition-opacity disabled:opacity-60"
           style={{ backgroundColor: primary }}
         >

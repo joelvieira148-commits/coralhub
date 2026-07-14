@@ -458,8 +458,12 @@ export default function Mural() {
 
   const primary = coral.cor_primaria || '#6366f1';
   const secondary = coral.cor_secundaria || '#a78bfa';
-  const welcomeBackgroundImage = coral.capa_url
-    ? `linear-gradient(rgba(15, 23, 42, 0.50), rgba(15, 23, 42, 0.78)), url("${coral.capa_url}")`
+  const welcomeImageUrl = coral.bem_vindo_url || coral.capa_url;
+  const welcomeImagePosition = coral.bem_vindo_url
+    ? coral.bem_vindo_posicao || 'center center'
+    : coral.capa_posicao || 'center center';
+  const welcomeBackgroundImage = welcomeImageUrl
+    ? `linear-gradient(rgba(15, 23, 42, 0.50), rgba(15, 23, 42, 0.78)), url("${welcomeImageUrl}")`
     : `linear-gradient(135deg, ${primary}, ${secondary})`;
   const videos = avisos.filter((aviso) => getPublicationType(aviso) === 'video');
   const fotos = avisos.filter((aviso) => getPublicationType(aviso) === 'foto');
@@ -471,7 +475,7 @@ export default function Mural() {
         className="rounded-2xl p-5 mb-6 min-h-[124px] text-white shadow-lg overflow-hidden bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: welcomeBackgroundImage,
-          backgroundPosition: coral.capa_url ? coral.capa_posicao || 'center center' : undefined,
+          backgroundPosition: welcomeImageUrl ? welcomeImagePosition : undefined,
         }}
       >
         <p className="text-white/80 text-sm mb-0.5">
