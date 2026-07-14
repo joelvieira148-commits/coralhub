@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, X, Calendar, Clock, MapPin, Pencil, Trash2, Music, Users, Presentation, HelpCircle } from 'lucide-react';
+import { Plus, X, Calendar, Clock, MapPin, Pencil, Trash2, Music, Users, Presentation, HelpCircle, Upload } from 'lucide-react';
 import { firebaseClient } from '@/api/firebaseClient';
 import CoralLayout from '@/components/coral/CoralLayout';
 import useCoralContext from '@/hooks/useCoralContext';
+import { getUploadErrorMessage, uploadCoralFile } from '@/lib/coral-file-upload';
+import { verificarEspaco, formatarBytes } from '@/utils/storage';
 
 const TIPOS_EVENTO = [
   { value: 'ensaio', label: 'Ensaio', icon: Music, color: '#6366f1', bg: '#eef2ff' },
@@ -21,11 +23,12 @@ const podeGerenciar = (isMaestro, membro) =>
 
 export default function Agenda() {
   const navigate = useNavigate();
-  const { user, coral, membro, isMaestro, loading } = useCoralContext();
+  const { user, coral, membro, isMaestro, loading, setCoral } = useCoralContext();
   const [eventos, setEventos] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editando, setEditando] = useState(null);
   const [salvando, setSalvando] = useState(false);
+  const [uploadingFundo, setUploadingFundo] = useState(false);
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const emptyForm = { titulo: '', descricao: '', data: '', hora: '', local: '', tipo: 'ensaio' };
   const [form, setForm] = useState(emptyForm);
@@ -85,6 +88,31 @@ export default function Agenda() {
     setEventos(prev => prev.filter(ev => ev.id !== id));
   };
 
+  const trocarFundoAgenda = async (file) => {
+    if (!file || !coral) return;
+
+    const espaco = verificarEspaco(coral, file.size);
+    if (!espaco.ok) {
+      alert(`Limite de armazenamento atingido (1 TB). Espaco restante: ${formatarBytes(espaco.restante)}.`);
+      return;
+    }
+
+    setUploadingFundo(true);
+    try {
+      const upload = await uploadCoralFile(firebaseClient, file, { kind: 'image' });
+      const updated = await firebaseClient.entities.Coral.update(coral.id, {
+        agenda_fundo_url: upload.file_url,
+        armazenamento_usado_bytes: (coral.armazenamento_usado_bytes || 0) + upload.file_size,
+      });
+      setCoral(updated);
+    } catch (error) {
+      console.error('Erro ao enviar fundo da agenda:', error);
+      alert(getUploadErrorMessage(error, 'o fundo da agenda'));
+    } finally {
+      setUploadingFundo(false);
+    }
+  };
+
   const hoje = new Date().toISOString().split('T')[0];
 
   const eventosFiltrados = eventos.filter(ev =>
@@ -98,6 +126,14 @@ export default function Agenda() {
   if (!coral) return null;
 
   const primary = coral.cor_primaria || '#6366f1';
+  const agendaBackgroundStyle = coral.agenda_fundo_url
+    ? {
+        backgroundImage: `linear-gradient(rgba(248, 250, 252, 0.80), rgba(248, 250, 252, 0.92)), url("${coral.agenda_fundo_url}")`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }
+    : {};
 
   const EventoCard = ({ ev }) => {
     const tipo = getTipoEvento(ev.tipo);
@@ -165,19 +201,39 @@ export default function Agenda() {
 
   return (
     <CoralLayout coral={coral} user={user} isMaestro={isMaestro}>
-      <div className="flex items-center justify-between mb-4">
+      <div
+        className={coral.agenda_fundo_url ? 'rounded-3xl p-4 -mx-2 -mt-2 shadow-inner' : ''}
+        style={agendaBackgroundStyle}
+      >
+      <div className="flex items-center justify-between gap-3 mb-4">
         <div>
           <h2 className="text-xl font-bold text-gray-800">Agenda do Coral</h2>
           <p className="text-sm text-gray-500">{proximos.length} próximo{proximos.length !== 1 ? 's' : ''}</p>
         </div>
         {canManage && (
-          <button
-            onClick={abrirNovo}
-            className="flex items-center gap-2 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-md hover:opacity-90"
-            style={{ backgroundColor: primary }}
-          >
-            <Plus className="w-4 h-4" /> Novo Evento
-          </button>
+          <div className="flex flex-wrap justify-end gap-2">
+            <label
+              className="flex items-center gap-2 bg-white text-gray-700 px-4 py-2 rounded-xl text-sm font-semibold shadow-sm border border-gray-100 hover:bg-gray-50 cursor-pointer"
+              title="Trocar fundo da agenda"
+            >
+              <Upload className="w-4 h-4" />
+              {uploadingFundo ? 'Enviando...' : 'Trocar fundo'}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={uploadingFundo}
+                onChange={(event) => event.target.files[0] && trocarFundoAgenda(event.target.files[0])}
+              />
+            </label>
+            <button
+              onClick={abrirNovo}
+              className="flex items-center gap-2 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-md hover:opacity-90"
+              style={{ backgroundColor: primary }}
+            >
+              <Plus className="w-4 h-4" /> Novo Evento
+            </button>
+          </div>
         )}
       </div>
 
@@ -277,6 +333,7 @@ export default function Agenda() {
           <p className="text-gray-400">Nenhum evento agendado.</p>
         </div>
       )}
+      </div>
     </CoralLayout>
   );
 }
