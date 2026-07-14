@@ -66,8 +66,8 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
         className="text-white shadow-lg sticky top-0 z-40"
         style={headerStyle}
       >
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3 min-w-0">
             {location.pathname !== '/mural' && (
               <button
                 onClick={() => navigate(-1)}
@@ -78,14 +78,14 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
               </button>
             )}
             {coral?.logo_url ? (
-              <img src={coral.logo_url} alt="Logo" className="h-8 w-8 rounded-full object-cover border-2 border-white/40 flex-shrink-0" />
+              <img src={coral.logo_url} alt="Logo" className="h-11 w-11 rounded-full object-cover border-2 border-white/40 flex-shrink-0" />
             ) : (
-              <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                <Music className="w-4 h-4 text-white" />
+              <div className="h-11 w-11 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                <Music className="w-6 h-6 text-white" />
               </div>
             )}
             <div className="min-w-0">
-              <h1 className="font-bold text-sm leading-tight truncate max-w-[160px] sm:max-w-none">{coral?.nome || 'Meu Coral'}</h1>
+              <h1 className="font-bold text-lg sm:text-xl leading-tight truncate max-w-[190px] sm:max-w-none">{coral?.nome || 'Meu Coral'}</h1>
               <p className="text-xs text-white/70">{isMaestro ? 'Maestro' : membro?.cargo ? 'Membro' : 'Membro'}</p>
             </div>
           </div>
