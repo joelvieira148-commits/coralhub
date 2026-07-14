@@ -443,7 +443,7 @@ export default function Mural() {
   const primary = coral.cor_primaria || '#6366f1';
   const secondary = coral.cor_secundaria || '#a78bfa';
   const welcomeBackgroundImage = coral.capa_url
-    ? `linear-gradient(135deg, rgba(15, 23, 42, 0.86), rgba(15, 23, 42, 0.58)), url("${coral.capa_url}")`
+    ? `linear-gradient(rgba(15, 23, 42, 0.50), rgba(15, 23, 42, 0.78)), url("${coral.capa_url}")`
     : `linear-gradient(135deg, ${primary}, ${secondary})`;
   const videos = avisos.filter((aviso) => getPublicationType(aviso) === 'video');
   const fotos = avisos.filter((aviso) => getPublicationType(aviso) === 'foto');
@@ -452,11 +452,10 @@ export default function Mural() {
   return (
     <CoralLayout coral={coral} user={user} isMaestro={canManage} membro={membro}>
       <div
-        className="rounded-2xl p-5 pr-28 sm:pr-44 mb-6 min-h-[124px] text-white shadow-lg overflow-hidden bg-no-repeat"
+        className="rounded-2xl p-5 mb-6 min-h-[124px] text-white shadow-lg overflow-hidden bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: welcomeBackgroundImage,
-          backgroundSize: coral.capa_url ? 'cover, clamp(96px, 30vw, 180px)' : undefined,
-          backgroundPosition: coral.capa_url ? 'center, calc(100% - 16px) center' : undefined,
+          backgroundPosition: coral.capa_url ? coral.capa_posicao || 'center center' : undefined,
         }}
       >
         <p className="text-white/80 text-sm mb-0.5">
