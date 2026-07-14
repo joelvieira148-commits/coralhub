@@ -69,7 +69,7 @@ export default function Landing() {
             className="flex items-center gap-3 bg-white/10 text-white font-semibold px-6 py-3.5 rounded-full hover:bg-white/20 transition-all border border-white/20"
           >
             <UserPlus className="w-5 h-5" />
-            Cadastro sem APK
+            Cadastro com APK
           </Link>
           <button
             onClick={() => redirectToEmailLogin('/mural')}
