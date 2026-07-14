@@ -8,6 +8,13 @@ import { CORAL_STATUS, isCoralAvailable, isCoralPending } from '@/lib/coral-appr
 import { getMemberPhotoFields } from '@/lib/member-photo';
 import { uploadProfilePhoto } from '@/lib/profile-photo-upload';
 import { saveCoralContextCache } from '@/hooks/useCoralContext';
+import {
+  buildAuthorizationMessage,
+  getAuthorizedCadastro,
+  getBlockedCadastro,
+  markCadastroAuthorizationUsed,
+  requestCadastroAuthorization,
+} from '@/lib/cadastro-autorizacao';
 
 const ADMIN_WHATSAPP_LABEL = '(81) 98551-1614';
 const ADMIN_WHATSAPP_URL = 'https://wa.me/5581985511614';
@@ -29,6 +36,7 @@ export default function Onboarding() {
   const [coraisLoading, setCoraisLoading] = useState(false);
   const [coraisError, setCoraisError] = useState('');
   const [formError, setFormError] = useState('');
+  const [autorizacaoBloqueada, setAutorizacaoBloqueada] = useState(null);
   const navigate = useNavigate();
 
   // Maestro form
@@ -171,6 +179,25 @@ export default function Onboarding() {
     </a>
   );
 
+  const verificarAutorizacaoCadastro = async ({ email = '', nome = '', coralNome = '', motivo = '' }) => {
+    const autorizado = await getAuthorizedCadastro(firebaseClient, { email, nome });
+    if (autorizado) return autorizado;
+
+    const bloqueio = await getBlockedCadastro(firebaseClient, { email, nome });
+    if (!bloqueio) return null;
+
+    const pedido = await requestCadastroAuthorization(firebaseClient, { email, nome, motivo, coralNome });
+    const info = pedido || bloqueio;
+    setAutorizacaoBloqueada({
+      ...info,
+      pedido_nome: nome || info.pedido_nome || info.nome || '',
+      pedido_email: email || info.pedido_email || info.email || '',
+      pedido_coral_nome: coralNome || info.pedido_coral_nome || info.coral_nome || '',
+    });
+    setStep('autorizacao');
+    return false;
+  };
+
   const criarCoral = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -178,6 +205,14 @@ export default function Onboarding() {
 
     try {
       const user = await firebaseClient.auth.me();
+      const autorizacao = await verificarAutorizacaoCadastro({
+        email: user.email,
+        nome: user.full_name || user.email,
+        coralNome: nomeCoralForm,
+        motivo: 'Criar coral novamente',
+      });
+      if (autorizacao === false) return;
+
       const coral = await firebaseClient.entities.Coral.create({
         nome: nomeCoralForm,
         cidade: cidadeForm,
@@ -222,6 +257,9 @@ export default function Onboarding() {
         isMaestro: false,
       });
       setCoralPendente(coral);
+      if (autorizacao?.id) {
+        await markCadastroAuthorizationUsed(firebaseClient, autorizacao.id);
+      }
       setStep('pending');
       window.setTimeout(() => {
         window.location.href = criarLinkWhatsApp(criarMensagemAprovacao(coral.nome));
@@ -267,6 +305,53 @@ export default function Onboarding() {
     );
   }
 
+  if (step === 'autorizacao') {
+    const mensagem = buildAuthorizationMessage({
+      nome: autorizacaoBloqueada?.pedido_nome || autorizacaoBloqueada?.nome || '',
+      email: autorizacaoBloqueada?.pedido_email || autorizacaoBloqueada?.email || '',
+      coralNome: autorizacaoBloqueada?.pedido_coral_nome || autorizacaoBloqueada?.coral_nome || '',
+    });
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-red-950 to-purple-950 flex items-center justify-center p-6">
+        <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center">
+          <User className="w-12 h-12 text-red-600 mx-auto mb-3" />
+          <h1 className="text-2xl font-bold text-gray-800">Entrada precisa de autorizacao</h1>
+          <p className="text-gray-500 mt-3 text-sm">
+            Este nome ou e-mail foi bloqueado/removido pelo admin. Para entrar novamente, o admin precisa liberar seu cadastro.
+          </p>
+          <div className="mt-6 rounded-2xl border border-red-100 bg-red-50 p-4 text-left">
+            <p className="text-sm font-semibold text-red-900">
+              Pedido enviado para a area do admin.
+            </p>
+            <p className="mt-1 text-xs text-red-700">
+              Nome: {autorizacaoBloqueada?.pedido_nome || autorizacaoBloqueada?.nome || 'Nao informado'}
+            </p>
+            <p className="text-xs text-red-700">
+              E-mail: {autorizacaoBloqueada?.pedido_email || autorizacaoBloqueada?.email || 'Nao informado'}
+            </p>
+          </div>
+          <a
+            href={criarLinkWhatsApp(mensagem)}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white hover:bg-green-700"
+          >
+            <MessageCircle className="w-4 h-4" />
+            Pedir autorizacao no WhatsApp
+          </a>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-3 w-full rounded-xl bg-gray-900 py-3 font-semibold text-white hover:bg-gray-800"
+          >
+            Verificar liberacao
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const entrarComoMembro = async (e) => {
     e.preventDefault();
     setFormError('');
@@ -281,6 +366,14 @@ export default function Onboarding() {
     try {
       const coralEscolhido = corais.find((coral) => coral.id === coralIdForm);
       const user = await firebaseClient.auth.me();
+      const autorizacao = await verificarAutorizacaoCadastro({
+        email: user.email,
+        nome: nomeForm,
+        coralNome: coralEscolhido?.nome || '',
+        motivo: 'Entrar novamente como membro',
+      });
+      if (autorizacao === false) return;
+
       const fotoMembroFields = getMemberPhotoFields(fotoMembroUrl);
       const fotoMembroParaUsuario = fotoMembroUrl && !fotoMembroUrl.startsWith('data:')
         ? { member_foto_url: fotoMembroUrl, ...fotoMembroFields }
@@ -308,6 +401,9 @@ export default function Onboarding() {
       };
       const userAtualizado = { ...user, ...userUpdate };
       await firebaseClient.auth.updateMe(userUpdate);
+      if (autorizacao?.id) {
+        await markCadastroAuthorizationUsed(firebaseClient, autorizacao.id);
+      }
       saveCoralContextCache({
         user: userAtualizado,
         coral: {

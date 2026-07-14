@@ -32,7 +32,8 @@ import {
   isCoralPending,
 } from '@/lib/coral-approval';
 import { publicarCoraisNoCatalogo, removerCoralDoCatalogo } from '@/lib/coral-directory';
-import { clearCurrentUserCoralMembership, normalizeEmail } from '@/lib/coral-membership';
+import { clearCurrentUserCoralMembership, getMemberEmail, normalizeEmail } from '@/lib/coral-membership';
+import { AUTORIZACAO_STATUS, registerCadastroBlocks } from '@/lib/cadastro-autorizacao';
 import TrebleClefIcon from '@/components/coral/TrebleClefIcon';
 
 const emptyForm = {
@@ -57,6 +58,7 @@ export default function AdminCorais() {
   const [excluindo, setExcluindo] = useState(null);
   const [aprovando, setAprovando] = useState(null);
   const [bloqueando, setBloqueando] = useState(null);
+  const [autorizacoes, setAutorizacoes] = useState([]);
 
   useEffect(() => {
     async function load() {
@@ -68,13 +70,15 @@ export default function AdminCorais() {
         return;
       }
 
-      const [allCorais, allMembros] = await Promise.all([
+      const [allCorais, allMembros, allAutorizacoes] = await Promise.all([
         firebaseClient.entities.Coral.list(),
         firebaseClient.entities.Membro.list(),
+        firebaseClient.entities.AutorizacaoCadastro.list(),
       ]);
 
       setCorais(allCorais);
       setMembros(allMembros);
+      setAutorizacoes(allAutorizacoes);
       publicarCoraisNoCatalogo(firebaseClient, allCorais.filter(isCoralAvailable)).catch((error) => {
         console.warn('Falha ao sincronizar catalogo de corais:', error);
       });
@@ -88,6 +92,7 @@ export default function AdminCorais() {
   const coraisAprovados = corais.filter(isCoralApproved);
   const coraisDisponiveis = corais.filter(isCoralAvailable);
   const coraisBloqueados = coraisAprovados.filter(isCoralBlocked);
+  const autorizacoesPendentes = autorizacoes.filter((item) => item.status === AUTORIZACAO_STATUS.pending);
 
   const filtered = coraisAprovados.filter((coral) => {
     const termo = search.toLowerCase();
@@ -114,6 +119,48 @@ export default function AdminCorais() {
   const cancelar = () => {
     setEditando(null);
     setForm(emptyForm);
+  };
+
+  const getPessoasDoCoralParaBloqueio = (coral, motivo) => {
+    const membrosDoCoral = membros.filter((item) => item.coral_id === coral.id);
+    const pessoas = membrosDoCoral.map((item) => ({
+      email: getMemberEmail(item),
+      nome: item.nome,
+      motivo,
+      coralId: coral.id,
+      coralNome: coral.nome,
+      papel: item.cargo || 'membro',
+      adminEmail: user?.email || '',
+    }));
+
+    if (coral.maestro_email) {
+      pessoas.push({
+        email: coral.maestro_email,
+        nome: coral.maestro_nome || coral.nome,
+        motivo,
+        coralId: coral.id,
+        coralNome: coral.nome,
+        papel: 'maestro',
+        adminEmail: user?.email || '',
+      });
+    }
+
+    return pessoas;
+  };
+
+  const autorizarCadastro = async (autorizacao) => {
+    try {
+      const updated = await firebaseClient.entities.AutorizacaoCadastro.update(autorizacao.id, {
+        status: AUTORIZACAO_STATUS.authorized,
+        autorizado_em: new Date().toISOString(),
+        autorizado_por: user?.email || '',
+      });
+      setAutorizacoes((prev) => prev.map((item) => (item.id === autorizacao.id ? updated : item)));
+      alert('Cadastro autorizado. A pessoa ja pode entrar novamente.');
+    } catch (error) {
+      console.error('Falha ao autorizar cadastro:', error);
+      alert('Nao foi possivel autorizar agora. Tente novamente.');
+    }
   };
 
   const sincronizarCadastro = async () => {
@@ -179,6 +226,13 @@ export default function AdminCorais() {
     setBloqueando(coral.id);
 
     try {
+      if (!bloqueado) {
+        await registerCadastroBlocks(
+          firebaseClient,
+          getPessoasDoCoralParaBloqueio(coral, 'Coral bloqueado pelo admin')
+        );
+      }
+
       const updated = await firebaseClient.entities.Coral.update(
         coral.id,
         bloqueado ? getUnblockFields(user?.email || '') : getBlockFields(user?.email || '')
@@ -223,6 +277,11 @@ export default function AdminCorais() {
     setExcluindo(coral.id);
 
     try {
+      await registerCadastroBlocks(
+        firebaseClient,
+        getPessoasDoCoralParaBloqueio(coral, 'Coral excluido pelo admin')
+      );
+
       await Promise.all([
         excluirRegistrosDoCoral('Membro', coral.id),
         excluirRegistrosDoCoral('Musica', coral.id),
@@ -367,6 +426,45 @@ export default function AdminCorais() {
                       Excluir
                     </button>
                   </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {autorizacoesPendentes.length > 0 && (
+          <section className="mb-6">
+            <div className="mb-3 flex items-center gap-2">
+              <Lock className="w-5 h-5 text-red-500" />
+              <h2 className="font-semibold text-gray-800">Pedidos para entrar novamente</h2>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {autorizacoesPendentes.map((autorizacao) => (
+                <div key={autorizacao.id} className="bg-white border border-red-100 rounded-2xl p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-gray-900 truncate">
+                        {autorizacao.pedido_nome || autorizacao.nome || 'Nome nao informado'}
+                      </h3>
+                      <p className="mt-1 text-xs text-gray-500 truncate">
+                        {autorizacao.pedido_email || autorizacao.email || 'E-mail nao informado'}
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-red-50 px-2 py-1 text-xs font-semibold text-red-700">
+                      Precisa liberar
+                    </span>
+                  </div>
+                  <div className="mt-3 text-xs text-gray-500 space-y-1">
+                    <p>Coral: {autorizacao.pedido_coral_nome || autorizacao.coral_nome || 'Nao informado'}</p>
+                    <p>Motivo: {autorizacao.motivo || autorizacao.pedido_motivo || 'Bloqueado pelo admin'}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => autorizarCadastro(autorizacao)}
+                    className="mt-4 w-full rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700"
+                  >
+                    Autorizar entrada
+                  </button>
                 </div>
               ))}
             </div>

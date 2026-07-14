@@ -17,6 +17,7 @@ import { firebaseClient } from '@/api/firebaseClient';
 import CoralLayout from '@/components/coral/CoralLayout';
 import useCoralContext, { clearCoralContextCache } from '@/hooks/useCoralContext';
 import { clearCurrentUserCoralMembership, getMemberEmail, normalizeEmail } from '@/lib/coral-membership';
+import { registerCadastroBlocks } from '@/lib/cadastro-autorizacao';
 import { getMemberPhotoFields, getMemberPhotoUrl } from '@/lib/member-photo';
 import { uploadProfilePhoto } from '@/lib/profile-photo-upload';
 import { NAIPES, getNaipeInfo } from '@/utils/coralTheme';
@@ -164,6 +165,18 @@ export default function Membros() {
     if (!confirm(`Excluir ${nome} do coral? Ele tera que fazer todo o cadastro novamente para entrar.`)) return;
 
     try {
+      await registerCadastroBlocks(
+        firebaseClient,
+        registrosDoMembro.map((item) => ({
+          email: getMemberEmail(item),
+          nome: item.nome,
+          motivo: 'Membro removido pelo admin',
+          coralId: coral.id,
+          coralNome: coral.nome,
+          papel: item.cargo || 'membro',
+          adminEmail: user?.email || '',
+        }))
+      );
       await Promise.all(idsParaExcluir.map((id) => firebaseClient.entities.Membro.delete(id)));
       setMembros((prev) => prev.filter((item) => !idsParaExcluir.includes(item.id)));
 
