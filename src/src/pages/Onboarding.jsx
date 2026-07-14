@@ -54,6 +54,50 @@ export default function Onboarding() {
   const [fotoMembroUrl, setFotoMembroUrl] = useState('');
   const [uploadingMembro, setUploadingMembro] = useState(false);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('autorizacao') !== '1') return;
+
+    let active = true;
+
+    const carregarBloqueio = async () => {
+      try {
+        const user = await firebaseClient.auth.me();
+        const bloqueio = await getBlockedCadastro(firebaseClient, {
+          email: user.email,
+          nome: user.full_name || user.email,
+        });
+
+        if (!active || !bloqueio) return;
+
+        const pedido = await requestCadastroAuthorization(firebaseClient, {
+          email: user.email,
+          nome: user.full_name || user.email,
+          coralNome: bloqueio.coral_nome || '',
+          motivo: 'Tentativa de entrada com e-mail bloqueado',
+        });
+
+        if (!active) return;
+
+        setAutorizacaoBloqueada({
+          ...(pedido || bloqueio),
+          pedido_nome: user.full_name || pedido?.pedido_nome || bloqueio.nome || '',
+          pedido_email: user.email || pedido?.pedido_email || bloqueio.email || '',
+          pedido_coral_nome: pedido?.pedido_coral_nome || bloqueio.coral_nome || '',
+        });
+        setStep('autorizacao');
+      } catch (error) {
+        console.warn('Falha ao carregar bloqueio de cadastro:', error);
+      }
+    };
+
+    carregarBloqueio();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const carregarCorais = useCallback(async () => {
     setCoraisLoading(true);
     setCoraisError('');
@@ -80,6 +124,28 @@ export default function Onboarding() {
     const carregarPendente = async () => {
       try {
         const user = await firebaseClient.auth.me();
+        const bloqueio = await getBlockedCadastro(firebaseClient, {
+          email: user.email,
+          nome: user.full_name || user.email,
+        });
+
+        if (active && bloqueio) {
+          const pedido = await requestCadastroAuthorization(firebaseClient, {
+            email: user.email,
+            nome: user.full_name || user.email,
+            coralNome: bloqueio.coral_nome || '',
+            motivo: 'Tentativa de entrada com e-mail bloqueado',
+          });
+          setAutorizacaoBloqueada({
+            ...(pedido || bloqueio),
+            pedido_nome: user.full_name || pedido?.pedido_nome || bloqueio.nome || '',
+            pedido_email: user.email || pedido?.pedido_email || bloqueio.email || '',
+            pedido_coral_nome: pedido?.pedido_coral_nome || bloqueio.coral_nome || '',
+          });
+          setStep('autorizacao');
+          return;
+        }
+
         const meusCorais = await firebaseClient.entities.Coral.filter({ maestro_email: user.email });
         const aprovado = meusCorais.find(isCoralAvailable);
 
