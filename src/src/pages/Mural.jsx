@@ -122,7 +122,7 @@ const normalizeAviso = (aviso) => {
   };
 };
 
-const MediaBlock = ({ aviso, compact = false }) => {
+const MediaBlock = ({ aviso, compact = false, onOpenImage }) => {
   const media = getMediaData(aviso);
   if (!media.url) return null;
 
@@ -153,25 +153,40 @@ const MediaBlock = ({ aviso, compact = false }) => {
     );
   }
 
-  return (
+  const image = (
     <img
       src={media.url}
       alt={title}
       loading="lazy"
-      className={`${compact ? 'h-56' : 'mt-3 max-h-[460px]'} w-full rounded-xl object-cover bg-gray-100`}
+      className={`${compact ? 'h-56' : 'max-h-[460px]'} w-full rounded-xl object-cover bg-gray-100`}
     />
   );
+
+  if (onOpenImage) {
+    return (
+      <button
+        type="button"
+        onClick={() => onOpenImage({ url: media.url, title })}
+        className={`${compact ? '' : 'mt-3'} block w-full cursor-zoom-in text-left`}
+        title="Abrir foto em tela cheia"
+      >
+        {image}
+      </button>
+    );
+  }
+
+  return <div className={compact ? '' : 'mt-3'}>{image}</div>;
 };
 
-const MediaCard = ({ aviso, canManage, onEdit, onDelete }) => {
+const MediaCard = ({ aviso, canManage, onEdit, onDelete, onOpenImage }) => {
   const mediaType = getMediaType(aviso);
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="relative bg-gray-100">
-        <MediaBlock aviso={aviso} compact />
+        <MediaBlock aviso={aviso} compact onOpenImage={mediaType === 'imagem' ? onOpenImage : undefined} />
         <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-black/65 px-2 py-1 text-xs font-medium text-white">
-        {mediaType === 'video' ? <Video className="w-3 h-3" /> : <Image className="w-3 h-3" />}
+          {mediaType === 'video' ? <Video className="w-3 h-3" /> : <Image className="w-3 h-3" />}
           {mediaType === 'video' ? 'Video' : 'Foto'}
         </span>
       </div>
@@ -223,6 +238,7 @@ export default function Mural() {
   const [salvando, setSalvando] = useState(false);
   const [uploadingMidia, setUploadingMidia] = useState(false);
   const [novosBytes, setNovosBytes] = useState(0);
+  const [fotoAberta, setFotoAberta] = useState(null);
   const [form, setForm] = useState(emptyForm);
 
   const canManage = isAdminUser(user) || podeGerenciar(isMaestro, membro);
@@ -515,6 +531,7 @@ export default function Mural() {
                 canManage={canManage}
                 onEdit={abrirEdicao}
                 onDelete={excluir}
+                onOpenImage={setFotoAberta}
               />
             ))}
           </div>
@@ -535,10 +552,33 @@ export default function Mural() {
                 canManage={canManage}
                 onEdit={abrirEdicao}
                 onDelete={excluir}
+                onOpenImage={setFotoAberta}
               />
             ))}
           </div>
         </section>
+      )}
+
+      {fotoAberta && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/95 flex items-center justify-center p-3 sm:p-6"
+          onClick={() => setFotoAberta(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setFotoAberta(null)}
+            className="absolute right-4 top-4 rounded-full bg-white/15 p-2 text-white hover:bg-white/25"
+            title="Fechar"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <img
+            src={fotoAberta.url}
+            alt={fotoAberta.title || 'Foto do coral'}
+            className="max-h-[90vh] max-w-full rounded-xl object-contain shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          />
+        </div>
       )}
 
       {showForm && canManage && (
