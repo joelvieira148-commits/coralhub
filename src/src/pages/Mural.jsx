@@ -441,6 +441,9 @@ export default function Mural() {
   }
 
   const primary = coral.cor_primaria || '#6366f1';
+  const welcomeBackgroundImage = coral.capa_url
+    ? `linear-gradient(rgba(15, 23, 42, 0.50), rgba(15, 23, 42, 0.78)), url("${coral.capa_url}")`
+    : `linear-gradient(135deg, ${primary}, ${coral.cor_secundaria || '#a78bfa'})`;
   const videos = avisos.filter((aviso) => getPublicationType(aviso) === 'video');
   const fotos = avisos.filter((aviso) => getPublicationType(aviso) === 'foto');
   const avisosTexto = avisos.filter((aviso) => getPublicationType(aviso) === 'aviso');
@@ -448,8 +451,11 @@ export default function Mural() {
   return (
     <CoralLayout coral={coral} user={user} isMaestro={canManage} membro={membro}>
       <div
-        className="rounded-2xl p-5 mb-6 text-white shadow-lg overflow-hidden"
-        style={{ background: `linear-gradient(135deg, ${primary}, ${coral.cor_secundaria || '#a78bfa'})` }}
+        className="rounded-2xl p-5 mb-6 text-white shadow-lg overflow-hidden bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: welcomeBackgroundImage,
+          backgroundPosition: coral.capa_url ? coral.capa_posicao || 'center center' : undefined,
+        }}
       >
         <p className="text-white/80 text-sm mb-0.5">
           {canManage ? 'Bem-vindo!' : `Bem-vindo, ${membro?.nome?.split(' ')[0] || 'Membro'}!`}

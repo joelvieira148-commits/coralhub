@@ -34,6 +34,9 @@ export default function Dashboard() {
   if (!coral) return null;
 
   const primary = coral.cor_primaria || '#6366f1';
+  const welcomeBackgroundImage = coral.capa_url
+    ? `linear-gradient(rgba(15, 23, 42, 0.50), rgba(15, 23, 42, 0.78)), url("${coral.capa_url}")`
+    : `linear-gradient(135deg, ${primary}, ${coral.cor_secundaria || '#a78bfa'})`;
   const naipeCounts = NAIPES.map(n => ({
     ...n,
     count: membros.filter(m => m.naipe === n.value).length
@@ -43,15 +46,12 @@ export default function Dashboard() {
     <CoralLayout coral={coral} user={user} isMaestro={isMaestro}>
       {/* Welcome banner */}
       <div
-        className="rounded-2xl p-6 mb-6 text-white shadow-lg"
-        style={{ background: `linear-gradient(135deg, ${primary}, ${coral.cor_secundaria || '#a78bfa'})` }}
+        className="rounded-2xl p-6 mb-6 text-white shadow-lg bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: welcomeBackgroundImage,
+          backgroundPosition: coral.capa_url ? coral.capa_posicao || 'center center' : undefined,
+        }}
       >
-        {coral.capa_url && (
-          <div
-            className="absolute inset-0 rounded-2xl opacity-20 bg-cover bg-center"
-            style={{ backgroundImage: `url(${coral.capa_url})` }}
-          />
-        )}
         <div className="relative">
           {isMaestro ? (
             <>
