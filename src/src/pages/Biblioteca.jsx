@@ -166,6 +166,9 @@ export default function Biblioteca() {
 
   // Quais naipes o membro atual pode ver
   const naipeDoMembro = membro?.naipe;
+  const naipesPermitidosDoMembro = naipeDoMembro === 'soprano'
+    ? ['soprano1', 'soprano2']
+    : [naipeDoMembro].filter(Boolean);
 
   // Filtra áudios visíveis por papel
   const getAudiosVisiveis = (m) => {
@@ -173,8 +176,8 @@ export default function Biblioteca() {
       // Maestro vê tudo
       return NAIPES.filter(n => m[`audio_${n.value}_url`]);
     } else {
-      // Membro vê só o próprio naipe
-      return NAIPES.filter(n => n.value === naipeDoMembro && m[`audio_${n.value}_url`]);
+      // Membro ve o proprio naipe; Soprano geral ve Soprano 1 e Soprano 2.
+      return NAIPES.filter(n => naipesPermitidosDoMembro.includes(n.value) && m[`audio_${n.value}_url`]);
     }
   };
 
@@ -217,7 +220,7 @@ export default function Biblioteca() {
             {musicas.length} música{musicas.length !== 1 ? 's' : ''}
             {!canManageMusic && naipeDoMembro && (
               <span className="ml-2 px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full text-xs font-medium">
-                {NAIPES.find(n => n.value === naipeDoMembro)?.label}
+                {naipeDoMembro === 'soprano' ? 'Soprano' : NAIPES.find(n => n.value === naipeDoMembro)?.label}
               </span>
             )}
           </p>
