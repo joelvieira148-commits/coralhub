@@ -449,6 +449,7 @@ export default function Onboarding() {
         email: user.email,
         telefone: telefoneForm,
         naipe: naipeForm,
+        naipes: [naipeForm].filter(Boolean),
         coral_id: coralIdForm,
         user_email: user.email,
         ativo: true,
@@ -463,6 +464,7 @@ export default function Onboarding() {
         active_member_id: membroCriado?.id || '',
         member_nome: nomeForm,
         member_naipe: naipeForm,
+        member_naipes: [naipeForm].filter(Boolean),
         ...fotoMembroParaUsuario,
       };
       const userAtualizado = { ...user, ...userUpdate };

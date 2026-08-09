@@ -39,6 +39,14 @@ const pathForExistingUser = (preferredPath) => {
   return '/mural';
 };
 
+const getMemberNaipes = (member) => {
+  const values = Array.isArray(member?.naipes) && member.naipes.length > 0
+    ? member.naipes
+    : [member?.naipe || member?.member_naipe];
+
+  return [...new Set(values.filter(Boolean))];
+};
+
 export const getPostLoginPath = async (preferredPath = '/mural') => {
   const user = await firebaseClient.auth.me();
   const bloqueio = await getBlockedCadastro(firebaseClient, {
@@ -80,6 +88,7 @@ export const getPostLoginPath = async (preferredPath = '/mural') => {
       active_member_id: '',
       member_nome: user.full_name || user.email || '',
       member_naipe: '',
+      member_naipes: [],
     }).catch((error) => {
       console.warn('Falha ao salvar coral ativo do maestro:', error);
     });
@@ -115,6 +124,7 @@ export const getPostLoginPath = async (preferredPath = '/mural') => {
       active_member_id: membro.id || '',
       member_nome: membro.nome || user.full_name || user.email || '',
       member_naipe: membro.naipe || '',
+      member_naipes: getMemberNaipes(membro),
       member_foto_url: membro.foto_url || membro.foto || membro.photo_url || '',
     }).catch((error) => {
       console.warn('Falha ao salvar coral ativo do membro:', error);

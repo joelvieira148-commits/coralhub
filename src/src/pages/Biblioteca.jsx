@@ -15,6 +15,20 @@ import { verificarEspaco, formatarBytes } from '@/utils/storage';
 
 const CATEGORIAS = ['sacra', 'popular', 'classica', 'gospel', 'folclorica', 'outro'];
 
+const getMemberNaipes = (member, user) => {
+  const values = Array.isArray(member?.naipes) && member.naipes.length > 0
+    ? member.naipes
+    : Array.isArray(user?.member_naipes) && user.member_naipes.length > 0
+      ? user.member_naipes
+      : [member?.naipe || user?.member_naipe];
+
+  return [...new Set(values.filter(Boolean))];
+};
+
+const expandNaipeAccess = (naipes = []) => (
+  [...new Set(naipes.flatMap((naipe) => (naipe === 'soprano' ? ['soprano1', 'soprano2'] : [naipe])))]
+);
+
 export default function Biblioteca() {
   const navigate = useNavigate();
   const { user, coral, membro, isMaestro, loading, setCoral } = useCoralContext();
@@ -165,10 +179,12 @@ export default function Biblioteca() {
   const canManageMusic = isMaestro || isAdminUser(user);
 
   // Quais naipes o membro atual pode ver
-  const naipeDoMembro = membro?.naipe;
-  const naipesPermitidosDoMembro = naipeDoMembro === 'soprano'
-    ? ['soprano1', 'soprano2']
-    : [naipeDoMembro].filter(Boolean);
+  const naipesDoMembro = getMemberNaipes(membro, user);
+  const naipesPermitidosDoMembro = expandNaipeAccess(naipesDoMembro);
+  const labelNaipesDoMembro = naipesDoMembro
+    .map((naipe) => (naipe === 'soprano' ? 'Soprano' : NAIPES.find(n => n.value === naipe)?.label))
+    .filter(Boolean)
+    .join(' + ');
 
   // Filtra áudios visíveis por papel
   const getAudiosVisiveis = (m) => {
@@ -218,9 +234,9 @@ export default function Biblioteca() {
           <h2 className="text-xl font-bold text-gray-800">Música</h2>
           <p className="text-sm text-gray-500">
             {musicas.length} música{musicas.length !== 1 ? 's' : ''}
-            {!canManageMusic && naipeDoMembro && (
+            {!canManageMusic && labelNaipesDoMembro && (
               <span className="ml-2 px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full text-xs font-medium">
-                {naipeDoMembro === 'soprano' ? 'Soprano' : NAIPES.find(n => n.value === naipeDoMembro)?.label}
+                {labelNaipesDoMembro}
               </span>
             )}
           </p>

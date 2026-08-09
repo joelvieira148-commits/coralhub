@@ -6,6 +6,7 @@ export const clearCoralMembershipFields = {
   active_member_id: '',
   member_nome: '',
   member_naipe: '',
+  member_naipes: [],
   member_foto_url: '',
 };
 
@@ -20,6 +21,7 @@ export const hasCoralMembershipData = (user) =>
       user?.active_member_id ||
       user?.member_nome ||
       user?.member_naipe ||
+      (Array.isArray(user?.member_naipes) && user.member_naipes.length > 0) ||
       user?.member_foto_url
   );
 

@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { firebaseClient } from '@/api/firebaseClient';
 import CoralLayout from '@/components/coral/CoralLayout';
-import useCoralContext, { clearCoralContextCache } from '@/hooks/useCoralContext';
+import useCoralContext, { clearCoralContextCache, saveCoralContextCache } from '@/hooks/useCoralContext';
 import { clearCurrentUserCoralMembership, getMemberEmail, normalizeEmail } from '@/lib/coral-membership';
 import { registerCadastroBlocks } from '@/lib/cadastro-autorizacao';
 import { getMemberPhotoFields, getMemberPhotoUrl } from '@/lib/member-photo';
@@ -30,6 +30,7 @@ const emptyForm = {
   user_email: '',
   senha: '',
   naipe: '',
+  naipes: [],
   cargo: 'membro',
   foto_url: '',
 };
@@ -40,6 +41,14 @@ const cargoLabel = {
   vice_secretaria: 'Vice-Secretaria',
   maestro: 'Maestro',
   maestrina: 'Maestrina',
+};
+
+const getMemberNaipes = (member) => {
+  const values = Array.isArray(member?.naipes) && member.naipes.length > 0
+    ? member.naipes
+    : [member?.naipe];
+
+  return [...new Set(values.filter(Boolean))];
 };
 
 export default function Membros() {
@@ -68,7 +77,7 @@ export default function Membros() {
 
   const filtered = membros.filter((item) => {
     const termo = search.toLowerCase();
-    const voz = getNaipeInfo(item.naipe)?.label || '';
+    const voz = getMemberNaipes(item).map((naipe) => getNaipeInfo(naipe)?.label || naipe).join(' ');
 
     return [
       item.nome,
@@ -89,7 +98,8 @@ export default function Membros() {
       endereco: item.endereco || '',
       user_email: item.user_email || item.email || '',
       senha: item.senha || '',
-      naipe: item.naipe || '',
+      naipe: item.naipe || getMemberNaipes(item)[0] || '',
+      naipes: getMemberNaipes(item),
       cargo: item.cargo || 'membro',
       foto_url: getMemberPhotoUrl(item),
     });
@@ -123,12 +133,34 @@ export default function Membros() {
     }
   };
 
+  const alternarVoz = (voz) => {
+    setEditForm((prev) => {
+      const selecionadas = getMemberNaipes(prev);
+
+      if (selecionadas.includes(voz)) {
+        const next = selecionadas.filter((item) => item !== voz);
+        return { ...prev, naipe: next[0] || '', naipes: next };
+      }
+
+      if (selecionadas.length >= 2) {
+        alert('Escolha no maximo 2 vozes para este membro.');
+        return prev;
+      }
+
+      const next = [...selecionadas, voz];
+      return { ...prev, naipe: next[0] || '', naipes: next };
+    });
+  };
+
   const salvar = async () => {
     setSalvando(true);
 
     try {
+      const naipesSelecionados = getMemberNaipes(editForm).slice(0, 2);
       const payload = {
         ...editForm,
+        naipe: naipesSelecionados[0] || '',
+        naipes: naipesSelecionados,
         ...getMemberPhotoFields(editForm.foto_url),
         email: editForm.user_email,
         user_email: editForm.user_email,
@@ -137,6 +169,21 @@ export default function Membros() {
       const updated = await firebaseClient.entities.Membro.update(editando, payload);
       const updatedWithPhoto = { ...updated, ...getMemberPhotoFields(editForm.foto_url) };
       setMembros((prev) => prev.map((item) => (item.id === editando ? updatedWithPhoto : item)));
+
+      const emailAtualizado = getMemberEmail(updatedWithPhoto);
+      if (emailAtualizado && normalizeEmail(user?.email) === emailAtualizado) {
+        const userUpdate = {
+          member_nome: updatedWithPhoto.nome || user?.full_name || user?.email || '',
+          member_naipe: updatedWithPhoto.naipe || '',
+          member_naipes: getMemberNaipes(updatedWithPhoto),
+          member_foto_url: getMemberPhotoUrl(updatedWithPhoto) || '',
+        };
+        await firebaseClient.auth.updateMe(userUpdate);
+        saveCoralContextCache({
+          user: { ...user, ...userUpdate },
+          membro: updatedWithPhoto,
+        });
+      }
 
       if (novosBytes > 0) {
         const updatedCoral = await firebaseClient.entities.Coral.update(coral.id, {
@@ -233,7 +280,7 @@ export default function Membros() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((item) => {
-            const voz = getNaipeInfo(item.naipe);
+            const vozes = getMemberNaipes(item).map((naipe) => getNaipeInfo(naipe));
             const isEditing = editando === item.id;
             const fotoUrl = getMemberPhotoUrl(item);
 
@@ -307,19 +354,31 @@ export default function Membros() {
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Voz</label>
-                          <select
-                            value={editForm.naipe}
-                            onChange={(event) => setEditForm((prev) => ({ ...prev, naipe: event.target.value }))}
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                          >
-                            <option value="">Sem voz</option>
-                            {NAIPES.map((naipe) => (
-                              <option key={naipe.value} value={naipe.value}>
-                                {naipe.label}
-                              </option>
-                            ))}
-                          </select>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Vozes (ate 2)</label>
+                          <div className="grid grid-cols-1 gap-1.5">
+                            {NAIPES.map((naipe) => {
+                              const checked = getMemberNaipes(editForm).includes(naipe.value);
+
+                              return (
+                                <label
+                                  key={naipe.value}
+                                  className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 text-xs font-medium cursor-pointer transition-colors ${
+                                    checked
+                                      ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
+                                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={() => alternarVoz(naipe.value)}
+                                    className="h-4 w-4 rounded border-gray-300 text-indigo-600"
+                                  />
+                                  <span>{naipe.label}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
 
@@ -367,14 +426,15 @@ export default function Membros() {
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-gray-800 truncate">{item.nome}</h3>
                           <div className="flex flex-wrap gap-1.5 mt-1">
-                            {item.naipe && (
+                            {vozes.map((voz) => (
                               <span
+                                key={voz.label}
                                 className="text-xs px-2 py-0.5 rounded-full font-medium"
                                 style={{ backgroundColor: `${voz.cor}20`, color: voz.cor }}
                               >
                                 {voz.label}
                               </span>
-                            )}
+                            ))}
                             <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">
                               {cargoLabel[item.cargo || 'membro'] || item.cargo}
                             </span>

@@ -65,6 +65,16 @@ export const clearCoralContextCache = () => {
   }
 };
 
+const getMemberNaipes = (member) => {
+  const values = Array.isArray(member?.naipes) && member.naipes.length > 0
+    ? member.naipes
+    : Array.isArray(member?.member_naipes) && member.member_naipes.length > 0
+      ? member.member_naipes
+      : [member?.naipe || member?.member_naipe];
+
+  return [...new Set(values.filter(Boolean))];
+};
+
 const criarMembroFallback = (user) => ({
   id: user?.active_member_id || `user-${user?.id || user?.email || 'membro'}`,
   nome: user?.member_nome || user?.full_name || user?.email || 'Membro',
@@ -72,6 +82,7 @@ const criarMembroFallback = (user) => ({
   user_email: user?.email || '',
   coral_id: user?.active_coral_id || '',
   naipe: user?.member_naipe || '',
+  naipes: getMemberNaipes(user),
   cargo: 'membro',
   ...getMemberPhotoFields(user?.member_foto_url || getMemberPhotoUrl(user)),
   ativo: true,
@@ -125,6 +136,7 @@ const carregarContextoCoral = async () => {
       active_member_id: '',
       member_nome: me.full_name || me.email || '',
       member_naipe: '',
+      member_naipes: [],
     });
     publicarCoraisNoCatalogo(firebaseClient, [coral]).catch((error) => {
       console.warn('Falha ao publicar coral no catalogo:', error);
@@ -178,6 +190,7 @@ const carregarContextoCoral = async () => {
     active_member_id: membroAtual.id || '',
     member_nome: membroAtual.nome || me.full_name || me.email || '',
     member_naipe: membroAtual.naipe || '',
+    member_naipes: getMemberNaipes(membroAtual),
     member_foto_url: getMemberPhotoUrl(membroAtual) || '',
   });
 
