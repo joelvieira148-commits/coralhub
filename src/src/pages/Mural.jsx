@@ -124,10 +124,27 @@ const normalizeAviso = (aviso) => {
 
 const MediaBlock = ({ aviso, compact = false, onOpenImage }) => {
   const media = getMediaData(aviso);
+  const [failed, setFailed] = useState(false);
   if (!media.url) return null;
 
   const mediaType = getMediaType(aviso);
   const title = aviso.titulo || media.nome || (mediaType === 'video' ? 'Video do coral' : 'Foto do coral');
+
+  if (failed) {
+    return (
+      <div className={`${compact ? '' : 'mt-3'} rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm text-amber-800`}>
+        <p className="font-semibold">Nao foi possivel carregar este arquivo.</p>
+        <a
+          href={media.url}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-2 inline-flex font-semibold text-amber-900 underline"
+        >
+          Abrir fora do app
+        </a>
+      </div>
+    );
+  }
 
   if (mediaType === 'video') {
     return (
@@ -138,6 +155,7 @@ const MediaBlock = ({ aviso, compact = false, onOpenImage }) => {
           playsInline
           preload="metadata"
           className={`${compact ? 'h-56' : 'max-h-[460px]'} w-full rounded-xl bg-black object-contain`}
+          onError={() => setFailed(true)}
         >
           Seu aparelho nao conseguiu tocar este video.
         </video>
@@ -159,6 +177,7 @@ const MediaBlock = ({ aviso, compact = false, onOpenImage }) => {
       alt={title}
       loading="lazy"
       className={`${compact ? 'h-56' : 'max-h-[460px]'} w-full rounded-xl object-cover bg-gray-100`}
+      onError={() => setFailed(true)}
     />
   );
 

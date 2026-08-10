@@ -22,6 +22,7 @@ export default function FixedAudioPlayer({ track, onClose }) {
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [repeat, setRepeat] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const color = track?.color || '#6366f1';
 
   useEffect(() => {
@@ -31,6 +32,7 @@ export default function FixedAudioPlayer({ track, onClose }) {
     audio.load();
     setCurrentTime(0);
     setDuration(0);
+    setLoadError(false);
 
     audio.play()
       .then(() => setPlaying(true))
@@ -79,6 +81,10 @@ export default function FixedAudioPlayer({ track, onClose }) {
         loop={repeat}
         onLoadedMetadata={(event) => setDuration(event.currentTarget.duration || 0)}
         onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime || 0)}
+        onError={() => {
+          setPlaying(false);
+          setLoadError(true);
+        }}
         onEnded={() => {
           if (!repeat) {
             setPlaying(false);
@@ -115,6 +121,14 @@ export default function FixedAudioPlayer({ track, onClose }) {
             </div>
 
             <div className="mt-3">
+              {loadError && (
+                <div className="mb-3 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  <p className="font-semibold">Nao foi possivel carregar este audio.</p>
+                  <a href={track.url} target="_blank" rel="noreferrer" className="mt-1 inline-flex underline">
+                    Abrir audio fora do app
+                  </a>
+                </div>
+              )}
               <input
                 type="range"
                 min="0"
