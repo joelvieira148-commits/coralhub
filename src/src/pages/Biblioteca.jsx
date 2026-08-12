@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Upload, Music, X, Plus, Pencil, Trash2, Building2, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { firebaseClient } from '@/api/firebaseClient';
@@ -41,9 +41,46 @@ const expandNaipeAccess = (naipes = []) => (
   [...new Set(naipes.flatMap((naipe) => (naipe === 'soprano' ? ['soprano1', 'soprano2'] : [naipe])))]
 );
 
+const getAudiosVisiveisDaMusica = (musica, { canManageMusic, naipesPermitidosDoMembro }) => {
+  if (canManageMusic) {
+    return NAIPES.filter(n => musica[`audio_${n.value}_url`]);
+  }
+
+  return NAIPES.filter(n =>
+    naipesPermitidosDoMembro.includes(n.value) && musica[`audio_${n.value}_url`]
+  );
+};
+
+const getOfflineItems = (musicas = [], { canManageMusic, naipesPermitidosDoMembro }) => {
+  const urls = [];
+
+  musicas.forEach((musica) => {
+    if (musica.partitura_url) {
+      urls.push({
+        url: musica.partitura_url,
+        cacheName: isImagePartitura(musica.partitura_url, musica.partitura_tipo)
+          ? 'coralhub-partituras-imagem-v1'
+          : 'coralhub-pdfs-v1',
+      });
+    }
+
+    if (canManageMusic && musica.audio_completo_url) {
+      urls.push({ url: musica.audio_completo_url, cacheName: 'coralhub-audios-v1' });
+    }
+
+    getAudiosVisiveisDaMusica(musica, { canManageMusic, naipesPermitidosDoMembro }).forEach((naipe) => {
+      const url = musica[`audio_${naipe.value}_url`];
+      if (url) urls.push({ url, cacheName: 'coralhub-audios-v1' });
+    });
+  });
+
+  return [...new Map(urls.map((item) => [item.url, item])).values()];
+};
+
 export default function Biblioteca() {
   const navigate = useNavigate();
   const { user, coral, membro, isMaestro, loading, setCoral } = useCoralContext();
+  const autoOfflineKeyRef = useRef('');
   const [musicas, setMusicas] = useState([]);
   const [selecionada, setSelecionada] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -51,6 +88,7 @@ export default function Biblioteca() {
   const [uploading, setUploading] = useState(false);
   const [currentTrack, setCurrentTrack] = useState(null);
   const [savingOffline, setSavingOffline] = useState(false);
+  const [offlineSync, setOfflineSync] = useState({ running: false, saved: 0, failed: 0, total: 0 });
 
   const emptyForm = { titulo: '', compositor: '', descricao: '', categoria: 'outro', tom: '' };
   const [form, setForm] = useState(emptyForm);
@@ -66,6 +104,73 @@ export default function Biblioteca() {
     if (!coral) return;
     firebaseClient.entities.Musica.filter({ coral_id: coral.id }).then(setMusicas);
   }, [coral]);
+
+  const canManageMusic = isMaestro || isAdminUser(user);
+  const naipesDoMembro = getMemberNaipes(membro, user);
+  const naipesPermitidosDoMembro = expandNaipeAccess(naipesDoMembro);
+  const labelNaipesDoMembro = naipesDoMembro
+    .map((naipe) => (naipe === 'soprano' ? 'Soprano' : NAIPES.find(n => n.value === naipe)?.label))
+    .filter(Boolean)
+    .join(' + ');
+
+  useEffect(() => {
+    if (loading || !coral || musicas.length === 0) return;
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+
+    const offlineItems = getOfflineItems(musicas, { canManageMusic, naipesPermitidosDoMembro });
+    if (offlineItems.length === 0) return;
+
+    const syncKey = [
+      coral.id,
+      canManageMusic ? 'manager' : naipesPermitidosDoMembro.join(','),
+      offlineItems.map((item) => item.url).join('|'),
+    ].join(':');
+
+    if (autoOfflineKeyRef.current === syncKey) return;
+    autoOfflineKeyRef.current = syncKey;
+
+    let cancelled = false;
+    setOfflineSync({ running: true, saved: 0, failed: 0, total: offlineItems.length });
+
+    const syncOffline = async () => {
+      let saved = 0;
+      let failed = 0;
+
+      for (const item of offlineItems) {
+        if (cancelled) return;
+
+        try {
+          const { response } = await fetchOfflineMedia(item.url, {
+            cacheName: item.cacheName,
+            preferCache: true,
+          });
+
+          if (response.ok) {
+            saved += 1;
+          } else {
+            failed += 1;
+          }
+        } catch (error) {
+          console.warn('Falha ao sincronizar arquivo offline:', error);
+          failed += 1;
+        }
+
+        if (!cancelled) {
+          setOfflineSync({ running: true, saved, failed, total: offlineItems.length });
+        }
+      }
+
+      if (!cancelled) {
+        setOfflineSync({ running: false, saved, failed, total: offlineItems.length });
+      }
+    };
+
+    syncOffline();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loading, coral, musicas, canManageMusic, naipesPermitidosDoMembro]);
 
   const abrirNova = () => {
     setEditando(null);
@@ -189,51 +294,12 @@ export default function Biblioteca() {
   if (!coral) return null;
 
   const primary = coral.cor_primaria || '#6366f1';
-  const canManageMusic = isMaestro || isAdminUser(user);
 
-  // Quais naipes o membro atual pode ver
-  const naipesDoMembro = getMemberNaipes(membro, user);
-  const naipesPermitidosDoMembro = expandNaipeAccess(naipesDoMembro);
-  const labelNaipesDoMembro = naipesDoMembro
-    .map((naipe) => (naipe === 'soprano' ? 'Soprano' : NAIPES.find(n => n.value === naipe)?.label))
-    .filter(Boolean)
-    .join(' + ');
-
-  // Filtra áudios visíveis por papel
-  const getAudiosVisiveis = (m) => {
-    if (canManageMusic) {
-      // Maestro vê tudo
-      return NAIPES.filter(n => m[`audio_${n.value}_url`]);
-    } else {
-      // Membro ve o proprio naipe; Soprano geral ve Soprano 1 e Soprano 2.
-      return NAIPES.filter(n => naipesPermitidosDoMembro.includes(n.value) && m[`audio_${n.value}_url`]);
-    }
-  };
+  const getAudiosVisiveis = (m) =>
+    getAudiosVisiveisDaMusica(m, { canManageMusic, naipesPermitidosDoMembro });
 
   const salvarTudoOffline = async () => {
-    const urls = [];
-
-    musicas.forEach((musica) => {
-      if (musica.partitura_url) {
-        urls.push({
-          url: musica.partitura_url,
-          cacheName: isImagePartitura(musica.partitura_url, musica.partitura_tipo)
-            ? 'coralhub-partituras-imagem-v1'
-            : 'coralhub-pdfs-v1',
-        });
-      }
-
-      if (canManageMusic && musica.audio_completo_url) {
-        urls.push({ url: musica.audio_completo_url, cacheName: 'coralhub-audios-v1' });
-      }
-
-      getAudiosVisiveis(musica).forEach((naipe) => {
-        const url = musica[`audio_${naipe.value}_url`];
-        if (url) urls.push({ url, cacheName: 'coralhub-audios-v1' });
-      });
-    });
-
-    const uniqueUrls = [...new Map(urls.map((item) => [item.url, item])).values()];
+    const uniqueUrls = getOfflineItems(musicas, { canManageMusic, naipesPermitidosDoMembro });
 
     if (uniqueUrls.length === 0) {
       alert('Nao ha musicas ou partituras para salvar offline.');
@@ -247,14 +313,19 @@ export default function Biblioteca() {
       let failed = 0;
 
       for (const item of uniqueUrls) {
-        const { response } = await fetchOfflineMedia(item.url, { cacheName: item.cacheName });
+        const { response } = await fetchOfflineMedia(item.url, {
+          cacheName: item.cacheName,
+          preferCache: true,
+        });
         if (response.ok) {
           saved += 1;
         } else {
           failed += 1;
         }
+        setOfflineSync({ running: true, saved, failed, total: uniqueUrls.length });
       }
 
+      setOfflineSync({ running: false, saved, failed, total: uniqueUrls.length });
       alert(
         failed > 0
           ? `${saved} salvo${saved !== 1 ? 's' : ''}. ${failed} nao foi possivel baixar agora.`
@@ -311,6 +382,15 @@ export default function Biblioteca() {
               </span>
             )}
           </p>
+          {offlineSync.total > 0 && (
+            <p className={`mt-1 text-xs font-medium ${offlineSync.failed > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+              {offlineSync.running
+                ? `Sincronizando offline ${offlineSync.saved}/${offlineSync.total}`
+                : offlineSync.failed > 0
+                  ? `${offlineSync.saved} offline, ${offlineSync.failed} nao baixou`
+                  : `${offlineSync.saved} arquivo${offlineSync.saved !== 1 ? 's' : ''} pronto${offlineSync.saved !== 1 ? 's' : ''} offline`}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button

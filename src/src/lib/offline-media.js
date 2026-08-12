@@ -15,7 +15,7 @@ const throwIfAborted = (signal) => {
 
 export const fetchOfflineMedia = async (
   url,
-  { cacheName = DEFAULT_CACHE_NAME, fetchOptions = {}, signal } = {}
+  { cacheName = DEFAULT_CACHE_NAME, fetchOptions = {}, preferCache = false, signal } = {}
 ) => {
   if (!url) {
     throw new Error('URL obrigatoria.');
@@ -32,7 +32,7 @@ export const fetchOfflineMedia = async (
   const cachedResponse = await cache.match(url);
   const isOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
 
-  if (isOffline && cachedResponse) {
+  if ((preferCache || isOffline) && cachedResponse) {
     return { response: cachedResponse, source: 'cache', cached: true };
   }
 
@@ -57,11 +57,12 @@ export const fetchOfflineMedia = async (
 
 export const getOfflineMediaObjectUrl = async (
   url,
-  { cacheName = DEFAULT_CACHE_NAME, fetchOptions = {}, signal } = {}
+  { cacheName = DEFAULT_CACHE_NAME, fetchOptions = {}, preferCache = false, signal } = {}
 ) => {
   const { response, source, cached } = await fetchOfflineMedia(url, {
     cacheName,
     fetchOptions,
+    preferCache,
     signal,
   });
 
