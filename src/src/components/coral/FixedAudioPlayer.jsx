@@ -8,6 +8,7 @@ import {
   Rewind,
   X,
 } from 'lucide-react';
+import { getOfflineMediaObjectUrl, revokeOfflineObjectUrl } from '@/lib/offline-media';
 
 const formatTime = (seconds = 0) => {
   if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
@@ -18,28 +19,68 @@ const formatTime = (seconds = 0) => {
 
 export default function FixedAudioPlayer({ track, onClose }) {
   const audioRef = useRef(null);
+  const offlineObjectUrlRef = useRef('');
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [repeat, setRepeat] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [audioSrc, setAudioSrc] = useState('');
+  const [offlineStatus, setOfflineStatus] = useState('');
   const color = track?.color || '#6366f1';
 
   useEffect(() => {
     if (!track || !audioRef.current) return;
 
+    const controller = new AbortController();
     const audio = audioRef.current;
-    audio.load();
+    revokeOfflineObjectUrl(offlineObjectUrlRef.current);
+    offlineObjectUrlRef.current = '';
     setCurrentTime(0);
     setDuration(0);
     setLoadError(false);
+    setAudioSrc('');
+    setOfflineStatus('Preparando offline...');
 
-    audio.play()
-      .then(() => setPlaying(true))
-      .catch((error) => {
-        console.warn('Nao foi possivel iniciar o audio automaticamente:', error);
-        setPlaying(false);
-      });
+    const loadTrack = async () => {
+      let objectUrl = '';
+
+      try {
+        const offlineMedia = await getOfflineMediaObjectUrl(track.url, {
+          cacheName: 'coralhub-audios-v1',
+          signal: controller.signal,
+        });
+        objectUrl = offlineMedia.objectUrl;
+        offlineObjectUrlRef.current = objectUrl;
+        setAudioSrc(objectUrl);
+        setOfflineStatus(offlineMedia.source === 'cache' ? 'Tocando salvo offline' : 'Salvo offline');
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        console.warn('Falha ao preparar audio offline:', error);
+        setAudioSrc(track.url);
+        setOfflineStatus('');
+      }
+
+      window.setTimeout(() => {
+        if (controller.signal.aborted || !audioRef.current) return;
+        audioRef.current.load();
+        audioRef.current.play()
+          .then(() => setPlaying(true))
+          .catch((error) => {
+            console.warn('Nao foi possivel iniciar o audio automaticamente:', error);
+            setPlaying(false);
+          });
+      }, 0);
+    };
+
+    loadTrack();
+
+    return () => {
+      controller.abort();
+      setPlaying(false);
+      revokeOfflineObjectUrl(offlineObjectUrlRef.current);
+      offlineObjectUrlRef.current = '';
+    };
   }, [track]);
 
   if (!track?.url) return null;
@@ -77,7 +118,7 @@ export default function FixedAudioPlayer({ track, onClose }) {
     <div className="fixed left-3 right-3 bottom-20 md:bottom-4 z-50 mx-auto max-w-3xl rounded-2xl border border-gray-200 bg-white shadow-2xl">
       <audio
         ref={audioRef}
-        src={track.url}
+        src={audioSrc || track.url}
         loop={repeat}
         onLoadedMetadata={(event) => setDuration(event.currentTarget.duration || 0)}
         onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime || 0)}
@@ -109,6 +150,9 @@ export default function FixedAudioPlayer({ track, onClose }) {
               <div className="min-w-0">
                 <p className="truncate text-sm font-bold text-gray-900">{track.title || track.label || 'Musica'}</p>
                 <p className="truncate text-xs text-gray-500">{track.subtitle || track.label || 'Audio'}</p>
+                {offlineStatus && (
+                  <p className="truncate text-[11px] font-medium text-emerald-600">{offlineStatus}</p>
+                )}
               </div>
               <button
                 type="button"

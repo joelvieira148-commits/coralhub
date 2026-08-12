@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Upload, Music, X, Plus, Pencil, Trash2, Building2 } from 'lucide-react';
+import { Upload, Music, X, Plus, Pencil, Trash2, Building2, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { firebaseClient } from '@/api/firebaseClient';
 import CoralLayout from '@/components/coral/CoralLayout';
@@ -10,10 +10,22 @@ import PartituraViewer from '@/components/coral/PartituraViewer';
 import StorageIndicator from '@/components/coral/StorageIndicator';
 import { isAdminUser } from '@/lib/admin-access';
 import { getUploadErrorMessage, isFileKind, uploadCoralFile } from '@/lib/coral-file-upload';
+import { fetchOfflineMedia } from '@/lib/offline-media';
 import { NAIPES } from '@/utils/coralTheme';
 import { verificarEspaco, formatarBytes } from '@/utils/storage';
 
 const CATEGORIAS = ['sacra', 'popular', 'classica', 'gospel', 'folclorica', 'outro'];
+
+const isImagePartitura = (url = '', fileType = '') => {
+  if (/^image\//i.test(fileType || '')) return true;
+
+  try {
+    const decoded = decodeURIComponent(String(url).split('?')[0]);
+    return /\.(apng|avif|gif|heic|heif|jpe?g|png|webp)$/i.test(decoded);
+  } catch {
+    return /\.(apng|avif|gif|heic|heif|jpe?g|png|webp)$/i.test(String(url).split('?')[0]);
+  }
+};
 
 const getMemberNaipes = (member, user) => {
   const values = Array.isArray(member?.naipes) && member.naipes.length > 0
@@ -38,6 +50,7 @@ export default function Biblioteca() {
   const [editando, setEditando] = useState(null); // música sendo editada
   const [uploading, setUploading] = useState(false);
   const [currentTrack, setCurrentTrack] = useState(null);
+  const [savingOffline, setSavingOffline] = useState(false);
 
   const emptyForm = { titulo: '', compositor: '', descricao: '', categoria: 'outro', tom: '' };
   const [form, setForm] = useState(emptyForm);
@@ -197,6 +210,64 @@ export default function Biblioteca() {
     }
   };
 
+  const salvarTudoOffline = async () => {
+    const urls = [];
+
+    musicas.forEach((musica) => {
+      if (musica.partitura_url) {
+        urls.push({
+          url: musica.partitura_url,
+          cacheName: isImagePartitura(musica.partitura_url, musica.partitura_tipo)
+            ? 'coralhub-partituras-imagem-v1'
+            : 'coralhub-pdfs-v1',
+        });
+      }
+
+      if (canManageMusic && musica.audio_completo_url) {
+        urls.push({ url: musica.audio_completo_url, cacheName: 'coralhub-audios-v1' });
+      }
+
+      getAudiosVisiveis(musica).forEach((naipe) => {
+        const url = musica[`audio_${naipe.value}_url`];
+        if (url) urls.push({ url, cacheName: 'coralhub-audios-v1' });
+      });
+    });
+
+    const uniqueUrls = [...new Map(urls.map((item) => [item.url, item])).values()];
+
+    if (uniqueUrls.length === 0) {
+      alert('Nao ha musicas ou partituras para salvar offline.');
+      return;
+    }
+
+    setSavingOffline(true);
+
+    try {
+      let saved = 0;
+      let failed = 0;
+
+      for (const item of uniqueUrls) {
+        const { response } = await fetchOfflineMedia(item.url, { cacheName: item.cacheName });
+        if (response.ok) {
+          saved += 1;
+        } else {
+          failed += 1;
+        }
+      }
+
+      alert(
+        failed > 0
+          ? `${saved} salvo${saved !== 1 ? 's' : ''}. ${failed} nao foi possivel baixar agora.`
+          : `${saved} arquivo${saved !== 1 ? 's' : ''} salvo${saved !== 1 ? 's' : ''} para usar offline.`
+      );
+    } catch (error) {
+      console.error('Falha ao salvar arquivos offline:', error);
+      alert('Nao foi possivel salvar tudo offline. Abra com internet e tente novamente.');
+    } finally {
+      setSavingOffline(false);
+    }
+  };
+
   const playTrack = (musica, audioInfo, kind) => {
     setCurrentTrack({
       ...audioInfo,
@@ -242,6 +313,16 @@ export default function Biblioteca() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={salvarTudoOffline}
+            disabled={savingOffline || musicas.length === 0}
+            className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            title="Salvar musicas e partituras offline"
+          >
+            <Download className="w-4 h-4" />
+            <span className="hidden sm:inline">{savingOffline ? 'Salvando...' : 'Salvar offline'}</span>
+          </button>
           {isAdminUser(user) && coral && (
             <button
               onClick={() => navigate('/admin/biblioteca')}

@@ -3,6 +3,7 @@ import { AlertCircle, Download, ExternalLink, FileImage, FileText, Loader2, Minu
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import pdfjsWorker from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 import { openExternalUrl } from '@/lib/native-app';
+import { fetchOfflineMedia, getOfflineMediaObjectUrl, revokeOfflineObjectUrl } from '@/lib/offline-media';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -141,10 +142,38 @@ function EmbeddedPdfFallback({ url, reason = '' }) {
 function ImagePartituraViewer({ url }) {
   const [zoom, setZoom] = useState(1);
   const [failed, setFailed] = useState(false);
+  const [imageSrc, setImageSrc] = useState('');
+  const [offlineStatus, setOfflineStatus] = useState('');
 
   useEffect(() => {
+    const controller = new AbortController();
+    let objectUrl = '';
+
     setZoom(1);
     setFailed(false);
+    setImageSrc('');
+    setOfflineStatus('Preparando offline...');
+
+    getOfflineMediaObjectUrl(url, {
+      cacheName: 'coralhub-partituras-imagem-v1',
+      signal: controller.signal,
+    })
+      .then((offlineMedia) => {
+        objectUrl = offlineMedia.objectUrl;
+        setImageSrc(objectUrl);
+        setOfflineStatus(offlineMedia.source === 'cache' ? 'Imagem salva offline' : 'Imagem salva para offline');
+      })
+      .catch((error) => {
+        if (controller.signal.aborted) return;
+        console.warn('Falha ao preparar imagem da partitura offline:', error);
+        setImageSrc(url);
+        setOfflineStatus('');
+      });
+
+    return () => {
+      controller.abort();
+      revokeOfflineObjectUrl(objectUrl);
+    };
   }, [url]);
 
   const zoomOut = () => setZoom((current) => Math.max(MIN_ZOOM, Number((current - ZOOM_STEP).toFixed(2))));
@@ -153,6 +182,9 @@ function ImagePartituraViewer({ url }) {
   return (
     <div className="bg-slate-100">
       <div className="sticky top-0 z-20 flex items-center justify-end gap-1 border-b border-slate-200 bg-white px-2 py-2">
+        {offlineStatus && (
+          <span className="mr-auto text-[11px] font-medium text-emerald-600">{offlineStatus}</span>
+        )}
         <button
           type="button"
           onClick={zoomOut}
@@ -183,7 +215,7 @@ function ImagePartituraViewer({ url }) {
           </div>
         ) : (
           <img
-            src={url}
+            src={imageSrc || url}
             alt="Partitura"
             className="mx-auto block max-w-none rounded bg-white shadow-sm"
             style={{ width: `${100 * zoom}%` }}
@@ -299,6 +331,7 @@ function PdfDocumentViewer({ url, forceEmbedded = false }) {
   const [zoom, setZoom] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [offlineStatus, setOfflineStatus] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -309,6 +342,7 @@ function PdfDocumentViewer({ url, forceEmbedded = false }) {
     setPdf(null);
     setPageCount(0);
     setZoom(1);
+    setOfflineStatus('Preparando offline...');
 
     const loadPdf = async () => {
       const loadWithPdfJs = async (options, timeoutMessage) => {
@@ -325,17 +359,20 @@ function PdfDocumentViewer({ url, forceEmbedded = false }) {
           const timer = window.setTimeout(() => controller.abort(), PDF_LOAD_TIMEOUT_MS);
 
           try {
-            const response = await fetch(pdfUrl, {
+            const { response, source } = await fetchOfflineMedia(pdfUrl, {
+              cacheName: 'coralhub-pdfs-v1',
+              signal: controller.signal,
+              fetchOptions: {
               mode: 'cors',
               credentials: 'omit',
-              cache: 'no-store',
-              signal: controller.signal,
+              },
             });
 
             if (!response.ok) {
               throw new Error(`Falha ao baixar PDF: ${response.status}`);
             }
 
+            setOfflineStatus(source === 'cache' ? 'PDF salvo offline' : 'PDF salvo para offline');
             return response.arrayBuffer();
           } catch (error) {
             lastError = error;
@@ -427,6 +464,9 @@ function PdfDocumentViewer({ url, forceEmbedded = false }) {
         <span className="text-xs font-semibold text-slate-600">
           {pageCount} pagina{pageCount !== 1 ? 's' : ''}
         </span>
+        {offlineStatus && (
+          <span className="text-[11px] font-medium text-emerald-600">{offlineStatus}</span>
+        )}
         <div className="flex items-center gap-1">
           <button
             type="button"
