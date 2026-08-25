@@ -30,6 +30,7 @@ import {
   where,
 } from 'firebase/firestore';
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage';
+import { isSupabaseStorageConfigured, uploadToSupabaseStorage } from './supabaseStorage';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyAXYefCFjclmfC1-eX8XybKWuKwoFj1jmw',
@@ -363,6 +364,15 @@ const uploadFile = async ({ file }) => {
 
   const authUser = await waitForAuthUser();
   const safeName = sanitizeFileName(file.name);
+
+  if (isSupabaseStorageConfigured) {
+    return uploadToSupabaseStorage({
+      file,
+      ownerId: authUser.uid,
+      safeName,
+    });
+  }
+
   const filePath = `${authUser.uid}/${Date.now()}-${safeName}`;
   const fileRef = ref(storage, filePath);
 
