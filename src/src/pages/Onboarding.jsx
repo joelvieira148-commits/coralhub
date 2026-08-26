@@ -124,28 +124,6 @@ export default function Onboarding() {
     const carregarPendente = async () => {
       try {
         const user = await firebaseClient.auth.me();
-        const bloqueio = await getBlockedCadastro(firebaseClient, {
-          email: user.email,
-          nome: user.full_name || user.email,
-        });
-
-        if (active && bloqueio) {
-          const pedido = await requestCadastroAuthorization(firebaseClient, {
-            email: user.email,
-            nome: user.full_name || user.email,
-            coralNome: bloqueio.coral_nome || '',
-            motivo: 'Tentativa de entrada com e-mail bloqueado',
-          });
-          setAutorizacaoBloqueada({
-            ...(pedido || bloqueio),
-            pedido_nome: user.full_name || pedido?.pedido_nome || bloqueio.nome || '',
-            pedido_email: user.email || pedido?.pedido_email || bloqueio.email || '',
-            pedido_coral_nome: pedido?.pedido_coral_nome || bloqueio.coral_nome || '',
-          });
-          setStep('autorizacao');
-          return;
-        }
-
         const meusCorais = await firebaseClient.entities.Coral.filter({ maestro_email: user.email });
         const aprovado = meusCorais.find(isCoralAvailable);
 
@@ -432,13 +410,6 @@ export default function Onboarding() {
     try {
       const coralEscolhido = corais.find((coral) => coral.id === coralIdForm);
       const user = await firebaseClient.auth.me();
-      const autorizacao = await verificarAutorizacaoCadastro({
-        email: user.email,
-        nome: nomeForm,
-        coralNome: coralEscolhido?.nome || '',
-        motivo: 'Entrar novamente como membro',
-      });
-      if (autorizacao === false) return;
 
       const fotoMembroFields = getMemberPhotoFields(fotoMembroUrl);
       const fotoMembroParaUsuario = fotoMembroUrl && !fotoMembroUrl.startsWith('data:')
@@ -469,9 +440,6 @@ export default function Onboarding() {
       };
       const userAtualizado = { ...user, ...userUpdate };
       await firebaseClient.auth.updateMe(userUpdate);
-      if (autorizacao?.id) {
-        await markCadastroAuthorizationUsed(firebaseClient, autorizacao.id);
-      }
       saveCoralContextCache({
         user: userAtualizado,
         coral: {
