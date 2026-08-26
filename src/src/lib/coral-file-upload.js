@@ -123,4 +123,8 @@ const normalizeUploadFile = (file, kind) => {
 export const getUploadErrorMessage = (error, label = 'arquivo') =>
   error?.message && error.message.startsWith('Selecione ')
     ? error.message
-    : `Nao foi possivel enviar ${label} para a nuvem. Verifique a internet e tente novamente.`;
+    : /Bucket not found|NoSuchBucket/i.test(error?.message || '')
+      ? `Nao foi possivel enviar ${label}: o bucket coralhub-media nao existe no Supabase conectado a Vercel.`
+      : /row-level security|permission|unauthorized|403|401/i.test(error?.message || '')
+        ? `Nao foi possivel enviar ${label}: confira as politicas do bucket coralhub-media no Supabase.`
+        : `Nao foi possivel enviar ${label} para a nuvem. Verifique a internet e tente novamente.`;
