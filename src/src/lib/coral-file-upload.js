@@ -120,11 +120,30 @@ const normalizeUploadFile = (file, kind) => {
   });
 };
 
-export const getUploadErrorMessage = (error, label = 'arquivo') =>
-  error?.message && error.message.startsWith('Selecione ')
-    ? error.message
-    : /Bucket not found|NoSuchBucket/i.test(error?.message || '')
-      ? `Nao foi possivel enviar ${label}: o bucket coralhub-media nao existe no Supabase conectado a Vercel.`
-      : /row-level security|permission|unauthorized|403|401/i.test(error?.message || '')
-        ? `Nao foi possivel enviar ${label}: confira as politicas do bucket coralhub-media no Supabase.`
-        : `Nao foi possivel enviar ${label} para a nuvem. Verifique a internet e tente novamente.`;
+export const getUploadErrorMessage = (error, label = 'arquivo') => {
+  const message = error?.message || '';
+
+  if (message.startsWith('Selecione ')) return message;
+
+  if (/maior que|muito grande|file size|payload|too large|exceed|maximum|max|413/i.test(message)) {
+    return `Nao foi possivel enviar ${label}: ${message}`;
+  }
+
+  if (/Bucket not found|NoSuchBucket/i.test(message)) {
+    return `Nao foi possivel enviar ${label}: o bucket coralhub-media nao existe no Supabase conectado a Vercel.`;
+  }
+
+  if (/row-level security|permission|unauthorized|403|401/i.test(message)) {
+    return `Nao foi possivel enviar ${label}: confira as politicas do bucket coralhub-media no Supabase.`;
+  }
+
+  if (/Falha de rede no Supabase Storage|Failed to fetch|NetworkError|Load failed/i.test(message)) {
+    return `Nao foi possivel enviar ${label}: a conexao caiu durante o envio. Tente com Wi-Fi ou um arquivo menor.`;
+  }
+
+  if (/Falha no Supabase Storage:/i.test(message)) {
+    return `Nao foi possivel enviar ${label}: ${message.replace(/^Falha no Supabase Storage:\s*/i, '')}`;
+  }
+
+  return `Nao foi possivel enviar ${label} para a nuvem. Verifique a internet e tente novamente.`;
+};
