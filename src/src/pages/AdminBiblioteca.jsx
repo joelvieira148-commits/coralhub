@@ -208,7 +208,7 @@ export default function AdminBiblioteca() {
 
   return (
     <AdminPasswordGate user={user} backPath="/biblioteca">
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen app-background">
       {/* Header */}
       <header className="bg-gradient-to-r from-gray-900 to-gray-700 text-white shadow-lg sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">

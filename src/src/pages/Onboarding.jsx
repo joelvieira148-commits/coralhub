@@ -340,7 +340,7 @@ export default function Onboarding() {
 
   if (step === 'pending') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 flex items-center justify-center p-6">
+      <div className="min-h-screen app-background flex items-center justify-center p-6">
         <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center">
           <Music className="w-12 h-12 text-indigo-600 mx-auto mb-3" />
           <h1 className="text-2xl font-bold text-gray-800">Coral aguardando aprovacao</h1>
@@ -379,7 +379,7 @@ export default function Onboarding() {
     });
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-red-950 to-purple-950 flex items-center justify-center p-6">
+      <div className="min-h-screen app-background flex items-center justify-center p-6">
         <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center">
           <User className="w-12 h-12 text-red-600 mx-auto mb-3" />
           <h1 className="text-2xl font-bold text-gray-800">Entrada precisa de autorizacao</h1>
@@ -489,10 +489,7 @@ export default function Onboarding() {
   if (step === 'role') {
     return (
       <div
-        className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center p-6"
-        style={{
-          backgroundImage: 'linear-gradient(rgba(20, 16, 51, 0.72), rgba(74, 12, 77, 0.78)), url("/app-icon.png")',
-        }}
+        className="min-h-screen app-background flex items-center justify-center p-6"
       >
         <div className="bg-white/95 rounded-3xl p-8 max-w-md w-full shadow-2xl backdrop-blur">
           <div className="text-center mb-8">
@@ -531,7 +528,7 @@ export default function Onboarding() {
 
   if (step === 'maestro') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-900 to-purple-900 flex items-center justify-center p-6">
+      <div className="min-h-screen app-background flex items-center justify-center p-6">
         <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
           <button onClick={() => setStep('role')} className="flex items-center gap-1 text-gray-400 hover:text-gray-600 text-sm mb-4 transition-colors">
             <ArrowLeft className="w-4 h-4" /> Voltar
@@ -595,7 +592,7 @@ export default function Onboarding() {
 
   if (step === 'membro') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 to-pink-900 flex items-center justify-center p-6">
+      <div className="min-h-screen app-background flex items-center justify-center p-6">
         <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
           <div className="mb-4 flex items-center justify-between gap-3">
             <button onClick={() => setStep('role')} className="flex items-center gap-1 text-gray-400 hover:text-gray-600 text-sm transition-colors">

@@ -61,7 +61,7 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
   const bottomMore = allNavItems.slice(4);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen app-background flex flex-col">
       <header
         className="text-white shadow-lg sticky top-0 z-40"
         style={headerStyle}

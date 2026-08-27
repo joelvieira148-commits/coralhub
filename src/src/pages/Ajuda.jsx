@@ -69,7 +69,7 @@ export default function Ajuda() {
   const toggle = (key) => setAbertos((prev) => ({ ...prev, [key]: !prev[key] }));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800">
+    <div className="min-h-screen app-background">
       <header className="px-6 py-5 flex items-center justify-between max-w-4xl mx-auto w-full">
         <Link to="/" className="flex items-center gap-2 text-white hover:opacity-80 transition-opacity">
           <Music className="w-6 h-6" />

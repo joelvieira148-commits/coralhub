@@ -28,7 +28,7 @@ export default function AdminPasswordGate({ user, children, backPath = '/mural' 
 
   if (!isAdminUser(user)) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+      <div className="min-h-screen app-background flex items-center justify-center p-6">
         <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-gray-100 p-6 text-center">
           <Shield className="w-10 h-10 text-red-500 mx-auto mb-3" />
           <h1 className="text-lg font-bold text-gray-900">Acesso negado</h1>
@@ -49,7 +49,7 @@ export default function AdminPasswordGate({ user, children, backPath = '/mural' 
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+    <div className="min-h-screen app-background flex items-center justify-center p-6">
       <form onSubmit={handleSubmit} className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <div className="text-center mb-5">
           <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center mx-auto mb-3">

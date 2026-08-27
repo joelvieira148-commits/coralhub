@@ -318,7 +318,7 @@ export default function AdminCorais() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen app-background flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
       </div>
     );
@@ -326,7 +326,7 @@ export default function AdminCorais() {
 
   return (
     <AdminPasswordGate user={user} backPath="/mural">
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen app-background">
       <header className="bg-gradient-to-r from-gray-900 to-gray-700 text-white shadow-lg sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">

@@ -457,7 +457,7 @@ export default function Mural() {
 
   if (!coral) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+      <div className="min-h-screen app-background flex items-center justify-center p-6">
         <div className="max-w-sm w-full bg-white rounded-2xl shadow-sm border border-gray-100 p-6 text-center">
           <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto mb-3" />
           <h1 className="text-lg font-bold text-gray-800">Coral nao encontrado</h1>
