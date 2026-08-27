@@ -46,10 +46,28 @@ const getMemberNaipes = (member) => {
   return [...new Set(values.filter(Boolean))];
 };
 
+const mergeById = (...lists) => {
+  const records = new Map();
+  lists.flat().forEach((item) => {
+    if (item?.id) records.set(item.id, item);
+  });
+  return [...records.values()];
+};
+
+const getOwnCorais = async (user) => {
+  const [byEmail, byPendingId, byActiveId] = await Promise.all([
+    safeFilter(firebaseClient.entities.Coral, { maestro_email: user.email }),
+    user?.pending_coral_id ? safeFilter(firebaseClient.entities.Coral, { id: user.pending_coral_id }) : [],
+    user?.active_coral_id ? safeFilter(firebaseClient.entities.Coral, { id: user.active_coral_id }) : [],
+  ]);
+
+  return mergeById(byEmail, byPendingId, byActiveId);
+};
+
 export const getPostLoginPath = async (preferredPath = '/mural') => {
   const user = await firebaseClient.auth.me();
   const [corais, membrosPorUserEmail, membrosPorEmail] = await Promise.all([
-    safeFilter(firebaseClient.entities.Coral, { maestro_email: user.email }),
+    getOwnCorais(user),
     safeFilter(firebaseClient.entities.Membro, { user_email: user.email }),
     safeFilter(firebaseClient.entities.Membro, { email: user.email }),
   ]);

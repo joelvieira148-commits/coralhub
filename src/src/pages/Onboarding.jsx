@@ -28,6 +28,14 @@ const criarLinkWhatsApp = (mensagem = '') => {
 const criarMensagemAprovacao = (nomeCoral = 'meu coral') =>
   `Ola, preciso de aprovacao para o coral: ${nomeCoral || 'meu coral'}.`;
 
+const uniqueById = (items = []) => {
+  const records = new Map();
+  items.forEach((item) => {
+    if (item?.id) records.set(item.id, item);
+  });
+  return [...records.values()];
+};
+
 export default function Onboarding() {
   const [step, setStep] = useState('role'); // role | maestro | membro
   const [loading, setLoading] = useState(false);
@@ -124,7 +132,16 @@ export default function Onboarding() {
     const carregarPendente = async () => {
       try {
         const user = await firebaseClient.auth.me();
-        const meusCorais = await firebaseClient.entities.Coral.filter({ maestro_email: user.email });
+        const [porEmail, porPendente, porAtivo] = await Promise.all([
+          firebaseClient.entities.Coral.filter({ maestro_email: user.email }),
+          user?.pending_coral_id
+            ? firebaseClient.entities.Coral.filter({ id: user.pending_coral_id })
+            : Promise.resolve([]),
+          user?.active_coral_id
+            ? firebaseClient.entities.Coral.filter({ id: user.active_coral_id })
+            : Promise.resolve([]),
+        ]);
+        const meusCorais = uniqueById([...porEmail, ...porPendente, ...porAtivo]);
         const aprovado = meusCorais.find(isCoralAvailable);
 
         if (active && aprovado) {

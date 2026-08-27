@@ -5,7 +5,7 @@ import {
   hasCoralMembershipData,
   syncCurrentUserCoralMembership,
 } from '@/lib/coral-membership';
-import { isCoralAvailable } from '@/lib/coral-approval';
+import { isCoralAvailable, isCoralPending } from '@/lib/coral-approval';
 import { publicarCoraisNoCatalogo } from '@/lib/coral-directory';
 import { getMemberPhotoFields, getMemberPhotoUrl } from '@/lib/member-photo';
 
@@ -92,16 +92,38 @@ const getActiveRoleFromCargo = (cargo) => {
   return cargo || 'membro';
 };
 
+const uniqueById = (items = []) => {
+  const records = new Map();
+  items.forEach((item) => {
+    if (item?.id) records.set(item.id, item);
+  });
+  return [...records.values()];
+};
+
+const safeFilter = async (entity, query) => {
+  try {
+    return await entity.filter(query);
+  } catch (error) {
+    console.warn('Falha ao carregar dados do coral:', error);
+    return [];
+  }
+};
+
+const getCoraisDoMaestro = async (user) => {
+  const [porEmail, porPendente, porAtivo] = await Promise.all([
+    safeFilter(firebaseClient.entities.Coral, { maestro_email: user.email }),
+    user?.pending_coral_id ? safeFilter(firebaseClient.entities.Coral, { id: user.pending_coral_id }) : [],
+    user?.active_coral_id ? safeFilter(firebaseClient.entities.Coral, { id: user.active_coral_id }) : [],
+  ]);
+
+  return uniqueById([...porEmail, ...porPendente, ...porAtivo]);
+};
+
 const carregarContextoCoral = async () => {
   const me = await firebaseClient.auth.me();
   const contexto = { ...emptyContext, user: me };
 
-  let corais = [];
-  try {
-    corais = await firebaseClient.entities.Coral.filter({ maestro_email: me.email });
-  } catch (error) {
-    console.warn('Falha ao carregar corais do maestro:', error);
-  }
+  const corais = await getCoraisDoMaestro(me);
 
   const coraisAprovados = corais.filter(isCoralAvailable);
 
@@ -162,28 +184,25 @@ const carregarContextoCoral = async () => {
   }
 
   const activeRole = getActiveRoleFromCargo(membroAtual.cargo);
-  contexto.membro = membroAtual;
-  contexto.isMaestro = activeRole === 'maestro';
   const coralId = membroAtual.coral_id || me.active_coral_id;
-  contexto.user = await syncCurrentUserCoralMembership(firebaseClient, me, {
-    active_coral_id: coralId,
-    active_coral_role: activeRole,
-    active_member_id: membroAtual.id || '',
-    member_nome: membroAtual.nome || me.full_name || me.email || '',
-    member_naipe: membroAtual.naipe || '',
-    member_naipes: getMemberNaipes(membroAtual),
-    member_foto_url: getMemberPhotoUrl(membroAtual) || '',
-  });
-
-  let coralData = [];
-  try {
-    coralData = await firebaseClient.entities.Coral.filter({ id: coralId });
-  } catch (error) {
-    console.warn('Falha ao carregar coral do membro:', error);
-  }
+  const coralData = coralId ? await safeFilter(firebaseClient.entities.Coral, { id: coralId }) : [];
 
   if (coralData.length > 0) {
     if (!isCoralAvailable(coralData[0])) {
+      if (activeRole === 'maestro' && isCoralPending(coralData[0])) {
+        contexto.user = await syncCurrentUserCoralMembership(firebaseClient, me, {
+          active_coral_id: '',
+          active_coral_role: '',
+          active_member_id: '',
+          member_nome: me.full_name || me.email || '',
+          member_naipe: '',
+          member_naipes: [],
+          pending_coral_id: coralData[0].id,
+          pending_coral_nome: coralData[0].nome || '',
+        });
+        return contexto;
+      }
+
       contexto.membro = null;
       contexto.isMaestro = false;
       contexto.user = await clearCurrentUserCoralMembership(firebaseClient, me);
@@ -191,6 +210,17 @@ const carregarContextoCoral = async () => {
     }
 
     contexto.coral = coralData[0];
+    contexto.membro = membroAtual;
+    contexto.isMaestro = activeRole === 'maestro';
+    contexto.user = await syncCurrentUserCoralMembership(firebaseClient, me, {
+      active_coral_id: coralId,
+      active_coral_role: activeRole,
+      active_member_id: membroAtual.id || '',
+      member_nome: membroAtual.nome || me.full_name || me.email || '',
+      member_naipe: membroAtual.naipe || '',
+      member_naipes: getMemberNaipes(membroAtual),
+      member_foto_url: getMemberPhotoUrl(membroAtual) || '',
+    });
     return contexto;
   }
 
