@@ -495,7 +495,7 @@ export default function Onboarding() {
               className="group border-2 border-purple-200 hover:border-purple-500 hover:bg-purple-50 rounded-2xl p-6 text-left transition-all"
             >
               <User className="w-8 h-8 text-purple-500 mb-2" />
-              <h3 className="font-bold text-gray-800 text-lg">Sou Membro</h3>
+              <h3 className="font-bold text-gray-800 text-lg">Sou Componente</h3>
               <p className="text-gray-500 text-sm mt-1">Entrar em um coral existente, ver partituras e ouvir áudios.</p>
             </button>
           </div>
