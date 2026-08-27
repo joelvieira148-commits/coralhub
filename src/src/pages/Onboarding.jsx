@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Music, User, ArrowLeft, Camera, Download, MessageCircle, RefreshCw } from 'lucide-react';
+import { Music, User, ArrowLeft, Camera, Download, LogOut, MessageCircle, RefreshCw } from 'lucide-react';
 import { firebaseClient } from '@/api/firebaseClient';
 import { NAIPES } from '@/utils/coralTheme';
 import { carregarCoraisParaCadastro } from '@/lib/coral-directory';
@@ -8,6 +8,7 @@ import { CORAL_STATUS, isCoralAvailable, isCoralPending } from '@/lib/coral-appr
 import { getMemberPhotoFields } from '@/lib/member-photo';
 import { uploadProfilePhoto } from '@/lib/profile-photo-upload';
 import { saveCoralContextCache } from '@/hooks/useCoralContext';
+import { logoutToApp } from '@/lib/logout';
 import {
   buildAuthorizationMessage,
   getAuthorizedCadastro,
@@ -215,6 +216,10 @@ export default function Onboarding() {
   const escolherMembro = () => {
     setFormError('');
     setStep('membro');
+  };
+
+  const trocarEmail = () => {
+    logoutToApp('/login?from_url=/onboarding&mode=login');
   };
 
   const WhatsAppCadastro = ({ className = '', mensagem = '' }) => (
@@ -592,9 +597,14 @@ export default function Onboarding() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 to-pink-900 flex items-center justify-center p-6">
         <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
-          <button onClick={() => setStep('role')} className="flex items-center gap-1 text-gray-400 hover:text-gray-600 text-sm mb-4 transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Voltar
-          </button>
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <button onClick={() => setStep('role')} className="flex items-center gap-1 text-gray-400 hover:text-gray-600 text-sm transition-colors">
+              <ArrowLeft className="w-4 h-4" /> Voltar
+            </button>
+            <button onClick={trocarEmail} className="flex items-center gap-1 text-purple-600 hover:text-purple-800 text-sm font-semibold transition-colors">
+              <LogOut className="w-4 h-4" /> Trocar e-mail
+            </button>
+          </div>
           <h2 className="text-xl font-bold text-gray-800 mb-1">Entrar em um Coral</h2>
           <p className="text-gray-500 text-sm mb-6">Preencha seus dados para se registrar.</p>
           <p className="mb-4 rounded-xl bg-purple-50 px-4 py-3 text-sm font-medium text-purple-700">
