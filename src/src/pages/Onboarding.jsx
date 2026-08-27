@@ -423,6 +423,7 @@ export default function Onboarding() {
         naipes: [naipeForm].filter(Boolean),
         coral_id: coralIdForm,
         user_email: user.email,
+        cargo: 'membro',
         ativo: true,
         ...fotoMembroFields,
       });
@@ -580,7 +581,7 @@ export default function Onboarding() {
           <h2 className="text-xl font-bold text-gray-800 mb-1">Entrar em um Coral</h2>
           <p className="text-gray-500 text-sm mb-6">Preencha seus dados para se registrar.</p>
           <p className="mb-4 rounded-xl bg-purple-50 px-4 py-3 text-sm font-medium text-purple-700">
-            Membro nao precisa de aprovacao: escolha o coral e entre direto.
+            Componente nao precisa de aprovacao: escolha o coral e entre direto.
           </p>
           <WhatsAppCadastro className="mb-4" />
           {formError && (
