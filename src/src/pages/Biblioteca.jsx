@@ -64,7 +64,7 @@ const getOfflineItems = (musicas = [], { canManageMusic, naipesPermitidosDoMembr
       });
     }
 
-    if (canManageMusic && musica.audio_completo_url) {
+    if (musica.audio_completo_url) {
       urls.push({ url: musica.audio_completo_url, cacheName: 'coralhub-audios-v1' });
     }
 
@@ -349,9 +349,12 @@ export default function Biblioteca() {
     });
   };
 
-  const FileInput = ({ label, fieldKey, accept, existingUrl }) => (
+  const FileInput = ({ label, fieldKey, accept, existingUrl }) => {
+    const displayLabel = fieldKey === 'audio_completo' ? 'Playback (todos ouvem)' : label;
+
+    return (
     <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+      <label className="block text-xs font-medium text-gray-600 mb-1">{displayLabel}</label>
       <label className="flex items-center gap-2 border-2 border-dashed border-gray-200 rounded-xl p-3 cursor-pointer hover:border-indigo-300 transition-colors">
         <Upload className="w-4 h-4 text-gray-400 flex-shrink-0" />
         <span className="text-xs text-gray-500 truncate">
@@ -367,7 +370,8 @@ export default function Biblioteca() {
           onChange={e => e.target.files[0] && handleFile(fieldKey, e.target.files[0])} />
       </label>
     </div>
-  );
+    );
+  };
 
   return (
     <CoralLayout coral={coral} user={user} isMaestro={canManageMusic}>
@@ -575,12 +579,12 @@ export default function Biblioteca() {
                         />
                       )}
 
-                      {/* Áudio completo — apenas maestro */}
-                      {canManageMusic && m.audio_completo_url && (
+                      {/* Playback para todos */}
+                      {m.audio_completo_url && (
                         <AudioPlayer
                           url={m.audio_completo_url}
-                          label="Audio Completo"
-                          allowDownload={true}
+                          label="Playback"
+                          allowDownload={canManageMusic}
                           onPlay={(audioInfo) => playTrack(m, audioInfo, 'completo')}
                           isSelected={currentTrack?.id === `${m.id}-completo`}
                         />
