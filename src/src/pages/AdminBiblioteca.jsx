@@ -123,6 +123,8 @@ export default function AdminBiblioteca() {
       uploaded_by: user.email,
       partitura_url: files.partitura?.file_url || base.partitura_url || '',
       partitura_tipo: files.partitura?.type || base.partitura_tipo || '',
+      playback_url: files.playback?.file_url || base.playback_url || '',
+      playback_tipo: files.playback?.type || base.playback_tipo || '',
       audio_completo_url: files.audio_completo?.file_url || base.audio_completo_url || '',
       audio_soprano1_url: files.soprano1?.file_url || base.audio_soprano1_url || '',
       audio_soprano2_url: files.soprano2?.file_url || base.audio_soprano2_url || '',
@@ -354,6 +356,15 @@ export default function AdminBiblioteca() {
                                           primary={primary}
                                         />
                                       )}
+                                      {m.playback_url && (
+                                        <AudioPlayer
+                                          url={m.playback_url}
+                                          label="Playback"
+                                          allowDownload={true}
+                                          onPlay={(audioInfo) => playTrack(m, audioInfo, 'playback')}
+                                          isSelected={currentTrack?.id === `${m.id}-playback`}
+                                        />
+                                      )}
                                       {m.audio_completo_url && (
                                         <AudioPlayer
                                           url={m.audio_completo_url}
@@ -427,8 +438,9 @@ export default function AdminBiblioteca() {
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <FileInput label="Partitura (PDF ou imagem)" fieldKey="partitura" accept=".pdf,image/*" existingUrl={editando?.partitura_url} />
+                <FileInput label="Playback (todos ouvem)" fieldKey="playback" accept="audio/*" existingUrl={editando?.playback_url} />
                 <FileInput label="🎵 Áudio Completo" fieldKey="audio_completo" accept="audio/*" existingUrl={editando?.audio_completo_url} />
               </div>
               <div>

@@ -64,7 +64,11 @@ const getOfflineItems = (musicas = [], { canManageMusic, naipesPermitidosDoMembr
       });
     }
 
-    if (musica.audio_completo_url) {
+    if (musica.playback_url) {
+      urls.push({ url: musica.playback_url, cacheName: 'coralhub-audios-v1' });
+    }
+
+    if (canManageMusic && musica.audio_completo_url) {
       urls.push({ url: musica.audio_completo_url, cacheName: 'coralhub-audios-v1' });
     }
 
@@ -240,6 +244,8 @@ export default function Biblioteca() {
       uploaded_by: user.email,
       partitura_url: files.partitura?.file_url || base.partitura_url || '',
       partitura_tipo: files.partitura?.type || base.partitura_tipo || '',
+      playback_url: files.playback?.file_url || base.playback_url || '',
+      playback_tipo: files.playback?.type || base.playback_tipo || '',
       audio_completo_url: files.audio_completo?.file_url || base.audio_completo_url || '',
       audio_soprano1_url: files.soprano1?.file_url || base.audio_soprano1_url || '',
       audio_soprano2_url: files.soprano2?.file_url || base.audio_soprano2_url || '',
@@ -349,12 +355,9 @@ export default function Biblioteca() {
     });
   };
 
-  const FileInput = ({ label, fieldKey, accept, existingUrl }) => {
-    const displayLabel = fieldKey === 'audio_completo' ? 'Playback (todos ouvem)' : label;
-
-    return (
+  const FileInput = ({ label, fieldKey, accept, existingUrl }) => (
     <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1">{displayLabel}</label>
+      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
       <label className="flex items-center gap-2 border-2 border-dashed border-gray-200 rounded-xl p-3 cursor-pointer hover:border-indigo-300 transition-colors">
         <Upload className="w-4 h-4 text-gray-400 flex-shrink-0" />
         <span className="text-xs text-gray-500 truncate">
@@ -370,8 +373,7 @@ export default function Biblioteca() {
           onChange={e => e.target.files[0] && handleFile(fieldKey, e.target.files[0])} />
       </label>
     </div>
-    );
-  };
+  );
 
   return (
     <CoralLayout coral={coral} user={user} isMaestro={canManageMusic}>
@@ -472,9 +474,10 @@ export default function Biblioteca() {
                 </div>
               </div>
 
-              {/* Partitura e áudio completo */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* Partitura, playback e audio completo */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <FileInput label="Partitura (PDF ou imagem)" fieldKey="partitura" accept=".pdf,image/*" existingUrl={editando?.partitura_url} />
+                <FileInput label="Playback (todos ouvem)" fieldKey="playback" accept="audio/*" existingUrl={editando?.playback_url} />
                 <FileInput label="🎵 Áudio Completo" fieldKey="audio_completo" accept="audio/*" existingUrl={editando?.audio_completo_url} />
               </div>
 
@@ -580,11 +583,21 @@ export default function Biblioteca() {
                       )}
 
                       {/* Playback para todos */}
-                      {m.audio_completo_url && (
+                      {m.playback_url && (
                         <AudioPlayer
-                          url={m.audio_completo_url}
+                          url={m.playback_url}
                           label="Playback"
                           allowDownload={canManageMusic}
+                          onPlay={(audioInfo) => playTrack(m, audioInfo, 'playback')}
+                          isSelected={currentTrack?.id === `${m.id}-playback`}
+                        />
+                      )}
+
+                      {canManageMusic && m.audio_completo_url && (
+                        <AudioPlayer
+                          url={m.audio_completo_url}
+                          label="Audio Completo"
+                          allowDownload={true}
                           onPlay={(audioInfo) => playTrack(m, audioInfo, 'completo')}
                           isSelected={currentTrack?.id === `${m.id}-completo`}
                         />
