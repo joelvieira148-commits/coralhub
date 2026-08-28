@@ -5,6 +5,7 @@ import { firebaseClient } from '@/api/firebaseClient';
 import { NAIPES } from '@/utils/coralTheme';
 import { carregarCoraisParaCadastro } from '@/lib/coral-directory';
 import { CORAL_STATUS, isCoralAvailable, isCoralPending } from '@/lib/coral-approval';
+import { clearCoralMembershipFields } from '@/lib/coral-membership';
 import { getMemberPhotoFields } from '@/lib/member-photo';
 import { uploadProfilePhoto } from '@/lib/profile-photo-upload';
 import { saveCoralContextCache } from '@/hooks/useCoralContext';
@@ -88,6 +89,16 @@ export default function Onboarding() {
 
         if (!active) return;
 
+        await firebaseClient.auth.updateMe(clearCoralMembershipFields).catch((error) => {
+          console.warn('Falha ao limpar cadastro bloqueado do perfil:', error);
+        });
+        saveCoralContextCache({
+          user: { ...user, ...clearCoralMembershipFields },
+          coral: null,
+          membro: null,
+          isMaestro: false,
+        });
+
         setAutorizacaoBloqueada({
           ...(pedido || bloqueio),
           pedido_nome: user.full_name || pedido?.pedido_nome || bloqueio.nome || '',
@@ -133,6 +144,45 @@ export default function Onboarding() {
     const carregarPendente = async () => {
       try {
         const user = await firebaseClient.auth.me();
+        const bloqueio = await getBlockedCadastro(firebaseClient, {
+          email: user.email,
+          nome: user.full_name || user.email,
+        }).catch(() => null);
+
+        if (active && bloqueio) {
+          const pedido = await requestCadastroAuthorization(firebaseClient, {
+            email: user.email,
+            nome: user.full_name || user.email,
+            coralNome: bloqueio.coral_nome || '',
+            motivo: 'Tentativa de entrada com cadastro removido ou bloqueado',
+          }).catch((error) => {
+            console.warn('Falha ao registrar pedido de autorizacao:', error);
+            return null;
+          });
+
+          await firebaseClient.auth.updateMe(clearCoralMembershipFields).catch((error) => {
+            console.warn('Falha ao limpar cadastro bloqueado do perfil:', error);
+          });
+          saveCoralContextCache({
+            user: { ...user, ...clearCoralMembershipFields },
+            coral: null,
+            membro: null,
+            isMaestro: false,
+          });
+
+          if (!active) return;
+
+          setAutorizacaoBloqueada({
+            ...(pedido || bloqueio),
+            pedido_nome: user.full_name || pedido?.pedido_nome || bloqueio.nome || '',
+            pedido_email: user.email || pedido?.pedido_email || bloqueio.email || '',
+            pedido_coral_nome: pedido?.pedido_coral_nome || bloqueio.coral_nome || '',
+          });
+          setCoralPendente(null);
+          setStep('autorizacao');
+          return;
+        }
+
         const [porEmail, porPendente, porAtivo] = await Promise.all([
           firebaseClient.entities.Coral.filter({ maestro_email: user.email }),
           user?.pending_coral_id

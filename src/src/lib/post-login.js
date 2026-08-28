@@ -82,9 +82,11 @@ export const getPostLoginPath = async (preferredPath = '/mural') => {
       console.warn('Falha ao registrar pedido de autorizacao:', error);
     });
 
-    firebaseClient.auth.updateMe(clearCoralMembershipFields).catch((error) => {
+    try {
+      await firebaseClient.auth.updateMe(clearCoralMembershipFields);
+    } catch (error) {
       console.warn('Falha ao limpar cadastro bloqueado do perfil:', error);
-    });
+    }
 
     return '/onboarding?autorizacao=1';
   }
@@ -125,7 +127,7 @@ export const getPostLoginPath = async (preferredPath = '/mural') => {
       : null;
 
     if (membro.coral_id && !coralDoMembro) {
-      firebaseClient.auth.updateMe(clearCoralMembershipFields).catch((error) => {
+      await firebaseClient.auth.updateMe(clearCoralMembershipFields).catch((error) => {
         console.warn('Falha ao limpar cadastro antigo do perfil:', error);
       });
       return '/onboarding';
@@ -152,7 +154,7 @@ export const getPostLoginPath = async (preferredPath = '/mural') => {
   }
 
   if (user?.active_coral_id || user?.active_member_id || user?.active_coral_role) {
-    firebaseClient.auth.updateMe(clearCoralMembershipFields).catch((error) => {
+    await firebaseClient.auth.updateMe(clearCoralMembershipFields).catch((error) => {
       console.warn('Falha ao limpar cadastro antigo do perfil:', error);
     });
   }
