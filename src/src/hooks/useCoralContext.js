@@ -8,6 +8,7 @@ import {
 import { isCoralAvailable, isCoralPending } from '@/lib/coral-approval';
 import { publicarCoraisNoCatalogo } from '@/lib/coral-directory';
 import { getMemberPhotoFields, getMemberPhotoUrl } from '@/lib/member-photo';
+import { getAdminCoralOverride, isAdminUser } from '@/lib/admin-access';
 
 const CACHE_KEY = 'coralhub_context_cache_v2';
 
@@ -122,6 +123,19 @@ const getCoraisDoMaestro = async (user) => {
 const carregarContextoCoral = async () => {
   const me = await firebaseClient.auth.me();
   const contexto = { ...emptyContext, user: me };
+
+  if (isAdminUser(me)) {
+    const adminCoralId = getAdminCoralOverride();
+    if (adminCoralId) {
+      const coralAdmin = (await safeFilter(firebaseClient.entities.Coral, { id: adminCoralId }))[0];
+      if (coralAdmin) {
+        contexto.coral = coralAdmin;
+        contexto.membro = null;
+        contexto.isMaestro = true;
+        return contexto;
+      }
+    }
+  }
 
   const corais = await getCoraisDoMaestro(me);
 

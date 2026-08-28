@@ -6,6 +6,7 @@ import {
   Check,
   Clock,
   Lock,
+  LogIn,
   Mail,
   MapPin,
   Music,
@@ -20,8 +21,8 @@ import {
 } from 'lucide-react';
 import { firebaseClient } from '@/api/firebaseClient';
 import AdminPasswordGate from '@/components/coral/AdminPasswordGate';
-import { isAdminUser } from '@/lib/admin-access';
-import { clearCoralContextCache } from '@/hooks/useCoralContext';
+import { isAdminUser, setAdminCoralOverride } from '@/lib/admin-access';
+import { clearCoralContextCache, saveCoralContextCache } from '@/hooks/useCoralContext';
 import {
   getApprovalFields,
   getBlockFields,
@@ -119,6 +120,25 @@ export default function AdminCorais() {
   const cancelar = () => {
     setEditando(null);
     setForm(emptyForm);
+  };
+
+  const entrarNaPlataformaDoCoral = (coral) => {
+    if (!isAdminUser(user) || !coral?.id) return;
+
+    setAdminCoralOverride(coral.id);
+    saveCoralContextCache({
+      user: {
+        ...user,
+        active_coral_id: coral.id,
+        active_coral_role: 'admin',
+        active_coral_nome: coral.nome || '',
+        active_coral_cidade: coral.cidade || '',
+      },
+      coral,
+      membro: null,
+      isMaestro: true,
+    });
+    navigate('/mural');
   };
 
   const getPessoasDoCoralParaBloqueio = (coral, motivo) => {
@@ -376,7 +396,15 @@ export default function AdminCorais() {
                 <div key={coral.id} className="bg-amber-50 border border-amber-200 rounded-2xl p-4 shadow-sm">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <h3 className="font-semibold text-gray-900 truncate">{coral.nome || 'Coral sem nome'}</h3>
+                      <button
+                        type="button"
+                        onClick={() => entrarNaPlataformaDoCoral(coral)}
+                        className="group inline-flex max-w-full items-center gap-1.5 text-left font-semibold text-gray-900 hover:text-indigo-700"
+                        title="Entrar na plataforma deste coral"
+                      >
+                        <span className="truncate">{coral.nome || 'Coral sem nome'}</span>
+                        <LogIn className="w-3.5 h-3.5 flex-shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
+                      </button>
                       <p className="mt-1 text-xs text-gray-600">
                         {coral.cidade || 'Cidade nao informada'}
                       </p>
@@ -573,7 +601,15 @@ export default function AdminCorais() {
                           )}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 min-w-0">
-                              <h2 className="font-semibold text-gray-800 truncate">{coral.nome}</h2>
+                              <button
+                                type="button"
+                                onClick={() => entrarNaPlataformaDoCoral(coral)}
+                                className="group inline-flex min-w-0 items-center gap-1.5 text-left font-semibold text-gray-800 hover:text-indigo-700"
+                                title="Entrar na plataforma deste coral"
+                              >
+                                <span className="truncate">{coral.nome}</span>
+                                <LogIn className="w-3.5 h-3.5 flex-shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
+                              </button>
                               {bloqueado && (
                                 <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700">
                                   Bloqueado
