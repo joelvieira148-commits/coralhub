@@ -122,23 +122,38 @@ export default function AdminCorais() {
     setForm(emptyForm);
   };
 
-  const entrarNaPlataformaDoCoral = (coral) => {
+  const entrarNaPlataformaDoCoral = async (coral) => {
     if (!isAdminUser(user) || !coral?.id) return;
 
+    const userUpdate = {
+      active_coral_id: coral.id,
+      active_coral_role: 'admin',
+      active_coral_nome: coral.nome || '',
+      active_coral_cidade: coral.cidade || '',
+      active_member_id: '',
+      member_nome: user.full_name || user.email || '',
+      member_naipe: '',
+      member_naipes: [],
+    };
+
     setAdminCoralOverride(coral.id);
+
+    try {
+      await firebaseClient.auth.updateMe(userUpdate);
+    } catch (error) {
+      console.warn('Falha ao salvar coral ativo do admin:', error);
+    }
+
     saveCoralContextCache({
       user: {
         ...user,
-        active_coral_id: coral.id,
-        active_coral_role: 'admin',
-        active_coral_nome: coral.nome || '',
-        active_coral_cidade: coral.cidade || '',
+        ...userUpdate,
       },
       coral,
       membro: null,
       isMaestro: true,
     });
-    navigate('/mural');
+    navigate('/mural', { replace: true });
   };
 
   const getPessoasDoCoralParaBloqueio = (coral, motivo) => {

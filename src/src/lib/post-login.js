@@ -2,6 +2,7 @@ import { firebaseClient } from '@/api/firebaseClient';
 import { getBlockedCadastro, requestCadastroAuthorization } from '@/lib/cadastro-autorizacao';
 import { isCoralAvailable, isCoralPending } from '@/lib/coral-approval';
 import { clearCoralMembershipFields } from '@/lib/coral-membership';
+import { isAdminUser } from '@/lib/admin-access';
 
 const normalizePath = (value = '/mural') => {
   if (!value || value === '/login' || value.startsWith('/login?')) {
@@ -67,10 +68,13 @@ const getOwnCorais = async (user) => {
 
 export const getPostLoginPath = async (preferredPath = '/mural') => {
   const user = await firebaseClient.auth.me();
-  const bloqueio = await getBlockedCadastro(firebaseClient, {
-    email: user.email,
-    nome: user.full_name || user.email,
-  }).catch(() => null);
+  const admin = isAdminUser(user);
+  const bloqueio = admin
+    ? null
+    : await getBlockedCadastro(firebaseClient, {
+      email: user.email,
+      nome: user.full_name || user.email,
+    }).catch(() => null);
 
   if (bloqueio) {
     await requestCadastroAuthorization(firebaseClient, {
@@ -89,6 +93,14 @@ export const getPostLoginPath = async (preferredPath = '/mural') => {
     }
 
     return '/onboarding?autorizacao=1';
+  }
+
+  const normalizedPreferredPath = normalizePath(preferredPath);
+  if (
+    admin &&
+    ['/', '/mural', '/login', '/onboarding'].includes(normalizedPreferredPath)
+  ) {
+    return '/admin/corais';
   }
 
   const [corais, membrosPorUserEmail, membrosPorEmail] = await Promise.all([

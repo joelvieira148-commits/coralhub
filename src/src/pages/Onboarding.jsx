@@ -9,6 +9,7 @@ import { clearCoralMembershipFields } from '@/lib/coral-membership';
 import { getMemberPhotoFields } from '@/lib/member-photo';
 import { uploadProfilePhoto } from '@/lib/profile-photo-upload';
 import { saveCoralContextCache } from '@/hooks/useCoralContext';
+import { isAdminUser } from '@/lib/admin-access';
 import { logoutToApp } from '@/lib/logout';
 import {
   buildAuthorizationMessage,
@@ -73,6 +74,11 @@ export default function Onboarding() {
     const carregarBloqueio = async () => {
       try {
         const user = await firebaseClient.auth.me();
+        if (isAdminUser(user)) {
+          navigate('/admin/corais', { replace: true });
+          return;
+        }
+
         const bloqueio = await getBlockedCadastro(firebaseClient, {
           email: user.email,
           nome: user.full_name || user.email,
@@ -144,6 +150,11 @@ export default function Onboarding() {
     const carregarPendente = async () => {
       try {
         const user = await firebaseClient.auth.me();
+        if (isAdminUser(user)) {
+          navigate('/admin/corais', { replace: true });
+          return;
+        }
+
         const bloqueio = await getBlockedCadastro(firebaseClient, {
           email: user.email,
           nome: user.full_name || user.email,
