@@ -1,4 +1,5 @@
 import { firebaseClient } from '@/api/firebaseClient';
+import { getBlockedCadastro, requestCadastroAuthorization } from '@/lib/cadastro-autorizacao';
 import { isCoralAvailable, isCoralPending } from '@/lib/coral-approval';
 import { clearCoralMembershipFields } from '@/lib/coral-membership';
 
@@ -66,6 +67,28 @@ const getOwnCorais = async (user) => {
 
 export const getPostLoginPath = async (preferredPath = '/mural') => {
   const user = await firebaseClient.auth.me();
+  const bloqueio = await getBlockedCadastro(firebaseClient, {
+    email: user.email,
+    nome: user.full_name || user.email,
+  }).catch(() => null);
+
+  if (bloqueio) {
+    await requestCadastroAuthorization(firebaseClient, {
+      email: user.email,
+      nome: user.full_name || user.email,
+      coralNome: bloqueio.coral_nome || '',
+      motivo: 'Tentativa de entrada com cadastro removido ou bloqueado',
+    }).catch((error) => {
+      console.warn('Falha ao registrar pedido de autorizacao:', error);
+    });
+
+    firebaseClient.auth.updateMe(clearCoralMembershipFields).catch((error) => {
+      console.warn('Falha ao limpar cadastro bloqueado do perfil:', error);
+    });
+
+    return '/onboarding?autorizacao=1';
+  }
+
   const [corais, membrosPorUserEmail, membrosPorEmail] = await Promise.all([
     getOwnCorais(user),
     safeFilter(firebaseClient.entities.Membro, { user_email: user.email }),

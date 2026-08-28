@@ -9,6 +9,7 @@ import { isCoralAvailable, isCoralPending } from '@/lib/coral-approval';
 import { publicarCoraisNoCatalogo } from '@/lib/coral-directory';
 import { getMemberPhotoFields, getMemberPhotoUrl } from '@/lib/member-photo';
 import { getAdminCoralOverride, isAdminUser } from '@/lib/admin-access';
+import { getBlockedCadastro, requestCadastroAuthorization } from '@/lib/cadastro-autorizacao';
 
 const CACHE_KEY = 'coralhub_context_cache_v2';
 
@@ -123,8 +124,9 @@ const getCoraisDoMaestro = async (user) => {
 const carregarContextoCoral = async () => {
   const me = await firebaseClient.auth.me();
   const contexto = { ...emptyContext, user: me };
+  const admin = isAdminUser(me);
 
-  if (isAdminUser(me)) {
+  if (admin) {
     const adminCoralId = getAdminCoralOverride();
     if (adminCoralId) {
       const coralAdmin = (await safeFilter(firebaseClient.entities.Coral, { id: adminCoralId }))[0];
@@ -134,6 +136,28 @@ const carregarContextoCoral = async () => {
         contexto.isMaestro = true;
         return contexto;
       }
+    }
+  }
+
+  if (!admin) {
+    const bloqueio = await getBlockedCadastro(firebaseClient, {
+      email: me.email,
+      nome: me.full_name || me.email,
+    }).catch(() => null);
+
+    if (bloqueio) {
+      await requestCadastroAuthorization(firebaseClient, {
+        email: me.email,
+        nome: me.full_name || me.email,
+        coralNome: bloqueio.coral_nome || '',
+        motivo: 'Tentativa de acesso com cadastro removido ou bloqueado',
+      }).catch((error) => {
+        console.warn('Falha ao registrar pedido de autorizacao:', error);
+      });
+
+      contexto.user = await clearCurrentUserCoralMembership(firebaseClient, me);
+      clearCoralContextCache();
+      return contexto;
     }
   }
 

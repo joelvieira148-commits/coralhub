@@ -208,6 +208,10 @@ export default function Membros() {
       : [member];
     const idsParaExcluir = [...new Set(registrosDoMembro.map((item) => item.id).filter(Boolean))];
     const nome = member.nome || memberEmail || 'este membro';
+    const removeRegenteDoCoral = registrosDoMembro.some((item) =>
+      ['maestro', 'maestrina'].includes(item.cargo) ||
+      (memberEmail && normalizeEmail(coral?.maestro_email) === memberEmail)
+    );
 
     if (!confirm(`Excluir ${nome} do coral? Ele tera que fazer todo o cadastro novamente para entrar.`)) return;
 
@@ -226,6 +230,14 @@ export default function Membros() {
       );
       await Promise.all(idsParaExcluir.map((id) => firebaseClient.entities.Membro.delete(id)));
       setMembros((prev) => prev.filter((item) => !idsParaExcluir.includes(item.id)));
+
+      if (removeRegenteDoCoral) {
+        const updatedCoral = await firebaseClient.entities.Coral.update(coral.id, {
+          maestro_email: '',
+          maestro_nome: '',
+        });
+        setCoral(updatedCoral);
+      }
 
       const membroApagadoEraDoUsuario =
         (memberEmail && normalizeEmail(user?.email) === memberEmail) ||
