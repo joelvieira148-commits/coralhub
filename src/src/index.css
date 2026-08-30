@@ -96,10 +96,10 @@
     background-color: #17113f !important;
     background-image:
       linear-gradient(rgba(18, 14, 47, 0.76), rgba(74, 12, 77, 0.84)),
-      url('/app-icon.png') !important;
-    background-position: center center !important;
+      var(--app-background-image, url('/app-icon.png')) !important;
+    background-position: center center, var(--app-background-position, center center) !important;
     background-repeat: no-repeat !important;
-    background-size: cover !important;
+    background-size: cover, cover !important;
     background-attachment: fixed !important;
   }
 

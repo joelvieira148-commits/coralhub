@@ -26,6 +26,12 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
   const primary = coral?.cor_primaria || '#6366f1';
   const secondary = coral?.cor_secundaria || '#818cf8';
   const capaPosicao = coral?.capa_posicao || 'center center';
+  const pageBackgroundStyle = coral?.pagina_fundo_url
+    ? {
+        '--app-background-image': `url("${coral.pagina_fundo_url}")`,
+        '--app-background-position': coral.pagina_fundo_posicao || 'center center',
+      }
+    : undefined;
   const headerBackground = coral?.capa_url
     ? `linear-gradient(rgba(15, 23, 42, 0.52), rgba(15, 23, 42, 0.76)), url("${coral.capa_url}")`
     : `linear-gradient(135deg, ${primary}, ${secondary})`;
@@ -61,7 +67,7 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
   const bottomMore = allNavItems.slice(4);
 
   return (
-    <div className="min-h-screen app-background flex flex-col">
+    <div className="min-h-screen app-background flex flex-col" style={pageBackgroundStyle}>
       <header
         className="text-white shadow-lg sticky top-0 z-40"
         style={headerStyle}

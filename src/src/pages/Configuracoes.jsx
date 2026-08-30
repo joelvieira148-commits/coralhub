@@ -37,6 +37,7 @@ export default function Configuracoes() {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingCapa, setUploadingCapa] = useState(false);
   const [uploadingBemVindo, setUploadingBemVindo] = useState(false);
+  const [uploadingFundoPaginas, setUploadingFundoPaginas] = useState(false);
   const [senhaAtual, setSenhaAtual] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
   const [msgSenha, setMsgSenha] = useState('');
@@ -58,6 +59,8 @@ export default function Configuracoes() {
       capa_posicao: coral.capa_posicao || 'center center',
       bem_vindo_url: coral.bem_vindo_url || '',
       bem_vindo_posicao: coral.bem_vindo_posicao || 'center center',
+      pagina_fundo_url: coral.pagina_fundo_url || '',
+      pagina_fundo_posicao: coral.pagina_fundo_posicao || 'center center',
     });
   }, [loading, isMaestro, coral]);
 
@@ -115,6 +118,25 @@ export default function Configuracoes() {
       alert(getUploadErrorMessage(error, 'a imagem de boas-vindas'));
     } finally {
       setUploadingBemVindo(false);
+    }
+  };
+
+  const handleFundoPaginas = async (file) => {
+    const espaco = verificarEspaco(coral, file.size);
+    if (!espaco.ok) {
+      alert(`Limite de armazenamento atingido (1 TB). Espaco restante: ${formatarBytes(espaco.restante)}.`);
+      return;
+    }
+    setUploadingFundoPaginas(true);
+    try {
+      const upload = await uploadCoralFile(firebaseClient, file, { kind: 'image' });
+      setForm(p => ({ ...p, pagina_fundo_url: upload.file_url, pagina_fundo_posicao: 'center center' }));
+      setNovosBytes(b => b + upload.file_size);
+    } catch (error) {
+      console.error('Erro ao enviar fundo das paginas:', error);
+      alert(getUploadErrorMessage(error, 'o fundo das paginas'));
+    } finally {
+      setUploadingFundoPaginas(false);
     }
   };
 
@@ -267,6 +289,54 @@ export default function Configuracoes() {
                 <p className="text-xs text-gray-400 mt-1">Essa imagem nao mexe no topo do coral.</p>
               )}
             </div>
+
+            {/* Fundo das paginas */}
+            <div className="flex-1">
+              <p className="mb-2 text-xs font-medium text-gray-600">Fundo das paginas</p>
+              <div
+                className="w-full h-28 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden bg-gray-50 cursor-pointer hover:border-indigo-300 transition-colors relative"
+              >
+                {form.pagina_fundo_url
+                  ? (
+                    <img
+                      src={form.pagina_fundo_url}
+                      className="w-full h-full object-cover"
+                      style={{ objectPosition: form.pagina_fundo_posicao || 'center center' }}
+                      alt="Fundo das paginas"
+                    />
+                  )
+                  : <span className="px-3 text-center text-gray-400 text-sm">Clique para trocar o fundo das paginas</span>}
+                <label className="absolute inset-0 cursor-pointer">
+                  <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && handleFundoPaginas(e.target.files[0])} />
+                </label>
+              </div>
+              {form.pagina_fundo_url && (
+                <div className="mt-3">
+                  <p className="mb-2 text-xs font-medium text-gray-600">Ajuste do fundo das paginas</p>
+                  <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
+                    {POSICOES_CAPA.map((posicao) => (
+                      <button
+                        key={posicao.value}
+                        type="button"
+                        onClick={() => setForm(p => ({ ...p, pagina_fundo_posicao: posicao.value }))}
+                        className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+                          (form.pagina_fundo_posicao || 'center center') === posicao.value
+                            ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                            : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        {posicao.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {uploadingFundoPaginas ? (
+                <p className="text-xs text-gray-400 mt-1">Enviando fundo das paginas...</p>
+              ) : (
+                <p className="text-xs text-gray-400 mt-1">Essa imagem aparece por tras das telas do coral.</p>
+              )}
+            </div>
           </div>
 
           {/* Cores */}
@@ -353,7 +423,7 @@ export default function Configuracoes() {
 
         <button
           type="submit"
-          disabled={salvando || uploadingLogo || uploadingCapa || uploadingBemVindo}
+          disabled={salvando || uploadingLogo || uploadingCapa || uploadingBemVindo || uploadingFundoPaginas}
           className="w-full flex items-center justify-center gap-2 text-white font-semibold py-3 rounded-xl transition-opacity disabled:opacity-60"
           style={{ backgroundColor: primary }}
         >
