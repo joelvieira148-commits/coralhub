@@ -119,6 +119,10 @@ export default function Biblioteca() {
 
   useEffect(() => {
     if (loading || !coral || musicas.length === 0) return;
+    if (!canManageMusic) {
+      setOfflineSync({ running: false, saved: 0, failed: 0, total: 0 });
+      return;
+    }
     if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
 
     const offlineItems = getOfflineItems(musicas, { canManageMusic, naipesPermitidosDoMembro });
@@ -399,16 +403,18 @@ export default function Biblioteca() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={salvarTudoOffline}
-            disabled={savingOffline || musicas.length === 0}
-            className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-            title="Salvar musicas e partituras offline"
-          >
-            <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">{savingOffline ? 'Salvando...' : 'Salvar offline'}</span>
-          </button>
+          {canManageMusic && (
+            <button
+              type="button"
+              onClick={salvarTudoOffline}
+              disabled={savingOffline || musicas.length === 0}
+              className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              title="Salvar musicas e partituras offline"
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">{savingOffline ? 'Salvando...' : 'Salvar offline'}</span>
+            </button>
+          )}
           {isAdminUser(user) && coral && (
             <button
               onClick={() => navigate('/admin/biblioteca')}
@@ -578,6 +584,7 @@ export default function Biblioteca() {
                           url={m.partitura_url}
                           fileType={m.partitura_tipo}
                           canDownload={canManageMusic}
+                          allowOffline={canManageMusic}
                           primary={primary}
                         />
                       )}
@@ -588,6 +595,7 @@ export default function Biblioteca() {
                           url={m.playback_url}
                           label="Playback"
                           allowDownload={canManageMusic}
+                          allowOffline={canManageMusic}
                           onPlay={(audioInfo) => playTrack(m, audioInfo, 'playback')}
                           isSelected={currentTrack?.id === `${m.id}-playback`}
                         />
@@ -598,6 +606,7 @@ export default function Biblioteca() {
                           url={m.audio_completo_url}
                           label="Audio Completo"
                           allowDownload={true}
+                          allowOffline={true}
                           onPlay={(audioInfo) => playTrack(m, audioInfo, 'completo')}
                           isSelected={currentTrack?.id === `${m.id}-completo`}
                         />
@@ -611,6 +620,7 @@ export default function Biblioteca() {
                             naipe={n.value}
                             url={m[`audio_${n.value}_url`]}
                             allowDownload={canManageMusic}
+                            allowOffline={canManageMusic}
                             onPlay={(audioInfo) => playTrack(m, audioInfo, n.value)}
                             isSelected={currentTrack?.id === `${m.id}-${n.value}`}
                           />

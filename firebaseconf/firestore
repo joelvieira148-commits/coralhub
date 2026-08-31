@@ -6,14 +6,39 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isAdmin() {
+      return signedIn() && request.auth.token.email == "joelvieira148@gmail.com";
+    }
+
+    function isCoralMaestro(coralId) {
+      return signedIn()
+        && coralId is string
+        && exists(/databases/$(database)/documents/records/$(coralId))
+        && get(/databases/$(database)/documents/records/$(coralId)).data.entity == "Coral"
+        && get(/databases/$(database)/documents/records/$(coralId)).data.data.maestro_email == request.auth.token.email;
+    }
+
+    function canWriteMusic(recordData) {
+      return isAdmin() || isCoralMaestro(recordData.data.coral_id);
+    }
+
     match /profiles/{userId} {
       allow read, create, update, delete: if signedIn() && request.auth.uid == userId;
     }
 
     match /records/{recordId} {
       allow read: if signedIn();
-      allow create: if signedIn() && request.resource.data.owner_id == request.auth.uid;
-      allow update, delete: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.owner_id == request.auth.uid
+        && (
+          request.resource.data.entity != "Musica"
+          || canWriteMusic(request.resource.data)
+        );
+      allow update, delete: if signedIn()
+        && (
+          resource.data.entity != "Musica"
+          || canWriteMusic(resource.data)
+        );
     }
   }
 }

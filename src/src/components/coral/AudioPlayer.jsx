@@ -2,7 +2,15 @@ import { useRef, useState } from 'react';
 import { Download, Pause, Play } from 'lucide-react';
 import { getNaipeInfo } from '@/utils/coralTheme';
 
-export default function AudioPlayer({ naipe, url, label, allowDownload = false, onPlay, isSelected = false }) {
+export default function AudioPlayer({
+  naipe,
+  url,
+  label,
+  allowDownload = false,
+  allowOffline = false,
+  onPlay,
+  isSelected = false,
+}) {
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const audioRef = useRef(null);
@@ -17,7 +25,7 @@ export default function AudioPlayer({ naipe, url, label, allowDownload = false, 
       >
         <button
           type="button"
-          onClick={() => onPlay({ url, label: info.label, color: info.cor, allowDownload })}
+          onClick={() => onPlay({ url, label: info.label, color: info.cor, allowDownload, allowOffline })}
           className="w-9 h-9 rounded-full flex items-center justify-center text-white flex-shrink-0 shadow-md hover:scale-105 transition-transform"
           style={{ backgroundColor: info.cor }}
           title={`Tocar ${info.label}`}

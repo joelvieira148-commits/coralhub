@@ -139,7 +139,7 @@ function EmbeddedPdfFallback({ url, reason = '' }) {
   );
 }
 
-function ImagePartituraViewer({ url }) {
+function ImagePartituraViewer({ url, allowOffline = false }) {
   const [zoom, setZoom] = useState(1);
   const [failed, setFailed] = useState(false);
   const [imageSrc, setImageSrc] = useState('');
@@ -152,7 +152,14 @@ function ImagePartituraViewer({ url }) {
     setZoom(1);
     setFailed(false);
     setImageSrc('');
-    setOfflineStatus('Preparando offline...');
+    setOfflineStatus(allowOffline ? 'Preparando offline...' : '');
+
+    if (!allowOffline) {
+      setImageSrc(url);
+      return () => {
+        controller.abort();
+      };
+    }
 
     getOfflineMediaObjectUrl(url, {
       cacheName: 'coralhub-partituras-imagem-v1',
@@ -174,7 +181,7 @@ function ImagePartituraViewer({ url }) {
       controller.abort();
       revokeOfflineObjectUrl(objectUrl);
     };
-  }, [url]);
+  }, [url, allowOffline]);
 
   const zoomOut = () => setZoom((current) => Math.max(MIN_ZOOM, Number((current - ZOOM_STEP).toFixed(2))));
   const zoomIn = () => setZoom((current) => Math.min(MAX_ZOOM, Number((current + ZOOM_STEP).toFixed(2))));
@@ -325,7 +332,7 @@ function PdfPageCanvas({ pdf, pageNumber, zoom }) {
   );
 }
 
-function PdfDocumentViewer({ url, forceEmbedded = false }) {
+function PdfDocumentViewer({ url, forceEmbedded = false, allowOffline = false }) {
   const [pdf, setPdf] = useState(null);
   const [pageCount, setPageCount] = useState(0);
   const [zoom, setZoom] = useState(1);
@@ -342,7 +349,7 @@ function PdfDocumentViewer({ url, forceEmbedded = false }) {
     setPdf(null);
     setPageCount(0);
     setZoom(1);
-    setOfflineStatus('Preparando offline...');
+    setOfflineStatus(allowOffline ? 'Preparando offline...' : '');
 
     const loadPdf = async () => {
       const loadWithPdfJs = async (options, timeoutMessage) => {
@@ -359,20 +366,31 @@ function PdfDocumentViewer({ url, forceEmbedded = false }) {
           const timer = window.setTimeout(() => controller.abort(), PDF_LOAD_TIMEOUT_MS);
 
           try {
-            const { response, source } = await fetchOfflineMedia(pdfUrl, {
-              cacheName: 'coralhub-pdfs-v1',
-              signal: controller.signal,
-              fetchOptions: {
-              mode: 'cors',
-              credentials: 'omit',
-              },
-            });
+            const { response, source } = allowOffline
+              ? await fetchOfflineMedia(pdfUrl, {
+                cacheName: 'coralhub-pdfs-v1',
+                signal: controller.signal,
+                fetchOptions: {
+                  mode: 'cors',
+                  credentials: 'omit',
+                },
+              })
+              : {
+                response: await fetch(pdfUrl, {
+                  signal: controller.signal,
+                  mode: 'cors',
+                  credentials: 'omit',
+                }),
+                source: 'network',
+              };
 
             if (!response.ok) {
               throw new Error(`Falha ao baixar PDF: ${response.status}`);
             }
 
-            setOfflineStatus(source === 'cache' ? 'PDF salvo offline' : 'PDF salvo para offline');
+            if (allowOffline) {
+              setOfflineStatus(source === 'cache' ? 'PDF salvo offline' : 'PDF salvo para offline');
+            }
             return response.arrayBuffer();
           } catch (error) {
             lastError = error;
@@ -435,7 +453,7 @@ function PdfDocumentViewer({ url, forceEmbedded = false }) {
       cancelled = true;
       loadingTask?.destroy();
     };
-  }, [url]);
+  }, [url, allowOffline]);
 
   const zoomOut = () => setZoom((current) => Math.max(MIN_ZOOM, Number((current - ZOOM_STEP).toFixed(2))));
   const zoomIn = () => setZoom((current) => Math.min(MAX_ZOOM, Number((current + ZOOM_STEP).toFixed(2))));
@@ -505,7 +523,13 @@ function PdfDocumentViewer({ url, forceEmbedded = false }) {
   );
 }
 
-export default function PartituraViewer({ url, fileType = '', canDownload = false, primary = '#6366f1' }) {
+export default function PartituraViewer({
+  url,
+  fileType = '',
+  canDownload = false,
+  allowOffline = null,
+  primary = '#6366f1',
+}) {
   const [forceEmbedded, setForceEmbedded] = useState(false);
 
   useEffect(() => {
@@ -514,6 +538,7 @@ export default function PartituraViewer({ url, fileType = '', canDownload = fals
 
   if (!url) return null;
   const isImage = isImagePartitura(url, fileType);
+  const shouldUseOffline = allowOffline ?? canDownload;
 
   const handleOpen = () => {
     openExternalUrl(url);
@@ -527,15 +552,17 @@ export default function PartituraViewer({ url, fileType = '', canDownload = fals
           Partitura
         </span>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleOpen}
-            className="inline-flex items-center gap-1 text-xs font-medium"
-            style={{ color: primary }}
-          >
-            <ExternalLink className="w-3 h-3" />
-            Abrir
-          </button>
+          {canDownload && (
+            <button
+              type="button"
+              onClick={handleOpen}
+              className="inline-flex items-center gap-1 text-xs font-medium"
+              style={{ color: primary }}
+            >
+              <ExternalLink className="w-3 h-3" />
+              Abrir
+            </button>
+          )}
           {!isImage && (
             <button
               type="button"
@@ -561,9 +588,9 @@ export default function PartituraViewer({ url, fileType = '', canDownload = fals
         </div>
       </div>
       {isImage ? (
-        <ImagePartituraViewer url={url} />
+        <ImagePartituraViewer url={url} allowOffline={shouldUseOffline} />
       ) : (
-        <PdfDocumentViewer url={url} forceEmbedded={forceEmbedded} />
+        <PdfDocumentViewer url={url} forceEmbedded={forceEmbedded} allowOffline={shouldUseOffline} />
       )}
     </div>
   );

@@ -40,10 +40,25 @@ export default function FixedAudioPlayer({ track, onClose }) {
     setDuration(0);
     setLoadError(false);
     setAudioSrc('');
-    setOfflineStatus('Preparando offline...');
+    setOfflineStatus(track.allowOffline ? 'Preparando offline...' : '');
 
     const loadTrack = async () => {
       let objectUrl = '';
+
+      if (!track.allowOffline) {
+        setAudioSrc(track.url);
+        window.setTimeout(() => {
+          if (controller.signal.aborted || !audioRef.current) return;
+          audioRef.current.load();
+          audioRef.current.play()
+            .then(() => setPlaying(true))
+            .catch((error) => {
+              console.warn('Nao foi possivel iniciar o audio automaticamente:', error);
+              setPlaying(false);
+            });
+        }, 0);
+        return;
+      }
 
       try {
         const offlineMedia = await getOfflineMediaObjectUrl(track.url, {
@@ -168,9 +183,11 @@ export default function FixedAudioPlayer({ track, onClose }) {
               {loadError && (
                 <div className="mb-3 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                   <p className="font-semibold">Nao foi possivel carregar este audio.</p>
-                  <a href={track.url} target="_blank" rel="noreferrer" className="mt-1 inline-flex underline">
-                    Abrir audio fora do app
-                  </a>
+                  {track.allowDownload && (
+                    <a href={track.url} target="_blank" rel="noreferrer" className="mt-1 inline-flex underline">
+                      Abrir audio fora do app
+                    </a>
+                  )}
                 </div>
               )}
               <input
