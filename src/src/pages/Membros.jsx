@@ -17,6 +17,7 @@ import { firebaseClient } from '@/api/firebaseClient';
 import CoralLayout from '@/components/coral/CoralLayout';
 import useCoralContext, { clearCoralContextCache, saveCoralContextCache } from '@/hooks/useCoralContext';
 import { clearCurrentUserCoralMembership, getMemberEmail, normalizeEmail } from '@/lib/coral-membership';
+import { canManageCoral } from '@/lib/coral-permissions';
 import { registerCadastroBlocks } from '@/lib/cadastro-autorizacao';
 import { getMemberPhotoFields, getMemberPhotoUrl } from '@/lib/member-photo';
 import { uploadProfilePhoto } from '@/lib/profile-photo-upload';
@@ -53,7 +54,7 @@ const getMemberNaipes = (member) => {
 
 export default function Membros() {
   const navigate = useNavigate();
-  const { user, coral, membro, isMaestro, loading, setCoral } = useCoralContext();
+  const { user, coral, membro, loading, setCoral } = useCoralContext();
   const [membros, setMembros] = useState([]);
   const [search, setSearch] = useState('');
   const [editando, setEditando] = useState(null);
@@ -62,7 +63,7 @@ export default function Membros() {
   const [uploadingFoto, setUploadingFoto] = useState(false);
   const [novosBytes, setNovosBytes] = useState(0);
 
-  const canManage = isMaestro;
+  const canManage = canManageCoral(user, coral);
 
   useEffect(() => {
     if (!loading && user && !coral && !membro) {
@@ -265,7 +266,7 @@ export default function Membros() {
   if (!coral) return null;
 
   return (
-    <CoralLayout coral={coral} user={user} isMaestro={isMaestro} membro={membro}>
+    <CoralLayout coral={coral} user={user} isMaestro={canManage} membro={membro}>
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5">
         <div>
           <h2 className="text-xl font-bold text-gray-800">Membros do Coral</h2>

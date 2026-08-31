@@ -16,7 +16,7 @@ import {
 import { firebaseClient } from '@/api/firebaseClient';
 import CoralLayout from '@/components/coral/CoralLayout';
 import useCoralContext from '@/hooks/useCoralContext';
-import { isAdminUser } from '@/lib/admin-access';
+import { canManageCoral } from '@/lib/coral-permissions';
 import { getUploadErrorMessage, isFileKind, uploadCoralFile } from '@/lib/coral-file-upload';
 import { formatarBytes, verificarEspaco } from '@/utils/storage';
 
@@ -43,9 +43,6 @@ const MEDIA_MARKER_REGEX = /\s*\[\[CORALHUB_MEDIA:([^\]]+)\]\]\s*$/;
 function getTipo(value) {
   return TIPOS.find((tipo) => tipo.value === value) || TIPOS[0];
 }
-
-const podeGerenciar = (isMaestro, membro) =>
-  isMaestro || membro?.cargo === 'secretaria' || membro?.cargo === 'vice_secretaria';
 
 const getMediaType = (item) => {
   const media = getMediaData(item);
@@ -250,7 +247,7 @@ const MediaCard = ({ aviso, canManage, onEdit, onDelete, onOpenImage }) => {
 
 export default function Mural() {
   const navigate = useNavigate();
-  const { user, coral, membro, isMaestro, loading, setCoral } = useCoralContext();
+  const { user, coral, membro, loading, setCoral } = useCoralContext();
   const [avisos, setAvisos] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editando, setEditando] = useState(null);
@@ -260,7 +257,7 @@ export default function Mural() {
   const [fotoAberta, setFotoAberta] = useState(null);
   const [form, setForm] = useState(emptyForm);
 
-  const canManage = isAdminUser(user) || podeGerenciar(isMaestro, membro);
+  const canManage = canManageCoral(user, coral);
 
   const ordenarAvisos = (items) =>
     [...items].sort((left, right) => {

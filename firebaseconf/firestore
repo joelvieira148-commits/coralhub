@@ -18,8 +18,42 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/records/$(coralId)).data.data.maestro_email == request.auth.token.email;
     }
 
-    function canWriteMusic(recordData) {
+    function isCoralOwnerRecord(recordData) {
+      return signedIn()
+        && recordData.entity == "Coral"
+        && recordData.data.maestro_email == request.auth.token.email;
+    }
+
+    function isSelfMemberCreate(recordData) {
+      return signedIn()
+        && recordData.entity == "Membro"
+        && recordData.data.cargo == "membro"
+        && (
+          recordData.data.user_email == request.auth.token.email
+          || recordData.data.email == request.auth.token.email
+        );
+    }
+
+    function canWriteCoralContent(recordData) {
       return isAdmin() || isCoralMaestro(recordData.data.coral_id);
+    }
+
+    function canCreateRecord(recordData) {
+      return (
+        !(recordData.entity in ["Coral", "Membro", "Musica", "Aviso", "Evento"])
+        || (recordData.entity == "Coral" && (isAdmin() || isCoralOwnerRecord(recordData)))
+        || (recordData.entity == "Membro" && (isSelfMemberCreate(recordData) || canWriteCoralContent(recordData)))
+        || (recordData.entity in ["Musica", "Aviso", "Evento"] && canWriteCoralContent(recordData))
+      );
+    }
+
+    function canUpdateOrDeleteRecord(recordData) {
+      return (
+        !(recordData.entity in ["Coral", "Membro", "Musica", "Aviso", "Evento"])
+        || (recordData.entity == "Coral" && (isAdmin() || isCoralOwnerRecord(recordData)))
+        || (recordData.entity == "Membro" && canWriteCoralContent(recordData))
+        || (recordData.entity in ["Musica", "Aviso", "Evento"] && canWriteCoralContent(recordData))
+      );
     }
 
     match /profiles/{userId} {
@@ -30,15 +64,9 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create: if signedIn()
         && request.resource.data.owner_id == request.auth.uid
-        && (
-          request.resource.data.entity != "Musica"
-          || canWriteMusic(request.resource.data)
-        );
+        && canCreateRecord(request.resource.data);
       allow update, delete: if signedIn()
-        && (
-          resource.data.entity != "Musica"
-          || canWriteMusic(resource.data)
-        );
+        && canUpdateOrDeleteRecord(resource.data);
     }
   }
 }

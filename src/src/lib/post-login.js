@@ -3,6 +3,7 @@ import { getBlockedCadastro, requestCadastroAuthorization } from '@/lib/cadastro
 import { isCoralAvailable, isCoralPending } from '@/lib/coral-approval';
 import { clearCoralMembershipFields } from '@/lib/coral-membership';
 import { isAdminUser } from '@/lib/admin-access';
+import { getSafeMemberRole } from '@/lib/coral-permissions';
 
 const normalizePath = (value = '/mural') => {
   if (!value || value === '/login' || value.startsWith('/login?')) {
@@ -57,13 +58,12 @@ const mergeById = (...lists) => {
 };
 
 const getOwnCorais = async (user) => {
-  const [byEmail, byPendingId, byActiveId] = await Promise.all([
+  const [byEmail, byPendingId] = await Promise.all([
     safeFilter(firebaseClient.entities.Coral, { maestro_email: user.email }),
     user?.pending_coral_id ? safeFilter(firebaseClient.entities.Coral, { id: user.pending_coral_id }) : [],
-    user?.active_coral_id ? safeFilter(firebaseClient.entities.Coral, { id: user.active_coral_id }) : [],
   ]);
 
-  return mergeById(byEmail, byPendingId, byActiveId);
+  return mergeById(byEmail, byPendingId);
 };
 
 export const getPostLoginPath = async (preferredPath = '/mural') => {
@@ -149,7 +149,7 @@ export const getPostLoginPath = async (preferredPath = '/mural') => {
       return '/onboarding';
     }
 
-    const role = membro.cargo || 'membro';
+    const role = getSafeMemberRole(user, coralDoMembro, membro.cargo || 'membro');
     firebaseClient.auth.updateMe({
       active_coral_id: membro.coral_id || '',
       active_coral_role: role,

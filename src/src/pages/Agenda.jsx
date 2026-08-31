@@ -4,6 +4,7 @@ import { Plus, X, Calendar, Clock, MapPin, Pencil, Trash2, Music, Users, Present
 import { firebaseClient } from '@/api/firebaseClient';
 import CoralLayout from '@/components/coral/CoralLayout';
 import useCoralContext from '@/hooks/useCoralContext';
+import { canManageCoral } from '@/lib/coral-permissions';
 import { getUploadErrorMessage, uploadCoralFile } from '@/lib/coral-file-upload';
 import { verificarEspaco, formatarBytes } from '@/utils/storage';
 
@@ -18,12 +19,9 @@ function getTipoEvento(value) {
   return TIPOS_EVENTO.find(t => t.value === value) || TIPOS_EVENTO[0];
 }
 
-const podeGerenciar = (isMaestro, membro) =>
-  isMaestro || membro?.cargo === 'secretaria' || membro?.cargo === 'vice_secretaria';
-
 export default function Agenda() {
   const navigate = useNavigate();
-  const { user, coral, membro, isMaestro, loading, setCoral } = useCoralContext();
+  const { user, coral, membro, loading, setCoral } = useCoralContext();
   const [eventos, setEventos] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editando, setEditando] = useState(null);
@@ -33,7 +31,7 @@ export default function Agenda() {
   const emptyForm = { titulo: '', descricao: '', data: '', hora: '', local: '', tipo: 'ensaio' };
   const [form, setForm] = useState(emptyForm);
 
-  const canManage = podeGerenciar(isMaestro, membro);
+  const canManage = canManageCoral(user, coral);
 
   useEffect(() => {
     if (!loading && user && !coral && !membro) {
@@ -200,7 +198,7 @@ export default function Agenda() {
   };
 
   return (
-    <CoralLayout coral={coral} user={user} isMaestro={isMaestro}>
+    <CoralLayout coral={coral} user={user} isMaestro={canManage} membro={membro}>
       <div
         className={coral.agenda_fundo_url ? 'rounded-3xl p-4 -mx-2 -mt-2 shadow-inner' : ''}
         style={agendaBackgroundStyle}

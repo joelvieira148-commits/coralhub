@@ -9,6 +9,7 @@ import { verificarEspaco, formatarBytes } from '@/utils/storage';
 import StorageIndicator from '@/components/coral/StorageIndicator';
 import { publicarCoraisNoCatalogo } from '@/lib/coral-directory';
 import { getUploadErrorMessage, uploadCoralFile } from '@/lib/coral-file-upload';
+import { canManageCoral } from '@/lib/coral-permissions';
 
 const PRESET_CORES = [
   { primary: '#6366f1', secondary: '#a78bfa', label: 'Índigo' },
@@ -31,7 +32,7 @@ const POSICOES_CAPA = [
 
 export default function Configuracoes() {
   const navigate = useNavigate();
-  const { user, coral, isMaestro, loading, setCoral } = useCoralContext();
+  const { user, coral, loading, setCoral } = useCoralContext();
   const [form, setForm] = useState({});
   const [salvando, setSalvando] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -42,9 +43,10 @@ export default function Configuracoes() {
   const [novaSenha, setNovaSenha] = useState('');
   const [msgSenha, setMsgSenha] = useState('');
   const [novosBytes, setNovosBytes] = useState(0);
+  const canManage = canManageCoral(user, coral);
 
   useEffect(() => {
-    if (!loading && !isMaestro) navigate('/dashboard');
+    if (!loading && coral && !canManage) navigate('/dashboard');
     if (coral) setForm({
       nome: coral.nome || '',
       descricao: coral.descricao || '',
@@ -62,7 +64,7 @@ export default function Configuracoes() {
       pagina_fundo_url: coral.pagina_fundo_url || '',
       pagina_fundo_posicao: coral.pagina_fundo_posicao || 'center center',
     });
-  }, [loading, isMaestro, coral]);
+  }, [loading, canManage, coral, navigate]);
 
   const handleLogo = async (file) => {
     const espaco = verificarEspaco(coral, file.size);
@@ -171,7 +173,7 @@ export default function Configuracoes() {
   const previewCoral = { ...coral, ...form };
 
   return (
-    <CoralLayout coral={previewCoral} user={user} isMaestro={isMaestro}>
+    <CoralLayout coral={previewCoral} user={user} isMaestro={canManage}>
       <h2 className="text-xl font-bold text-gray-800 mb-6">Configurações do Coral</h2>
 
       <form onSubmit={salvar} className="space-y-6">

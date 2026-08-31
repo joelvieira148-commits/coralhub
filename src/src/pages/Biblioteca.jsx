@@ -9,6 +9,7 @@ import FixedAudioPlayer from '@/components/coral/FixedAudioPlayer';
 import PartituraViewer from '@/components/coral/PartituraViewer';
 import StorageIndicator from '@/components/coral/StorageIndicator';
 import { isAdminUser } from '@/lib/admin-access';
+import { canManageCoral } from '@/lib/coral-permissions';
 import { getUploadErrorMessage, isFileKind, uploadCoralFile } from '@/lib/coral-file-upload';
 import { fetchOfflineMedia } from '@/lib/offline-media';
 import { NAIPES } from '@/utils/coralTheme';
@@ -83,7 +84,7 @@ const getOfflineItems = (musicas = [], { canManageMusic, naipesPermitidosDoMembr
 
 export default function Biblioteca() {
   const navigate = useNavigate();
-  const { user, coral, membro, isMaestro, loading, setCoral } = useCoralContext();
+  const { user, coral, membro, loading, setCoral } = useCoralContext();
   const autoOfflineKeyRef = useRef('');
   const [musicas, setMusicas] = useState([]);
   const [selecionada, setSelecionada] = useState(null);
@@ -109,7 +110,7 @@ export default function Biblioteca() {
     firebaseClient.entities.Musica.filter({ coral_id: coral.id }).then(setMusicas);
   }, [coral]);
 
-  const canManageMusic = isMaestro || isAdminUser(user);
+  const canManageMusic = canManageCoral(user, coral);
   const naipesDoMembro = getMemberNaipes(membro, user);
   const naipesPermitidosDoMembro = expandNaipeAccess(naipesDoMembro);
   const labelNaipesDoMembro = naipesDoMembro

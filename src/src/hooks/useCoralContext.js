@@ -10,6 +10,7 @@ import { publicarCoraisNoCatalogo } from '@/lib/coral-directory';
 import { getMemberPhotoFields, getMemberPhotoUrl } from '@/lib/member-photo';
 import { getAdminCoralOverride, isAdminUser } from '@/lib/admin-access';
 import { getBlockedCadastro, requestCadastroAuthorization } from '@/lib/cadastro-autorizacao';
+import { getSafeMemberRole, isCoralOwner } from '@/lib/coral-permissions';
 
 const CACHE_KEY = 'coralhub_context_cache_v2';
 
@@ -112,13 +113,12 @@ const safeFilter = async (entity, query) => {
 };
 
 const getCoraisDoMaestro = async (user) => {
-  const [porEmail, porPendente, porAtivo] = await Promise.all([
+  const [porEmail, porPendente] = await Promise.all([
     safeFilter(firebaseClient.entities.Coral, { maestro_email: user.email }),
     user?.pending_coral_id ? safeFilter(firebaseClient.entities.Coral, { id: user.pending_coral_id }) : [],
-    user?.active_coral_id ? safeFilter(firebaseClient.entities.Coral, { id: user.active_coral_id }) : [],
   ]);
 
-  return uniqueById([...porEmail, ...porPendente, ...porAtivo]);
+  return uniqueById([...porEmail, ...porPendente]);
 };
 
 const carregarContextoCoral = async () => {
@@ -247,12 +247,15 @@ const carregarContextoCoral = async () => {
       return contexto;
     }
 
-    contexto.coral = coralData[0];
+    const coralAtual = coralData[0];
+    const safeRole = getSafeMemberRole(me, coralAtual, activeRole);
+
+    contexto.coral = coralAtual;
     contexto.membro = membroAtual;
-    contexto.isMaestro = activeRole === 'maestro';
+    contexto.isMaestro = safeRole === 'maestro' && isCoralOwner(me, coralAtual);
     contexto.user = await syncCurrentUserCoralMembership(firebaseClient, me, {
       active_coral_id: coralId,
-      active_coral_role: activeRole,
+      active_coral_role: safeRole,
       active_member_id: membroAtual.id || '',
       member_nome: membroAtual.nome || me.full_name || me.email || '',
       member_naipe: membroAtual.naipe || '',
