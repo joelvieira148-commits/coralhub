@@ -7,7 +7,6 @@ import useCoralContext from '@/hooks/useCoralContext';
 import AudioPlayer from '@/components/coral/AudioPlayer';
 import FixedAudioPlayer from '@/components/coral/FixedAudioPlayer';
 import PartituraViewer from '@/components/coral/PartituraViewer';
-import StorageIndicator from '@/components/coral/StorageIndicator';
 import { isAdminUser } from '@/lib/admin-access';
 import { canManageCoral } from '@/lib/coral-permissions';
 import { getUploadErrorMessage, isFileKind, uploadCoralFile } from '@/lib/coral-file-upload';
@@ -437,13 +436,6 @@ export default function Biblioteca() {
           )}
         </div>
       </div>
-
-      {/* Indicador de armazenamento (apenas maestro) */}
-      {canManageMusic && (
-        <div className="mb-6">
-          <StorageIndicator coral={coral} primary={primary} />
-        </div>
-      )}
 
       {/* Modal de adição/edição (apenas maestro) */}
       {showForm && canManageMusic && (
