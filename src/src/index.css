@@ -93,7 +93,7 @@
 
 @layer utilities {
   .app-background {
-    background-color: #17113f !important;
+    background-color: var(--app-background-color, #17113f) !important;
     background-image:
       linear-gradient(
         var(--app-background-overlay-start, rgba(18, 14, 47, 0.76)),
