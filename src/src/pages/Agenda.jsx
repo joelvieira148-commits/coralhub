@@ -141,8 +141,11 @@ export default function Agenda() {
     const passado = ev.data < hoje;
 
     return (
-      <div className={`rounded-2xl overflow-hidden bg-transparent shadow-none border border-transparent ${passado ? 'opacity-60' : ''}`}>
-        <div className="flex">
+      <div
+        className={`rounded-2xl overflow-hidden bg-transparent shadow-none border border-transparent ${passado ? 'opacity-60' : ''}`}
+        style={{ background: 'transparent', backgroundColor: 'transparent' }}
+      >
+        <div className="flex bg-transparent" style={{ background: 'transparent', backgroundColor: 'transparent' }}>
           {/* Data */}
           <div className="w-16 flex-shrink-0 flex flex-col items-center justify-center py-4 text-white rounded-l-2xl"
             style={{ backgroundColor: passado ? '#94a3b8' : tipo.color }}>
@@ -154,7 +157,7 @@ export default function Agenda() {
             </span>
           </div>
           {/* Conteúdo */}
-          <div className="flex-1 p-3 min-w-0">
+          <div className="flex-1 p-3 min-w-0 bg-transparent" style={{ background: 'transparent', backgroundColor: 'transparent' }}>
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 mb-0.5">
