@@ -124,7 +124,8 @@ export default function Agenda() {
   if (!coral) return null;
 
   const primary = coral.cor_primaria || '#6366f1';
-  const agendaBackgroundStyle = coral.agenda_fundo_url
+  const hasAgendaBackground = Boolean(coral.agenda_fundo_url);
+  const agendaBackgroundStyle = hasAgendaBackground
     ? {
         backgroundImage: `url("${coral.agenda_fundo_url}")`,
         backgroundSize: 'cover',
@@ -140,11 +141,17 @@ export default function Agenda() {
     const passado = ev.data < hoje;
 
     return (
-      <div className={`bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden ${passado ? 'opacity-60' : ''}`}>
+      <div
+        className={`rounded-2xl overflow-hidden ${
+          hasAgendaBackground
+            ? 'bg-transparent shadow-none border border-white/45'
+            : 'bg-white shadow-sm border border-gray-100'
+        } ${passado ? 'opacity-60' : ''}`}
+      >
         <div className="flex">
           {/* Data */}
           <div className="w-16 flex-shrink-0 flex flex-col items-center justify-center py-4 text-white rounded-l-2xl"
-            style={{ backgroundColor: passado ? '#94a3b8' : tipo.color }}>
+            style={{ backgroundColor: hasAgendaBackground ? 'transparent' : passado ? '#94a3b8' : tipo.color }}>
             <span className="text-xs font-medium uppercase">
               {dataObj.toLocaleDateString('pt-BR', { month: 'short' })}
             </span>
@@ -158,21 +165,23 @@ export default function Agenda() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 mb-0.5">
                   <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                    style={{ backgroundColor: tipo.bg, color: tipo.color }}>
+                    style={hasAgendaBackground
+                      ? { backgroundColor: 'transparent', color: '#fff', border: '1px solid rgba(255, 255, 255, 0.55)' }
+                      : { backgroundColor: tipo.bg, color: tipo.color }}>
                     {tipo.label}
                   </span>
-                  {passado && <span className="text-xs text-gray-400">Encerrado</span>}
+                  {passado && <span className={`text-xs ${hasAgendaBackground ? 'text-white/70' : 'text-gray-400'}`}>Encerrado</span>}
                 </div>
-                <h3 className="font-semibold text-gray-800 truncate">{ev.titulo}</h3>
-                {ev.descricao && <p className="text-xs text-gray-500 mt-0.5 truncate">{ev.descricao}</p>}
+                <h3 className={`font-semibold truncate ${hasAgendaBackground ? 'text-white drop-shadow' : 'text-gray-800'}`}>{ev.titulo}</h3>
+                {ev.descricao && <p className={`text-xs mt-0.5 truncate ${hasAgendaBackground ? 'text-white/80 drop-shadow' : 'text-gray-500'}`}>{ev.descricao}</p>}
                 <div className="flex flex-wrap items-center gap-2 mt-1.5">
                   {ev.hora && (
-                    <span className="flex items-center gap-1 text-xs text-gray-400">
+                    <span className={`flex items-center gap-1 text-xs ${hasAgendaBackground ? 'text-white/75' : 'text-gray-400'}`}>
                       <Clock className="w-3 h-3" />{ev.hora}
                     </span>
                   )}
                   {ev.local && (
-                    <span className="flex items-center gap-1 text-xs text-gray-400">
+                    <span className={`flex items-center gap-1 text-xs ${hasAgendaBackground ? 'text-white/75' : 'text-gray-400'}`}>
                       <MapPin className="w-3 h-3" />{ev.local}
                     </span>
                   )}
@@ -181,11 +190,11 @@ export default function Agenda() {
               {canManage && (
                 <div className="flex gap-1 flex-shrink-0">
                   <button onClick={() => abrirEdicao(ev)}
-                    className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+                    className={`p-1.5 rounded-lg transition-colors ${hasAgendaBackground ? 'text-white/75 hover:bg-white/10 hover:text-white' : 'text-gray-400 hover:text-indigo-600 hover:bg-indigo-50'}`}>
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                   <button onClick={() => excluir(ev.id)}
-                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                    className={`p-1.5 rounded-lg transition-colors ${hasAgendaBackground ? 'text-white/75 hover:bg-white/10 hover:text-white' : 'text-gray-400 hover:text-red-600 hover:bg-red-50'}`}>
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -200,19 +209,19 @@ export default function Agenda() {
   return (
     <CoralLayout coral={coral} user={user} isMaestro={canManage} membro={membro}>
       <div
-        className={coral.agenda_fundo_url ? 'rounded-3xl p-4 -mx-2 -mt-2' : ''}
+        className={hasAgendaBackground ? 'rounded-3xl p-4 -mx-2 -mt-2' : ''}
         style={agendaBackgroundStyle}
       >
       <div className="flex items-center justify-between gap-3 mb-4">
         <div>
-          <h2 className="text-xl font-bold text-gray-800">Agenda do Coral</h2>
-          <p className="text-sm text-gray-500">{proximos.length} próximo{proximos.length !== 1 ? 's' : ''}</p>
+          <h2 className={`text-xl font-bold ${hasAgendaBackground ? 'text-white drop-shadow' : 'text-gray-800'}`}>Agenda do Coral</h2>
+          <p className={`text-sm ${hasAgendaBackground ? 'text-white/80 drop-shadow' : 'text-gray-500'}`}>{proximos.length} próximo{proximos.length !== 1 ? 's' : ''}</p>
         </div>
         {canManage && (
           <div className="flex flex-wrap justify-end gap-2">
             <label
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border cursor-pointer transition-colors ${
-                coral.agenda_fundo_url
+                hasAgendaBackground
                   ? 'bg-transparent text-white border-white/70 shadow-none hover:bg-white/10'
                   : 'bg-white text-gray-700 shadow-sm border-gray-100 hover:bg-gray-50'
               }`}
@@ -230,8 +239,12 @@ export default function Agenda() {
             </label>
             <button
               onClick={abrirNovo}
-              className="flex items-center gap-2 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-md hover:opacity-90"
-              style={{ backgroundColor: primary }}
+              className={`flex items-center gap-2 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                hasAgendaBackground
+                  ? 'bg-transparent border border-white/70 shadow-none hover:bg-white/10'
+                  : 'shadow-md hover:opacity-90'
+              }`}
+              style={hasAgendaBackground ? undefined : { backgroundColor: primary }}
             >
               <Plus className="w-4 h-4" /> Novo Evento
             </button>
@@ -246,9 +259,15 @@ export default function Agenda() {
             key={t.value}
             onClick={() => setFiltroTipo(t.value)}
             className="text-xs px-3 py-1.5 rounded-full font-medium transition-all border"
-            style={filtroTipo === t.value
-              ? { backgroundColor: primary, color: '#fff', borderColor: primary }
-              : { backgroundColor: '#fff', color: '#64748b', borderColor: '#e2e8f0' }}
+            style={hasAgendaBackground
+              ? {
+                  backgroundColor: 'transparent',
+                  color: '#fff',
+                  borderColor: filtroTipo === t.value ? '#fff' : 'rgba(255, 255, 255, 0.55)',
+                }
+              : filtroTipo === t.value
+                ? { backgroundColor: primary, color: '#fff', borderColor: primary }
+                : { backgroundColor: '#fff', color: '#64748b', borderColor: '#e2e8f0' }}
           >
             {t.label}
           </button>
@@ -312,7 +331,7 @@ export default function Agenda() {
       {/* Próximos */}
       {proximos.length > 0 && (
         <div className="mb-6">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Próximos Eventos</h3>
+          <h3 className={`text-sm font-semibold uppercase tracking-wide mb-3 ${hasAgendaBackground ? 'text-white drop-shadow' : 'text-gray-500'}`}>Próximos Eventos</h3>
           <div className="space-y-3">
             {proximos.map(ev => <EventoCard key={ev.id} ev={ev} />)}
           </div>
@@ -322,7 +341,7 @@ export default function Agenda() {
       {/* Passados */}
       {passados.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">Eventos Anteriores</h3>
+          <h3 className={`text-sm font-semibold uppercase tracking-wide mb-3 ${hasAgendaBackground ? 'text-white/80 drop-shadow' : 'text-gray-400'}`}>Eventos Anteriores</h3>
           <div className="space-y-3">
             {[...passados].reverse().map(ev => <EventoCard key={ev.id} ev={ev} />)}
           </div>
@@ -330,9 +349,9 @@ export default function Agenda() {
       )}
 
       {eventosFiltrados.length === 0 && (
-        <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
-          <Calendar className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-          <p className="text-gray-400">Nenhum evento agendado.</p>
+        <div className={`rounded-2xl p-12 text-center ${hasAgendaBackground ? 'bg-transparent border border-white/45 shadow-none' : 'bg-white shadow-sm border border-gray-100'}`}>
+          <Calendar className={`w-12 h-12 mx-auto mb-3 ${hasAgendaBackground ? 'text-white/70' : 'text-gray-200'}`} />
+          <p className={hasAgendaBackground ? 'text-white drop-shadow' : 'text-gray-400'}>Nenhum evento agendado.</p>
         </div>
       )}
       </div>
