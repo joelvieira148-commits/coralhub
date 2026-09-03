@@ -200,7 +200,7 @@ export default function Agenda() {
   return (
     <CoralLayout coral={coral} user={user} isMaestro={canManage} membro={membro}>
       <div
-        className={coral.agenda_fundo_url ? 'rounded-3xl p-4 -mx-2 -mt-2 shadow-inner' : ''}
+        className={coral.agenda_fundo_url ? 'rounded-3xl p-4 -mx-2 -mt-2' : ''}
         style={agendaBackgroundStyle}
       >
       <div className="flex items-center justify-between gap-3 mb-4">
@@ -211,7 +211,11 @@ export default function Agenda() {
         {canManage && (
           <div className="flex flex-wrap justify-end gap-2">
             <label
-              className="flex items-center gap-2 bg-white text-gray-700 px-4 py-2 rounded-xl text-sm font-semibold shadow-sm border border-gray-100 hover:bg-gray-50 cursor-pointer"
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border cursor-pointer transition-colors ${
+                coral.agenda_fundo_url
+                  ? 'bg-transparent text-white border-white/70 shadow-none hover:bg-white/10'
+                  : 'bg-white text-gray-700 shadow-sm border-gray-100 hover:bg-gray-50'
+              }`}
               title="Trocar fundo da agenda"
             >
               <Upload className="w-4 h-4" />
