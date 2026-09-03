@@ -141,13 +141,7 @@ export default function Agenda() {
     const passado = ev.data < hoje;
 
     return (
-      <div
-        className={`rounded-2xl overflow-hidden ${
-          hasAgendaBackground
-            ? 'bg-transparent shadow-none border border-transparent'
-            : 'bg-white shadow-sm border border-gray-100'
-        } ${passado ? 'opacity-60' : ''}`}
-      >
+      <div className={`rounded-2xl overflow-hidden bg-transparent shadow-none border border-transparent ${passado ? 'opacity-60' : ''}`}>
         <div className="flex">
           {/* Data */}
           <div className="w-16 flex-shrink-0 flex flex-col items-center justify-center py-4 text-white rounded-l-2xl"
@@ -337,7 +331,7 @@ export default function Agenda() {
       )}
 
       {eventosFiltrados.length === 0 && (
-        <div className={`rounded-2xl p-12 text-center ${hasAgendaBackground ? 'bg-transparent shadow-none border border-transparent' : 'bg-white shadow-sm border border-gray-100'}`}>
+        <div className="rounded-2xl p-12 text-center bg-transparent shadow-none border border-transparent">
           <Calendar className="w-12 h-12 text-gray-200 mx-auto mb-3" />
           <p className="text-gray-400">Nenhum evento agendado.</p>
         </div>
