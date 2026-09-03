@@ -126,7 +126,7 @@ export default function Agenda() {
   const primary = coral.cor_primaria || '#6366f1';
   const agendaBackgroundStyle = coral.agenda_fundo_url
     ? {
-        backgroundImage: `linear-gradient(rgba(248, 250, 252, 0.80), rgba(248, 250, 252, 0.92)), url("${coral.agenda_fundo_url}")`,
+        backgroundImage: `url("${coral.agenda_fundo_url}")`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
