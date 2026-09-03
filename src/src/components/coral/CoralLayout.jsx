@@ -73,10 +73,21 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
   return (
     <div className="min-h-screen app-background flex flex-col" style={pageBackgroundStyle}>
       <header
-        className="text-white shadow-lg sticky top-0 z-40"
+        className="text-white shadow-lg sticky top-0 z-40 overflow-hidden"
         style={headerStyle}
       >
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 flex h-full items-center justify-center px-4"
+        >
+          <span
+            className="max-w-[92%] truncate text-3xl font-semibold italic leading-none text-white/20 sm:text-5xl"
+            style={{ fontFamily: 'Georgia, "Times New Roman", serif', textShadow: '0 2px 18px rgba(0, 0, 0, 0.28)' }}
+          >
+            {coral?.nome || 'Meu Coral'}
+          </span>
+        </div>
+        <div className="relative z-10 max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
             {location.pathname !== '/mural' && (
               <button
@@ -124,7 +135,7 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
           </div>
         </div>
 
-        <nav className="hidden md:flex max-w-7xl mx-auto px-4 gap-1 pb-1 overflow-x-auto">
+        <nav className="relative z-10 hidden md:flex max-w-7xl mx-auto px-4 gap-1 pb-1 overflow-x-auto">
           {allNavItems.map(({ to, icon: Icon, label }) => (
             <Link
               key={to}
