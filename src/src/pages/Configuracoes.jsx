@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, Type } from 'lucide-react';
+import { Save, Type, X } from 'lucide-react';
 import { firebaseClient } from '@/api/firebaseClient';
 import CoralLayout from '@/components/coral/CoralLayout';
 import useCoralContext from '@/hooks/useCoralContext';
@@ -412,32 +412,6 @@ export default function Configuracoes() {
                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-300"
                 style={getNomeCoralFonteStyle(form.nome_fonte)}
               />
-              {showFontesNome && (
-                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {NOME_CORAL_FONTES.map((fonte) => (
-                    <button
-                      key={fonte.value}
-                      type="button"
-                      onClick={() => {
-                        setForm(p => ({ ...p, nome_fonte: fonte.value }));
-                        setShowFontesNome(false);
-                      }}
-                      className={`rounded-xl border px-3 py-3 text-center transition-colors ${
-                        (form.nome_fonte || 'classica') === fonte.value
-                          ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                          : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      <span className="block truncate text-lg" style={fonte.style}>
-                        {form.nome || 'Meu Coral'}
-                      </span>
-                      <span className="mt-1 block text-[11px] font-semibold uppercase tracking-wide">
-                        {fonte.label}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
@@ -468,6 +442,60 @@ export default function Configuracoes() {
             </div>
           </div>
         </div>
+
+        {showFontesNome && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-3 sm:items-center sm:p-6">
+            <div className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl">
+              <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+                <div>
+                  <h3 className="font-bold text-gray-800">Escolher letra do coral</h3>
+                  <p className="text-xs text-gray-500">Toque em um modelo para aplicar no nome.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowFontesNome(false)}
+                  className="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="max-h-[70vh] overflow-y-auto p-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {NOME_CORAL_FONTES.map((fonte) => {
+                    const selected = (form.nome_fonte || 'classica') === fonte.value;
+
+                    return (
+                      <button
+                        key={fonte.value}
+                        type="button"
+                        onClick={() => {
+                          setForm(p => ({ ...p, nome_fonte: fonte.value }));
+                          setShowFontesNome(false);
+                        }}
+                        className={`rounded-xl border p-4 text-left transition-all ${
+                          selected
+                            ? 'border-indigo-500 bg-indigo-50 shadow-sm'
+                            : 'border-gray-200 bg-white hover:border-indigo-200 hover:bg-indigo-50/50'
+                        }`}
+                      >
+                        <span
+                          className={`block truncate text-3xl leading-tight ${selected ? 'text-indigo-700' : 'text-gray-800'}`}
+                          style={fonte.style}
+                        >
+                          {form.nome || 'Meu Coral'}
+                        </span>
+                        <span className={`mt-2 block text-xs font-semibold uppercase tracking-wide ${selected ? 'text-indigo-600' : 'text-gray-500'}`}>
+                          {fonte.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <button
           type="submit"

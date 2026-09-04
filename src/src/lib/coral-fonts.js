@@ -1,18 +1,48 @@
 export const NOME_CORAL_FONTES = [
   {
     value: 'classica',
-    label: 'Classica',
-    style: { fontFamily: 'Georgia, "Times New Roman", serif', fontWeight: 700, fontStyle: 'italic' },
+    label: 'Clássica',
+    style: { fontFamily: '"Playfair Display", Georgia, serif', fontWeight: 700, fontStyle: 'italic' },
   },
   {
     value: 'elegante',
     label: 'Elegante',
-    style: { fontFamily: 'Garamond, Georgia, serif', fontWeight: 600, fontStyle: 'normal' },
+    style: { fontFamily: '"Cormorant Garamond", Garamond, Georgia, serif', fontWeight: 700, fontStyle: 'normal' },
+  },
+  {
+    value: 'majestosa',
+    label: 'Majestosa',
+    style: { fontFamily: '"Cinzel", Georgia, serif', fontWeight: 700, fontStyle: 'normal' },
+  },
+  {
+    value: 'assinatura',
+    label: 'Assinatura',
+    style: { fontFamily: '"Great Vibes", "Brush Script MT", cursive', fontWeight: 400, fontStyle: 'normal' },
+  },
+  {
+    value: 'romantica',
+    label: 'Romântica',
+    style: { fontFamily: '"Parisienne", "Brush Script MT", cursive', fontWeight: 400, fontStyle: 'normal' },
+  },
+  {
+    value: 'manuscrita',
+    label: 'Manuscrita',
+    style: { fontFamily: '"Dancing Script", "Lucida Handwriting", cursive', fontWeight: 700, fontStyle: 'normal' },
+  },
+  {
+    value: 'serena',
+    label: 'Serena',
+    style: { fontFamily: '"Marcellus", Georgia, serif', fontWeight: 400, fontStyle: 'normal' },
   },
   {
     value: 'moderna',
     label: 'Moderna',
-    style: { fontFamily: '"Trebuchet MS", Arial, sans-serif', fontWeight: 800, fontStyle: 'normal' },
+    style: { fontFamily: '"Montserrat", Arial, sans-serif', fontWeight: 800, fontStyle: 'normal' },
+  },
+  {
+    value: 'leve',
+    label: 'Leve',
+    style: { fontFamily: '"Quicksand", Arial, sans-serif', fontWeight: 700, fontStyle: 'normal' },
   },
   {
     value: 'forte',
@@ -22,17 +52,7 @@ export const NOME_CORAL_FONTES = [
   {
     value: 'suave',
     label: 'Suave',
-    style: { fontFamily: '"Segoe UI", Arial, sans-serif', fontWeight: 500, fontStyle: 'normal' },
-  },
-  {
-    value: 'manuscrita',
-    label: 'Manuscrita',
-    style: { fontFamily: '"Brush Script MT", "Lucida Handwriting", cursive', fontWeight: 500, fontStyle: 'normal' },
-  },
-  {
-    value: 'serena',
-    label: 'Serena',
-    style: { fontFamily: '"Palatino Linotype", Palatino, serif', fontWeight: 600, fontStyle: 'italic' },
+    style: { fontFamily: '"Segoe UI", Arial, sans-serif', fontWeight: 600, fontStyle: 'normal' },
   },
   {
     value: 'formal',
