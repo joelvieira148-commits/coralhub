@@ -10,6 +10,7 @@ import StorageIndicator from '@/components/coral/StorageIndicator';
 import { publicarCoraisNoCatalogo } from '@/lib/coral-directory';
 import { getUploadErrorMessage, uploadCoralFile } from '@/lib/coral-file-upload';
 import { canManageCoral } from '@/lib/coral-permissions';
+import { NOME_CORAL_FONTES, getNomeCoralFonteStyle } from '@/lib/coral-fonts';
 
 const PRESET_CORES = [
   { primary: '#6366f1', secondary: '#a78bfa', label: 'Índigo' },
@@ -63,6 +64,7 @@ export default function Configuracoes() {
       bem_vindo_posicao: coral.bem_vindo_posicao || 'center center',
       pagina_fundo_url: coral.pagina_fundo_url || '',
       pagina_fundo_posicao: coral.pagina_fundo_posicao || 'center center',
+      nome_fonte: coral.nome_fonte || 'classica',
     });
   }, [loading, canManage, coral, navigate]);
 
@@ -382,6 +384,39 @@ export default function Configuracoes() {
 
           {/* Preview */}
           <div className="mt-3 h-10 rounded-xl" style={{ background: `linear-gradient(135deg, ${primary}, ${form.cor_secundaria || '#a78bfa'})` }} />
+
+          <div className="mt-5">
+            <p className="text-sm font-medium text-gray-700 mb-2">Letra do nome do coral</p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {NOME_CORAL_FONTES.map((fonte) => (
+                <button
+                  key={fonte.value}
+                  type="button"
+                  onClick={() => setForm(p => ({ ...p, nome_fonte: fonte.value }))}
+                  className={`rounded-xl border px-3 py-3 text-center transition-colors ${
+                    (form.nome_fonte || 'classica') === fonte.value
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="block truncate text-lg" style={fonte.style}>
+                    {form.nome || 'Meu Coral'}
+                  </span>
+                  <span className="mt-1 block text-[11px] font-semibold uppercase tracking-wide">
+                    {fonte.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-center">
+              <span
+                className="block truncate text-2xl text-gray-800"
+                style={getNomeCoralFonteStyle(form.nome_fonte)}
+              >
+                {form.nome || 'Nome do coral'}
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Dados */}

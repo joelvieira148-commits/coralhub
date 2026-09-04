@@ -16,6 +16,7 @@ import {
 import { isUsingLocalFirebase } from '@/api/firebaseClient';
 import { isAdminUser } from '@/lib/admin-access';
 import { logoutToApp } from '@/lib/logout';
+import { getNomeCoralFonteStyle } from '@/lib/coral-fonts';
 import TrebleClefIcon from '@/components/coral/TrebleClefIcon';
 
 export default function CoralLayout({ coral, user, isMaestro, membro, children }) {
@@ -26,6 +27,7 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
   const primary = coral?.cor_primaria || '#6366f1';
   const secondary = coral?.cor_secundaria || '#818cf8';
   const capaPosicao = coral?.capa_posicao || 'center center';
+  const nomeCoralFonteStyle = getNomeCoralFonteStyle(coral?.nome_fonte);
   const pageBackgroundStyle = coral?.pagina_fundo_url
     ? {
         '--app-background-image': `url("${coral.pagina_fundo_url}")`,
@@ -81,8 +83,8 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
           className="pointer-events-none absolute inset-x-0 top-0 flex h-full items-center justify-center px-4"
         >
           <span
-            className="max-w-[92%] truncate text-3xl font-semibold italic leading-none text-white/20 sm:text-5xl"
-            style={{ fontFamily: 'Georgia, "Times New Roman", serif', textShadow: '0 2px 18px rgba(0, 0, 0, 0.28)' }}
+            className="max-w-[92%] truncate text-3xl leading-none text-white/20 sm:text-5xl"
+            style={{ ...nomeCoralFonteStyle, textShadow: '0 2px 18px rgba(0, 0, 0, 0.28)' }}
           >
             {coral?.nome || 'Meu Coral'}
           </span>
@@ -106,7 +108,12 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
               </div>
             )}
             <div className="min-w-0">
-              <h1 className="font-bold text-lg sm:text-xl leading-tight truncate max-w-[190px] sm:max-w-none">{coral?.nome || 'Meu Coral'}</h1>
+              <h1
+                className="text-lg sm:text-xl leading-tight truncate max-w-[190px] sm:max-w-none"
+                style={nomeCoralFonteStyle}
+              >
+                {coral?.nome || 'Meu Coral'}
+              </h1>
               <p className="text-xs text-white/70">{isMaestro ? 'Maestro' : membro?.cargo ? 'Membro' : 'Membro'}</p>
             </div>
           </div>
