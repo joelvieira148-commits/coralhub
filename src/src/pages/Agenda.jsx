@@ -124,10 +124,11 @@ export default function Agenda() {
   if (!coral) return null;
 
   const primary = coral.cor_primaria || '#6366f1';
-  const hasAgendaBackground = Boolean(coral.agenda_fundo_url);
+  const agendaImageUrl = coral.agenda_fundo_url || coral.pagina_fundo_url;
+  const hasAgendaBackground = Boolean(agendaImageUrl);
   const agendaBackgroundStyle = hasAgendaBackground
     ? {
-        backgroundImage: `url("${coral.agenda_fundo_url}")`,
+        backgroundImage: `url("${agendaImageUrl}")`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
@@ -252,7 +253,9 @@ export default function Agenda() {
             className="text-xs px-3 py-1.5 rounded-full font-medium transition-all border"
             style={filtroTipo === t.value
               ? { backgroundColor: primary, color: '#fff', borderColor: primary }
-              : { backgroundColor: '#fff', color: '#64748b', borderColor: '#e2e8f0' }}
+              : hasAgendaBackground
+                ? { backgroundColor: 'transparent', color: '#64748b', borderColor: 'transparent' }
+                : { backgroundColor: '#fff', color: '#64748b', borderColor: '#e2e8f0' }}
           >
             {t.label}
           </button>
