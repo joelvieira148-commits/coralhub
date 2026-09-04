@@ -594,12 +594,12 @@ export default function Biblioteca() {
                         />
                       )}
 
-                      {canManageMusic && m.audio_completo_url && (
+                      {m.audio_completo_url && (
                         <AudioPlayer
                           url={m.audio_completo_url}
                           label="Audio Completo"
-                          allowDownload={true}
-                          allowOffline={true}
+                          allowDownload={canManageMusic}
+                          allowOffline={canManageMusic}
                           onPlay={(audioInfo) => playTrack(m, audioInfo, 'completo')}
                           isSelected={currentTrack?.id === `${m.id}-completo`}
                         />
@@ -619,7 +619,7 @@ export default function Biblioteca() {
                           />
                         ))
                       ) : (
-                        !canManageMusic && (
+                        !canManageMusic && !m.audio_completo_url && !m.playback_url && (
                           <p className="text-xs text-gray-400 text-center py-2">
                             Nenhum áudio disponível para o seu naipe nesta música.
                           </p>
