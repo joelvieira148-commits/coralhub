@@ -17,7 +17,7 @@ import { firebaseClient } from '@/api/firebaseClient';
 import CoralLayout from '@/components/coral/CoralLayout';
 import useCoralContext, { clearCoralContextCache, saveCoralContextCache } from '@/hooks/useCoralContext';
 import { clearCurrentUserCoralMembership, getMemberEmail, normalizeEmail } from '@/lib/coral-membership';
-import { canManageCoral } from '@/lib/coral-permissions';
+import { canManageCoral, getCoralManagerEmails, isRegenteRole } from '@/lib/coral-permissions';
 import { registerCadastroBlocks } from '@/lib/cadastro-autorizacao';
 import { getMemberPhotoFields, getMemberPhotoUrl } from '@/lib/member-photo';
 import { uploadProfilePhoto } from '@/lib/profile-photo-upload';
@@ -50,6 +50,24 @@ const getMemberNaipes = (member) => {
     : [member?.naipe];
 
   return [...new Set(values.filter(Boolean))];
+};
+
+const getCargoRole = (cargo) => (isRegenteRole(cargo) ? 'maestro' : 'membro');
+
+const getNextManagerEmails = (coral, previousMember, updatedMember) => {
+  const previousEmail = getMemberEmail(previousMember);
+  const updatedEmail = getMemberEmail(updatedMember);
+  const emails = new Set(getCoralManagerEmails(coral));
+
+  if (previousEmail && (isRegenteRole(previousMember?.cargo) || previousEmail !== updatedEmail)) {
+    emails.delete(previousEmail);
+  }
+
+  if (updatedEmail && isRegenteRole(updatedMember?.cargo)) {
+    emails.add(updatedEmail);
+  }
+
+  return [...emails];
 };
 
 export default function Membros() {
@@ -157,6 +175,7 @@ export default function Membros() {
     setSalvando(true);
 
     try {
+      const membroAnterior = membros.find((item) => item.id === editando) || null;
       const naipesSelecionados = getMemberNaipes(editForm).slice(0, 2);
       const payload = {
         ...editForm,
@@ -171,9 +190,23 @@ export default function Membros() {
       const updatedWithPhoto = { ...updated, ...getMemberPhotoFields(editForm.foto_url) };
       setMembros((prev) => prev.map((item) => (item.id === editando ? updatedWithPhoto : item)));
 
+      const coralUpdates = {};
+      const nextManagerEmails = getNextManagerEmails(coral, membroAnterior, updatedWithPhoto);
+      const currentManagerEmails = getCoralManagerEmails(coral);
+      const managersChanged =
+        nextManagerEmails.length !== currentManagerEmails.length ||
+        nextManagerEmails.some((email) => !currentManagerEmails.includes(email));
+
+      if (managersChanged) {
+        coralUpdates.maestro_emails = nextManagerEmails;
+        coralUpdates.regente_emails = nextManagerEmails;
+      }
+
       const emailAtualizado = getMemberEmail(updatedWithPhoto);
       if (emailAtualizado && normalizeEmail(user?.email) === emailAtualizado) {
+        const activeRole = getCargoRole(updatedWithPhoto.cargo);
         const userUpdate = {
+          active_coral_role: activeRole,
           member_nome: updatedWithPhoto.nome || user?.full_name || user?.email || '',
           member_naipe: updatedWithPhoto.naipe || '',
           member_naipes: getMemberNaipes(updatedWithPhoto),
@@ -187,9 +220,11 @@ export default function Membros() {
       }
 
       if (novosBytes > 0) {
-        const updatedCoral = await firebaseClient.entities.Coral.update(coral.id, {
-          armazenamento_usado_bytes: (coral.armazenamento_usado_bytes || 0) + novosBytes,
-        });
+        coralUpdates.armazenamento_usado_bytes = (coral.armazenamento_usado_bytes || 0) + novosBytes;
+      }
+
+      if (Object.keys(coralUpdates).length > 0) {
+        const updatedCoral = await firebaseClient.entities.Coral.update(coral.id, coralUpdates);
         setCoral(updatedCoral);
       }
 

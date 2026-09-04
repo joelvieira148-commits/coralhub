@@ -11,17 +11,38 @@ service cloud.firestore {
     }
 
     function isCoralMaestro(coralId) {
+      let coralRecord = get(/databases/$(database)/documents/records/$(coralId));
       return signedIn()
         && coralId is string
         && exists(/databases/$(database)/documents/records/$(coralId))
-        && get(/databases/$(database)/documents/records/$(coralId)).data.entity == "Coral"
-        && get(/databases/$(database)/documents/records/$(coralId)).data.data.maestro_email == request.auth.token.email;
+        && coralRecord.data.entity == "Coral"
+        && (
+          coralRecord.data.data.maestro_email == request.auth.token.email
+          || (
+            coralRecord.data.data.maestro_emails is list
+            && request.auth.token.email in coralRecord.data.data.maestro_emails
+          )
+          || (
+            coralRecord.data.data.regente_emails is list
+            && request.auth.token.email in coralRecord.data.data.regente_emails
+          )
+        );
     }
 
     function isCoralOwnerRecord(recordData) {
       return signedIn()
         && recordData.entity == "Coral"
-        && recordData.data.maestro_email == request.auth.token.email;
+        && (
+          recordData.data.maestro_email == request.auth.token.email
+          || (
+            recordData.data.maestro_emails is list
+            && request.auth.token.email in recordData.data.maestro_emails
+          )
+          || (
+            recordData.data.regente_emails is list
+            && request.auth.token.email in recordData.data.regente_emails
+          )
+        );
     }
 
     function isSelfMemberCreate(recordData) {
@@ -47,10 +68,10 @@ service cloud.firestore {
       );
     }
 
-    function canUpdateOrDeleteRecord(recordData) {
+    function canUpdateOrDeleteRecord(recordData, recordId) {
       return (
         !(recordData.entity in ["Coral", "Membro", "Musica", "Aviso", "Evento"])
-        || (recordData.entity == "Coral" && (isAdmin() || isCoralOwnerRecord(recordData)))
+        || (recordData.entity == "Coral" && (isAdmin() || isCoralOwnerRecord(recordData) || isCoralMaestro(recordId)))
         || (recordData.entity == "Membro" && canWriteCoralContent(recordData))
         || (recordData.entity in ["Musica", "Aviso", "Evento"] && canWriteCoralContent(recordData))
       );
@@ -66,7 +87,7 @@ service cloud.firestore {
         && request.resource.data.owner_id == request.auth.uid
         && canCreateRecord(request.resource.data);
       allow update, delete: if signedIn()
-        && canUpdateOrDeleteRecord(resource.data);
+        && canUpdateOrDeleteRecord(resource.data, recordId);
     }
   }
 }

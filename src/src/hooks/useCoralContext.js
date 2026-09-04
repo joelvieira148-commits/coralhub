@@ -10,7 +10,7 @@ import { publicarCoraisNoCatalogo } from '@/lib/coral-directory';
 import { getMemberPhotoFields, getMemberPhotoUrl } from '@/lib/member-photo';
 import { getAdminCoralOverride, isAdminUser } from '@/lib/admin-access';
 import { getBlockedCadastro, requestCadastroAuthorization } from '@/lib/cadastro-autorizacao';
-import { getSafeMemberRole, isCoralOwner } from '@/lib/coral-permissions';
+import { canManageCoral, getSafeMemberRole } from '@/lib/coral-permissions';
 
 const CACHE_KEY = 'coralhub_context_cache_v2';
 
@@ -252,7 +252,7 @@ const carregarContextoCoral = async () => {
 
     contexto.coral = coralAtual;
     contexto.membro = membroAtual;
-    contexto.isMaestro = safeRole === 'maestro' && isCoralOwner(me, coralAtual);
+    contexto.isMaestro = safeRole === 'maestro' && canManageCoral(me, coralAtual);
     contexto.user = await syncCurrentUserCoralMembership(firebaseClient, me, {
       active_coral_id: coralId,
       active_coral_role: safeRole,
