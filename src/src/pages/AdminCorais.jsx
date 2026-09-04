@@ -14,6 +14,7 @@ import {
   Phone,
   RefreshCw,
   Search,
+  Send,
   Trash2,
   Unlock,
   Users,
@@ -35,6 +36,7 @@ import {
 import { publicarCoraisNoCatalogo, removerCoralDoCatalogo } from '@/lib/coral-directory';
 import { clearCurrentUserCoralMembership, getMemberEmail, normalizeEmail } from '@/lib/coral-membership';
 import { AUTORIZACAO_STATUS, registerCadastroBlocks } from '@/lib/cadastro-autorizacao';
+import { getCoralManagerEmails, isRegenteRole } from '@/lib/coral-permissions';
 import TrebleClefIcon from '@/components/coral/TrebleClefIcon';
 
 const emptyForm = {
@@ -44,6 +46,19 @@ const emptyForm = {
   endereco: '',
   descricao: '',
 };
+
+const AVISO_USO_PLATAFORMA_ASSUNTO = 'Aviso importante - Plataforma Maestro Coral';
+
+const AVISO_USO_PLATAFORMA_MENSAGEM = `Ola, Maestro/Maestrina!
+
+Estamos passando para lembrar da importancia de continuar utilizando sua plataforma no Maestro Coral.
+
+Pedimos que mantenha sua plataforma em uso, atualizando musicas, partituras, avisos, agenda e informacoes do coral sempre que necessario. Plataformas sem uso por muito tempo poderao ser analisadas e bloqueadas posteriormente para mantermos a organizacao do sistema.
+
+Agradecemos por voce estar conosco na plataforma Coral. E uma alegria ter seu coral fazendo parte deste projeto.
+
+Atenciosamente,
+ADMIN`;
 
 export default function AdminCorais() {
   const navigate = useNavigate();
@@ -181,6 +196,53 @@ export default function AdminCorais() {
     }
 
     return pessoas;
+  };
+
+  const getEmailsDosRegentes = () => {
+    const coraisComPlataforma = coraisAprovados;
+    const coralIds = new Set(coraisComPlataforma.map((coral) => coral.id));
+    const emails = new Set();
+
+    coraisComPlataforma.forEach((coral) => {
+      getCoralManagerEmails(coral).forEach((email) => emails.add(email));
+    });
+
+    membros.forEach((membro) => {
+      if (!coralIds.has(membro.coral_id) || !isRegenteRole(membro.cargo)) return;
+      const email = getMemberEmail(membro);
+      if (email) emails.add(email);
+    });
+
+    return [...emails].sort();
+  };
+
+  const enviarAvisoParaRegentes = async () => {
+    const emails = getEmailsDosRegentes();
+
+    if (emails.length === 0) {
+      alert('Nenhum e-mail de maestro ou maestrina foi encontrado.');
+      return;
+    }
+
+    const assunto = encodeURIComponent(AVISO_USO_PLATAFORMA_ASSUNTO);
+    const corpo = encodeURIComponent(AVISO_USO_PLATAFORMA_MENSAGEM);
+    const mailto = `mailto:?bcc=${encodeURIComponent(emails.join(','))}&subject=${assunto}&body=${corpo}`;
+
+    try {
+      await navigator.clipboard?.writeText(
+        `Para/BCC:\n${emails.join(', ')}\n\nAssunto:\n${AVISO_USO_PLATAFORMA_ASSUNTO}\n\nMensagem:\n${AVISO_USO_PLATAFORMA_MENSAGEM}`
+      );
+    } catch {
+      // Clipboard is only a convenience if the browser allows it.
+    }
+
+    if (mailto.length > 1800) {
+      alert(`Aviso copiado para ${emails.length} e-mail${emails.length !== 1 ? 's' : ''}. Como a lista e grande, cole os destinatarios e a mensagem no seu app de e-mail.`);
+      return;
+    }
+
+    window.location.href = mailto;
+    alert(`Aviso preparado para ${emails.length} e-mail${emails.length !== 1 ? 's' : ''}. Se o app de e-mail nao abrir, a mensagem foi copiada para voce colar.`);
   };
 
   const autorizarCadastro = async (autorizacao) => {
@@ -376,6 +438,14 @@ export default function AdminCorais() {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={enviarAvisoParaRegentes}
+              disabled={coraisAprovados.length === 0}
+              className="flex items-center gap-1.5 text-white/75 hover:text-white text-xs transition-colors disabled:opacity-50"
+              title="Enviar aviso aos maestros e maestrinas"
+            >
+              <Send className="w-4 h-4" /> Aviso
+            </button>
             <button
               onClick={sincronizarCadastro}
               disabled={sincronizando || coraisDisponiveis.length === 0}
