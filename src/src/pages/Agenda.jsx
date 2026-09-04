@@ -216,11 +216,7 @@ export default function Agenda() {
         {canManage && (
           <div className="flex flex-wrap justify-end gap-2">
             <label
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border cursor-pointer transition-colors ${
-                hasAgendaBackground
-                  ? 'bg-transparent text-white border-white/70 shadow-none hover:bg-white/10'
-                  : 'bg-white text-gray-700 shadow-sm border-gray-100 hover:bg-gray-50'
-              }`}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-transparent bg-transparent text-gray-700 shadow-none cursor-pointer transition-colors hover:bg-transparent"
               title="Trocar fundo da agenda"
             >
               <Upload className="w-4 h-4" />
@@ -253,9 +249,7 @@ export default function Agenda() {
             className="text-xs px-3 py-1.5 rounded-full font-medium transition-all border"
             style={filtroTipo === t.value
               ? { backgroundColor: primary, color: '#fff', borderColor: primary }
-              : hasAgendaBackground
-                ? { backgroundColor: 'transparent', color: '#64748b', borderColor: 'transparent' }
-                : { backgroundColor: '#fff', color: '#64748b', borderColor: '#e2e8f0' }}
+              : { backgroundColor: 'transparent', color: '#64748b', borderColor: 'transparent' }}
           >
             {t.label}
           </button>
