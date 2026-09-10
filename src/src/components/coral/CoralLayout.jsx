@@ -41,12 +41,14 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
   const headerBackground = coral?.capa_url
     ? `url("${coral.capa_url}")`
     : `linear-gradient(135deg, ${primary}, ${secondary})`;
+  const readableTextShadow = '0 2px 6px rgba(0, 0, 0, 0.9), 0 0 18px rgba(0, 0, 0, 0.7)';
   const headerStyle = coral?.capa_url
     ? {
         backgroundImage: headerBackground,
         backgroundSize: 'cover',
         backgroundPosition: capaPosicao,
         backgroundRepeat: 'no-repeat',
+        textShadow: readableTextShadow,
       }
     : { background: headerBackground };
 
@@ -83,8 +85,8 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
           className="pointer-events-none absolute inset-x-0 top-0 flex h-full items-center justify-center px-4"
         >
           <span
-            className="max-w-[92%] truncate text-3xl leading-none text-white/20 sm:text-5xl"
-            style={{ ...nomeCoralFonteStyle, textShadow: '0 2px 18px rgba(0, 0, 0, 0.28)' }}
+            className="max-w-[92%] truncate text-3xl leading-none text-white/35 sm:text-5xl"
+            style={{ ...nomeCoralFonteStyle, textShadow: readableTextShadow }}
           >
             {coral?.nome || 'Meu Coral'}
           </span>
@@ -114,7 +116,7 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
               >
                 {coral?.nome || 'Meu Coral'}
               </h1>
-              <p className="text-xs text-white/70">{isMaestro ? 'Maestro' : membro?.cargo ? 'Membro' : 'Membro'}</p>
+              <p className="text-xs font-semibold text-white/95">{isMaestro ? 'Maestro' : membro?.cargo ? 'Membro' : 'Membro'}</p>
             </div>
           </div>
 

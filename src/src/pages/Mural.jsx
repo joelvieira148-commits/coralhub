@@ -492,13 +492,16 @@ export default function Mural() {
         style={{
           backgroundImage: welcomeBackgroundImage,
           backgroundPosition: welcomeImageUrl ? welcomeImagePosition : undefined,
+          textShadow: welcomeImageUrl
+            ? '0 2px 7px rgba(0, 0, 0, 0.92), 0 0 18px rgba(0, 0, 0, 0.72)'
+            : undefined,
         }}
       >
-        <p className="text-white/80 text-sm mb-0.5">
+        <p className="text-white/95 text-sm font-semibold mb-0.5">
           {canManage ? 'Bem-vindo!' : `Bem-vindo, ${membro?.nome?.split(' ')[0] || 'Membro'}!`}
         </p>
-        <h2 className="text-xl font-bold">{coral.nome}</h2>
-        <p className="text-white/70 text-sm mt-1">
+        <h2 className="text-xl font-extrabold">{coral.nome}</h2>
+        <p className="text-white/95 text-sm font-medium mt-1">
           {canManage ? 'Publique avisos, fotos e videos para o coral.' : 'Confira avisos, fotos e videos do coral.'}
         </p>
       </div>
