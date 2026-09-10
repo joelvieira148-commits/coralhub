@@ -23,8 +23,18 @@ export const isLightTextColor = (color) => {
 
 export const getReadableTextShadow = (color) =>
   isLightTextColor(color)
-    ? '0 2px 6px rgba(0, 0, 0, 0.92), 0 0 18px rgba(0, 0, 0, 0.74)'
-    : '0 1px 4px rgba(255, 255, 255, 0.92), 0 0 16px rgba(255, 255, 255, 0.72)';
+    ? [
+        '0 1px 2px rgba(0, 0, 0, 0.95)',
+        '1px 0 1px rgba(0, 0, 0, 0.85)',
+        '-1px 0 1px rgba(0, 0, 0, 0.85)',
+        '0 -1px 1px rgba(0, 0, 0, 0.85)',
+      ].join(', ')
+    : [
+        '0 1px 2px rgba(255, 255, 255, 0.95)',
+        '1px 0 1px rgba(255, 255, 255, 0.85)',
+        '-1px 0 1px rgba(255, 255, 255, 0.85)',
+        '0 -1px 1px rgba(255, 255, 255, 0.85)',
+      ].join(', ');
 
 export const getReadableTextStyle = (color) => ({
   color: normalizeHexColor(color),
