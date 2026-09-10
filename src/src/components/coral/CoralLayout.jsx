@@ -39,7 +39,7 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
       }
     : undefined;
   const headerBackground = coral?.capa_url
-    ? `linear-gradient(rgba(15, 23, 42, 0.52), rgba(15, 23, 42, 0.76)), url("${coral.capa_url}")`
+    ? `url("${coral.capa_url}")`
     : `linear-gradient(135deg, ${primary}, ${secondary})`;
   const headerStyle = coral?.capa_url
     ? {

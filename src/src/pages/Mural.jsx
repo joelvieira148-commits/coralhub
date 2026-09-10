@@ -479,7 +479,7 @@ export default function Mural() {
     ? coral.bem_vindo_posicao || 'center center'
     : coral.capa_posicao || 'center center';
   const welcomeBackgroundImage = welcomeImageUrl
-    ? `linear-gradient(rgba(15, 23, 42, 0.50), rgba(15, 23, 42, 0.78)), url("${welcomeImageUrl}")`
+    ? `url("${welcomeImageUrl}")`
     : `linear-gradient(135deg, ${primary}, ${secondary})`;
   const videos = avisos.filter((aviso) => getPublicationType(aviso) === 'video');
   const fotos = avisos.filter((aviso) => getPublicationType(aviso) === 'foto');
