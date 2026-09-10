@@ -17,6 +17,7 @@ import { isUsingLocalFirebase } from '@/api/firebaseClient';
 import { isAdminUser } from '@/lib/admin-access';
 import { logoutToApp } from '@/lib/logout';
 import { getNomeCoralFonteStyle } from '@/lib/coral-fonts';
+import { getReadableTextStyle } from '@/lib/readable-text';
 import TrebleClefIcon from '@/components/coral/TrebleClefIcon';
 
 export default function CoralLayout({ coral, user, isMaestro, membro, children }) {
@@ -28,6 +29,7 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
   const secondary = coral?.cor_secundaria || '#818cf8';
   const capaPosicao = coral?.capa_posicao || 'center center';
   const nomeCoralFonteStyle = getNomeCoralFonteStyle(coral?.nome_fonte);
+  const topoTextoStyle = getReadableTextStyle(coral?.topo_texto_cor || '#ffffff');
   const pageBackgroundStyle = coral?.pagina_fundo_url
     ? {
         '--app-background-image': `url("${coral.pagina_fundo_url}")`,
@@ -41,14 +43,13 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
   const headerBackground = coral?.capa_url
     ? `url("${coral.capa_url}")`
     : `linear-gradient(135deg, ${primary}, ${secondary})`;
-  const readableTextShadow = '0 2px 6px rgba(0, 0, 0, 0.9), 0 0 18px rgba(0, 0, 0, 0.7)';
   const headerStyle = coral?.capa_url
     ? {
         backgroundImage: headerBackground,
         backgroundSize: 'cover',
         backgroundPosition: capaPosicao,
         backgroundRepeat: 'no-repeat',
-        textShadow: readableTextShadow,
+        textShadow: topoTextoStyle.textShadow,
       }
     : { background: headerBackground };
 
@@ -85,8 +86,8 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
           className="pointer-events-none absolute inset-x-0 top-0 flex h-full items-center justify-center px-4"
         >
           <span
-            className="max-w-[92%] truncate text-3xl leading-none text-white/35 sm:text-5xl"
-            style={{ ...nomeCoralFonteStyle, textShadow: readableTextShadow }}
+            className="max-w-[92%] truncate text-3xl leading-none opacity-35 sm:text-5xl"
+            style={{ ...nomeCoralFonteStyle, ...topoTextoStyle }}
           >
             {coral?.nome || 'Meu Coral'}
           </span>
@@ -97,6 +98,7 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
               <button
                 onClick={() => navigate(-1)}
                 className="mr-1 p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors flex-shrink-0"
+                style={topoTextoStyle}
                 title="Voltar"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -106,22 +108,26 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
               <img src={coral.logo_url} alt="Logo" className="h-14 w-14 rounded-full object-cover border-2 border-white/40 flex-shrink-0" />
             ) : (
               <div className="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                <Music className="w-7 h-7 text-white" />
+                <Music className="w-7 h-7" style={{ color: topoTextoStyle.color }} />
               </div>
             )}
             <div className="min-w-0">
               <h1
                 className="text-lg sm:text-xl leading-tight truncate max-w-[190px] sm:max-w-none"
-                style={nomeCoralFonteStyle}
+                style={{ ...nomeCoralFonteStyle, ...topoTextoStyle }}
               >
                 {coral?.nome || 'Meu Coral'}
               </h1>
-              <p className="text-xs font-semibold text-white/95">{isMaestro ? 'Maestro' : membro?.cargo ? 'Membro' : 'Membro'}</p>
+              <p className="text-xs font-semibold" style={topoTextoStyle}>{isMaestro ? 'Maestro' : membro?.cargo ? 'Membro' : 'Membro'}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <Link to="/ajuda" className="flex items-center gap-1 text-white/80 hover:text-white text-sm transition-colors">
+            <Link
+              to="/ajuda"
+              className="flex items-center gap-1 text-sm transition-colors"
+              style={topoTextoStyle}
+            >
               <HelpCircle className="w-4 h-4" />
               <span className="hidden sm:inline text-xs">Ajuda</span>
             </Link>
@@ -136,7 +142,8 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
                 }
                 logoutToApp('/');
               }}
-              className="flex items-center gap-1 text-white/80 hover:text-white text-sm transition-colors"
+              className="flex items-center gap-1 text-sm transition-colors"
+              style={topoTextoStyle}
             >
               <LogOut className="w-4 h-4" />
               <span className="hidden sm:inline text-xs">Sair</span>
@@ -154,6 +161,7 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
                   ? 'bg-white/20 text-white'
                   : 'text-white/70 hover:text-white hover:bg-white/10'
               }`}
+              style={topoTextoStyle}
             >
               <Icon className="w-3.5 h-3.5" />
               {label}

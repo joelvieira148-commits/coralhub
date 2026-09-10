@@ -346,6 +346,8 @@ export default function Onboarding() {
         maestro_email: user.email,
         cor_primaria: '#6366f1',
         cor_secundaria: '#a78bfa',
+        topo_texto_cor: '#ffffff',
+        bem_vindo_texto_cor: '#ffffff',
         tema: 'classico',
         status_aprovacao: CORAL_STATUS.pending,
         solicitado_em: new Date().toISOString(),

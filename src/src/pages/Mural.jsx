@@ -18,6 +18,7 @@ import CoralLayout from '@/components/coral/CoralLayout';
 import useCoralContext from '@/hooks/useCoralContext';
 import { canManageCoral } from '@/lib/coral-permissions';
 import { getUploadErrorMessage, isFileKind, uploadCoralFile } from '@/lib/coral-file-upload';
+import { getReadableTextStyle } from '@/lib/readable-text';
 import { formatarBytes, verificarEspaco } from '@/utils/storage';
 
 const TIPOS = [
@@ -481,6 +482,7 @@ export default function Mural() {
   const welcomeBackgroundImage = welcomeImageUrl
     ? `url("${welcomeImageUrl}")`
     : `linear-gradient(135deg, ${primary}, ${secondary})`;
+  const welcomeTextStyle = getReadableTextStyle(coral.bem_vindo_texto_cor || '#ffffff');
   const videos = avisos.filter((aviso) => getPublicationType(aviso) === 'video');
   const fotos = avisos.filter((aviso) => getPublicationType(aviso) === 'foto');
   const avisosTexto = avisos.filter((aviso) => getPublicationType(aviso) === 'aviso');
@@ -492,16 +494,15 @@ export default function Mural() {
         style={{
           backgroundImage: welcomeBackgroundImage,
           backgroundPosition: welcomeImageUrl ? welcomeImagePosition : undefined,
-          textShadow: welcomeImageUrl
-            ? '0 2px 7px rgba(0, 0, 0, 0.92), 0 0 18px rgba(0, 0, 0, 0.72)'
-            : undefined,
+          color: welcomeTextStyle.color,
+          textShadow: welcomeTextStyle.textShadow,
         }}
       >
-        <p className="text-white/95 text-sm font-semibold mb-0.5">
+        <p className="text-sm font-semibold mb-0.5" style={{ color: welcomeTextStyle.color }}>
           {canManage ? 'Bem-vindo!' : `Bem-vindo, ${membro?.nome?.split(' ')[0] || 'Membro'}!`}
         </p>
-        <h2 className="text-xl font-extrabold">{coral.nome}</h2>
-        <p className="text-white/95 text-sm font-medium mt-1">
+        <h2 className="text-xl font-extrabold" style={{ color: welcomeTextStyle.color }}>{coral.nome}</h2>
+        <p className="text-sm font-medium mt-1" style={{ color: welcomeTextStyle.color }}>
           {canManage ? 'Publique avisos, fotos e videos para o coral.' : 'Confira avisos, fotos e videos do coral.'}
         </p>
       </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, Type, X } from 'lucide-react';
+import { Palette, Save, Type, X } from 'lucide-react';
 import { firebaseClient } from '@/api/firebaseClient';
 import CoralLayout from '@/components/coral/CoralLayout';
 import useCoralContext from '@/hooks/useCoralContext';
@@ -21,6 +21,19 @@ const PRESET_CORES = [
   { primary: '#8b5cf6', secondary: '#c084fc', label: 'Roxo' },
   { primary: '#ef4444', secondary: '#f87171', label: 'Vermelho' },
   { primary: '#0ea5e9', secondary: '#38bdf8', label: 'Ciano' },
+];
+
+const PRESET_CORES_LETRAS = [
+  { value: '#ffffff', label: 'Branco' },
+  { value: '#111827', label: 'Preto' },
+  { value: '#fef3c7', label: 'Creme' },
+  { value: '#fde047', label: 'Amarelo' },
+  { value: '#fbbf24', label: 'Dourado' },
+  { value: '#f472b6', label: 'Rosa' },
+  { value: '#c084fc', label: 'Lilás' },
+  { value: '#93c5fd', label: 'Azul claro' },
+  { value: '#86efac', label: 'Verde claro' },
+  { value: '#ef4444', label: 'Vermelho' },
 ];
 
 const POSICOES_CAPA = [
@@ -66,6 +79,8 @@ export default function Configuracoes() {
       pagina_fundo_url: coral.pagina_fundo_url || '',
       pagina_fundo_posicao: coral.pagina_fundo_posicao || 'center center',
       nome_fonte: coral.nome_fonte || 'classica',
+      topo_texto_cor: coral.topo_texto_cor || '#ffffff',
+      bem_vindo_texto_cor: coral.bem_vindo_texto_cor || '#ffffff',
     });
   }, [loading, canManage, coral, navigate]);
 
@@ -175,6 +190,49 @@ export default function Configuracoes() {
   const primary = form.cor_primaria || '#6366f1';
   const previewCoral = { ...coral, ...form };
   const fonteSelecionada = getNomeCoralFonte(form.nome_fonte);
+  const renderPaletaLetras = (field, label, description) => (
+    <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold text-gray-700">{label}</p>
+          <p className="text-xs text-gray-500">{description}</p>
+        </div>
+        <Palette className="h-4 w-4 flex-shrink-0 text-gray-400" />
+      </div>
+      <div className="mb-3 flex flex-wrap gap-2">
+        {PRESET_CORES_LETRAS.map((cor) => {
+          const selected = (form[field] || '#ffffff').toLowerCase() === cor.value.toLowerCase();
+
+          return (
+            <button
+              key={`${field}-${cor.value}`}
+              type="button"
+              onClick={() => setForm(p => ({ ...p, [field]: cor.value }))}
+              className={`h-9 w-9 rounded-full border-2 shadow-sm transition-transform hover:scale-110 ${
+                selected ? 'border-gray-900 ring-2 ring-gray-300' : 'border-white'
+              }`}
+              style={{ backgroundColor: cor.value }}
+              title={cor.label}
+            />
+          );
+        })}
+      </div>
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          value={form[field] || '#ffffff'}
+          onChange={e => setForm(p => ({ ...p, [field]: e.target.value }))}
+          className="h-10 w-10 flex-shrink-0 cursor-pointer rounded-lg border border-gray-200 p-0.5"
+        />
+        <input
+          value={form[field] || ''}
+          onChange={e => setForm(p => ({ ...p, [field]: e.target.value }))}
+          className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+          placeholder="#ffffff"
+        />
+      </div>
+    </div>
+  );
 
   return (
     <CoralLayout coral={previewCoral} user={user} isMaestro={canManage}>
@@ -386,6 +444,14 @@ export default function Configuracoes() {
 
           {/* Preview */}
           <div className="mt-3 h-10 rounded-xl" style={{ background: `linear-gradient(135deg, ${primary}, ${form.cor_secundaria || '#a78bfa'})` }} />
+
+          <div className="mt-5">
+            <p className="mb-2 text-sm font-medium text-gray-700">Paleta das letras</p>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {renderPaletaLetras('topo_texto_cor', 'Letra do topo', 'Cor do nome do coral no topo.')}
+              {renderPaletaLetras('bem_vindo_texto_cor', 'Letra do Bem-vindo', 'Cor dos textos da area de boas-vindas.')}
+            </div>
+          </div>
 
         </div>
 
