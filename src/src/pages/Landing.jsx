@@ -48,7 +48,7 @@ export default function Landing() {
 
       <main className="flex-1 flex flex-col items-center justify-center text-center px-6 py-20">
         <img
-          src="/app-icon.png"
+          src="/maestro-coral-icon.png"
           alt="Maestro Coral"
           className="mb-6 h-28 w-28 rounded-[2rem] border-4 border-white/30 object-cover shadow-2xl"
         />

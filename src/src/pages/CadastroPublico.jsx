@@ -11,7 +11,7 @@ export default function CadastroPublico() {
     <div className="min-h-screen app-background flex items-center justify-center p-6">
       <div className="w-full max-w-md rounded-3xl bg-white/95 p-6 text-center shadow-2xl backdrop-blur sm:p-8">
         <img
-          src="/app-icon.png"
+          src="/maestro-coral-icon.png"
           alt="Maestro Coral"
           className="mx-auto mb-4 h-20 w-20 rounded-2xl object-cover shadow-lg"
         />

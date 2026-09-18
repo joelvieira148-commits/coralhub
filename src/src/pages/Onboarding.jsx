@@ -557,7 +557,7 @@ export default function Onboarding() {
         <div className="bg-white/95 rounded-3xl p-8 max-w-md w-full shadow-2xl backdrop-blur">
           <div className="text-center mb-8">
             <img
-              src="/app-icon.png"
+              src="/maestro-coral-icon.png"
               alt="Maestro Coral"
               className="mx-auto mb-3 h-20 w-20 rounded-2xl object-cover shadow-lg"
             />

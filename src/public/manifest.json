@@ -5,17 +5,17 @@
   "start_url": "/cadastro",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#4f46e5",
+  "background_color": "#25170f",
+  "theme_color": "#25170f",
   "icons": [
     {
-      "src": "/app-icon.png",
+      "src": "/maestro-coral-icon.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/app-icon.png",
+      "src": "/maestro-coral-icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

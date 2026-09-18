@@ -99,7 +99,7 @@
         var(--app-background-overlay-start, rgba(255, 255, 255, 0.12)),
         var(--app-background-overlay-end, rgba(255, 255, 255, 0.20))
       ),
-      var(--app-background-image, url('/platform-background.png')) !important;
+      var(--app-background-image, url('/maestro-coral-platform.png')) !important;
     background-position: center center, var(--app-background-position, center center) !important;
     background-repeat: no-repeat !important;
     background-size: cover, var(--app-background-size, min(1180px, 96vw) auto) !important;
