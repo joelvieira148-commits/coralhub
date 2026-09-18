@@ -93,16 +93,16 @@
 
 @layer utilities {
   .app-background {
-    background-color: var(--app-background-color, #17113f) !important;
+    background-color: var(--app-background-color, #25170f) !important;
     background-image:
       linear-gradient(
-        var(--app-background-overlay-start, rgba(18, 14, 47, 0.76)),
-        var(--app-background-overlay-end, rgba(74, 12, 77, 0.84))
+        var(--app-background-overlay-start, rgba(255, 255, 255, 0.12)),
+        var(--app-background-overlay-end, rgba(255, 255, 255, 0.20))
       ),
-      var(--app-background-image, url('/app-icon.png')) !important;
+      var(--app-background-image, url('/platform-background.png')) !important;
     background-position: center center, var(--app-background-position, center center) !important;
     background-repeat: no-repeat !important;
-    background-size: cover, var(--app-background-size, cover) !important;
+    background-size: cover, var(--app-background-size, min(1180px, 96vw) auto) !important;
     background-attachment: fixed !important;
   }
 

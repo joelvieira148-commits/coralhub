@@ -34,10 +34,10 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
     ? {
         '--app-background-image': `url("${coral.pagina_fundo_url}")`,
         '--app-background-position': coral.pagina_fundo_posicao || 'center center',
-        '--app-background-size': '108% auto',
+        '--app-background-size': '100% auto',
         '--app-background-color': '#ffffff',
-        '--app-background-overlay-start': 'rgba(255, 255, 255, 0.10)',
-        '--app-background-overlay-end': 'rgba(255, 255, 255, 0.18)',
+        '--app-background-overlay-start': 'rgba(255, 255, 255, 0.18)',
+        '--app-background-overlay-end': 'rgba(255, 255, 255, 0.26)',
       }
     : undefined;
   const headerBackground = coral?.capa_url
