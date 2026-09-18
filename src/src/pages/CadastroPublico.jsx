@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronDown, Download, Globe2, Share2, Smartphone, UserPlus } from 'lucide-react';
 
 const APK_DOWNLOAD_URL = '/downloads/coralhub.apk';
+const APK_FILE_NAME = 'maestro-coral.apk';
 
 export default function CadastroPublico() {
   const [infoAberta, setInfoAberta] = useState('cadastro');
@@ -56,10 +57,12 @@ export default function CadastroPublico() {
           </section>
 
           <section className="overflow-hidden rounded-2xl border border-purple-100 bg-purple-50">
-            <button
-              type="button"
-              onClick={() => setInfoAberta(infoAberta === 'apk' ? '' : 'apk')}
-              className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left"
+            <a
+              href={APK_DOWNLOAD_URL}
+              download={APK_FILE_NAME}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left transition-colors hover:bg-purple-100"
             >
               <span className="flex items-center gap-3">
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-600 text-white">
@@ -70,10 +73,10 @@ export default function CadastroPublico() {
                   <span className="block text-xs text-purple-800">Somente para celular Android</span>
                 </span>
               </span>
-              <ChevronDown className={`h-5 w-5 text-purple-700 transition-transform ${infoAberta === 'apk' ? 'rotate-180' : ''}`} />
-            </button>
+              <Download className="h-5 w-5 flex-shrink-0 text-purple-700" />
+            </a>
 
-            {infoAberta === 'apk' && (
+            {infoAberta === 'baixar-apk' && (
               <div className="border-t border-purple-100 bg-white px-4 py-4">
                 <p className="text-sm text-gray-600">
                   Baixe o APK se quiser instalar o Maestro Coral no Android. Depois de instalar, você entra ou cadastra sua conta normalmente pelo aplicativo.

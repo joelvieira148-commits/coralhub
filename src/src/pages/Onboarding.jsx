@@ -22,6 +22,7 @@ import {
 const ADMIN_WHATSAPP_LABEL = '(81) 98551-1614';
 const ADMIN_WHATSAPP_URL = 'https://wa.me/5581985511614';
 const APK_DOWNLOAD_URL = '/downloads/coralhub.apk';
+const APK_FILE_NAME = 'maestro-coral.apk';
 
 const criarLinkWhatsApp = (mensagem = '') => {
   if (!mensagem) return ADMIN_WHATSAPP_URL;
@@ -298,7 +299,9 @@ export default function Onboarding() {
   const DownloadApk = ({ className = '' }) => (
     <a
       href={APK_DOWNLOAD_URL}
-      download
+      download={APK_FILE_NAME}
+      target="_blank"
+      rel="noopener noreferrer"
       className={`flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-800 hover:bg-gray-50 ${className}`}
     >
       <Download className="w-4 h-4" />
