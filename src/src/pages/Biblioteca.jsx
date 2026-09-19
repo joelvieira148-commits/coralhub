@@ -64,6 +64,10 @@ const getOfflineItems = (musicas = [], { canManageMusic, naipesPermitidosDoMembr
       });
     }
 
+    if (musica.letra_pdf_url) {
+      urls.push({ url: musica.letra_pdf_url, cacheName: 'coralhub-pdfs-v1' });
+    }
+
     if (musica.playback_url) {
       urls.push({ url: musica.playback_url, cacheName: 'coralhub-audios-v1' });
     }
@@ -202,7 +206,9 @@ export default function Biblioteca() {
   };
 
   const handleFile = async (key, file) => {
-    const kind = key === 'partitura' && isFileKind(file, 'image')
+    const kind = key === 'letra_pdf'
+      ? 'pdf'
+      : key === 'partitura' && isFileKind(file, 'image')
       ? 'image'
       : key === 'partitura'
         ? 'pdf'
@@ -227,7 +233,10 @@ export default function Biblioteca() {
       }));
     } catch (error) {
       console.error('Erro ao enviar arquivo da musica:', error);
-      alert(getUploadErrorMessage(error, key === 'partitura' ? 'a partitura' : 'o audio'));
+      alert(getUploadErrorMessage(
+        error,
+        key === 'partitura' ? 'a partitura' : key === 'letra_pdf' ? 'a letra em PDF' : 'o audio'
+      ));
       setFiles(p => {
         const next = { ...p };
         delete next[key];
@@ -249,6 +258,8 @@ export default function Biblioteca() {
       uploaded_by: user.email,
       partitura_url: files.partitura?.file_url || base.partitura_url || '',
       partitura_tipo: files.partitura?.type || base.partitura_tipo || '',
+      letra_pdf_url: files.letra_pdf?.file_url || base.letra_pdf_url || '',
+      letra_pdf_tipo: files.letra_pdf?.type || base.letra_pdf_tipo || '',
       playback_url: files.playback?.file_url || base.playback_url || '',
       playback_tipo: files.playback?.type || base.playback_tipo || '',
       audio_completo_url: files.audio_completo?.file_url || base.audio_completo_url || '',
@@ -488,6 +499,7 @@ export default function Biblioteca() {
               {/* Partitura, playback e audio completo */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <FileInput label="Partitura (PDF ou imagem)" fieldKey="partitura" accept=".pdf,image/*" existingUrl={editando?.partitura_url} />
+                <FileInput label="Letra em PDF" fieldKey="letra_pdf" accept=".pdf" existingUrl={editando?.letra_pdf_url} />
                 <FileInput label="Playback (todos ouvem)" fieldKey="playback" accept="audio/*" existingUrl={editando?.playback_url} />
                 <FileInput label="🎵 Áudio Completo" fieldKey="audio_completo" accept="audio/*" existingUrl={editando?.audio_completo_url} />
               </div>
@@ -600,6 +612,19 @@ export default function Biblioteca() {
                           <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-gray-700">
                             {m.letra}
                           </pre>
+                        </div>
+                      )}
+
+                      {m.letra_pdf_url && (
+                        <div>
+                          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Letra em PDF</p>
+                          <PartituraViewer
+                            url={m.letra_pdf_url}
+                            fileType={m.letra_pdf_tipo || 'application/pdf'}
+                            canDownload={canManageMusic}
+                            allowOffline={canManageMusic}
+                            primary={primary}
+                          />
                         </div>
                       )}
 
