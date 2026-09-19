@@ -94,7 +94,7 @@ export default function Biblioteca() {
   const [savingOffline, setSavingOffline] = useState(false);
   const [offlineSync, setOfflineSync] = useState({ running: false, saved: 0, failed: 0, total: 0 });
 
-  const emptyForm = { titulo: '', compositor: '', descricao: '', categoria: 'outro', tom: '' };
+  const emptyForm = { titulo: '', compositor: '', descricao: '', categoria: 'outro', tom: '', letra: '' };
   const [form, setForm] = useState(emptyForm);
   const [files, setFiles] = useState({});
 
@@ -195,6 +195,7 @@ export default function Biblioteca() {
       descricao: m.descricao || '',
       categoria: m.categoria || 'outro',
       tom: m.tom || '',
+      letra: m.letra || '',
     });
     setFiles({});
     setShowForm(true);
@@ -473,6 +474,17 @@ export default function Biblioteca() {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Letra da musica</label>
+                <textarea
+                  value={form.letra || ''}
+                  onChange={e => setForm(p => ({ ...p, letra: e.target.value }))}
+                  rows={6}
+                  placeholder="Cole ou digite a letra da musica aqui"
+                  className="w-full resize-y border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                />
+              </div>
+
               {/* Partitura, playback e audio completo */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <FileInput label="Partitura (PDF ou imagem)" fieldKey="partitura" accept=".pdf,image/*" existingUrl={editando?.partitura_url} />
@@ -580,6 +592,15 @@ export default function Biblioteca() {
                           allowOffline={canManageMusic}
                           primary={primary}
                         />
+                      )}
+
+                      {m.letra && (
+                        <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Letra da musica</p>
+                          <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-gray-700">
+                            {m.letra}
+                          </pre>
+                        </div>
                       )}
 
                       {/* Playback para todos */}
