@@ -6,6 +6,7 @@ import CoralLayout from '@/components/coral/CoralLayout';
 import useCoralContext from '@/hooks/useCoralContext';
 import { canManageCoral } from '@/lib/coral-permissions';
 import { getUploadErrorMessage, uploadCoralFile } from '@/lib/coral-file-upload';
+import { getReadableTextStyle } from '@/lib/readable-text';
 import { verificarEspaco, formatarBytes } from '@/utils/storage';
 
 const TIPOS_EVENTO = [
@@ -161,6 +162,8 @@ export default function Agenda() {
   if (!coral) return null;
 
   const primary = coral.cor_primaria || '#6366f1';
+  const agendaTextStyle = getReadableTextStyle(coral.agenda_texto_cor || '#111827');
+  const agendaMutedTextStyle = { ...agendaTextStyle, opacity: 0.78 };
   const agendaImageUrl = coral.agenda_sem_fundo ? '' : (coral.agenda_fundo_url || coral.pagina_fundo_url);
   const hasAgendaBackground = Boolean(agendaImageUrl);
   const agendaBackgroundStyle = hasAgendaBackground
@@ -203,18 +206,18 @@ export default function Agenda() {
                     style={{ backgroundColor: tipo.bg, color: tipo.color }}>
                     {tipo.label}
                   </span>
-                  {passado && <span className="text-xs text-gray-400">Encerrado</span>}
+                  {passado && <span className="text-xs" style={agendaMutedTextStyle}>Encerrado</span>}
                 </div>
-                <h3 className="font-semibold text-gray-800 truncate">{ev.titulo}</h3>
-                {ev.descricao && <p className="text-xs text-gray-500 mt-0.5 truncate">{ev.descricao}</p>}
+                <h3 className="font-semibold truncate" style={agendaTextStyle}>{ev.titulo}</h3>
+                {ev.descricao && <p className="text-xs mt-0.5 truncate" style={agendaMutedTextStyle}>{ev.descricao}</p>}
                 <div className="flex flex-wrap items-center gap-2 mt-1.5">
                   {ev.hora && (
-                    <span className="flex items-center gap-1 text-xs text-gray-400">
+                    <span className="flex items-center gap-1 text-xs" style={agendaMutedTextStyle}>
                       <Clock className="w-3 h-3" />{ev.hora}
                     </span>
                   )}
                   {ev.local && (
-                    <span className="flex items-center gap-1 text-xs text-gray-400">
+                    <span className="flex items-center gap-1 text-xs" style={agendaMutedTextStyle}>
                       <MapPin className="w-3 h-3" />{ev.local}
                     </span>
                   )}
@@ -247,13 +250,14 @@ export default function Agenda() {
       >
       <div className="flex items-center justify-between gap-3 mb-4">
         <div>
-          <h2 className="text-xl font-bold text-gray-800">Agenda do Coral</h2>
-          <p className="text-sm text-gray-500">{proximos.length} próximo{proximos.length !== 1 ? 's' : ''}</p>
+          <h2 className="text-xl font-bold" style={agendaTextStyle}>Agenda do Coral</h2>
+          <p className="text-sm" style={agendaMutedTextStyle}>{proximos.length} próximo{proximos.length !== 1 ? 's' : ''}</p>
         </div>
         {canManage && (
           <div className="flex flex-wrap justify-end gap-2">
             <label
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-transparent bg-transparent text-gray-700 shadow-none cursor-pointer transition-colors hover:bg-transparent"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-transparent bg-transparent shadow-none cursor-pointer transition-colors hover:bg-transparent"
+              style={agendaTextStyle}
               title="Trocar fundo da agenda"
             >
               <Upload className="w-4 h-4" />
@@ -270,7 +274,8 @@ export default function Agenda() {
               type="button"
               onClick={usarFundoGeralAgenda}
               disabled={uploadingFundo}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-transparent bg-transparent text-gray-700 shadow-none transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-transparent bg-transparent shadow-none transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              style={agendaTextStyle}
               title="Usar o fundo geral do coral na agenda"
             >
               <Image className="w-4 h-4" />
@@ -280,7 +285,8 @@ export default function Agenda() {
               type="button"
               onClick={removerFundoAgenda}
               disabled={uploadingFundo}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-transparent bg-transparent text-gray-700 shadow-none transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-transparent bg-transparent shadow-none transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              style={agendaTextStyle}
               title="Deixar agenda sem fundo"
             >
               <ImageOff className="w-4 h-4" />
@@ -306,7 +312,12 @@ export default function Agenda() {
             className="text-xs px-3 py-1.5 rounded-full font-medium transition-all border"
             style={filtroTipo === t.value
               ? { backgroundColor: primary, color: '#fff', borderColor: primary }
-              : { backgroundColor: 'transparent', color: '#64748b', borderColor: 'transparent' }}
+              : {
+                  backgroundColor: 'transparent',
+                  color: agendaTextStyle.color,
+                  borderColor: 'transparent',
+                  textShadow: agendaTextStyle.textShadow,
+                }}
           >
             {t.label}
           </button>
@@ -370,7 +381,7 @@ export default function Agenda() {
       {/* Próximos */}
       {proximos.length > 0 && (
         <div className="mb-6">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Próximos Eventos</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-wide mb-3" style={agendaMutedTextStyle}>Próximos Eventos</h3>
           <div className="space-y-3">
             {proximos.map(ev => <EventoCard key={ev.id} ev={ev} />)}
           </div>
@@ -380,7 +391,7 @@ export default function Agenda() {
       {/* Passados */}
       {passados.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">Eventos Anteriores</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-wide mb-3" style={agendaMutedTextStyle}>Eventos Anteriores</h3>
           <div className="space-y-3">
             {[...passados].reverse().map(ev => <EventoCard key={ev.id} ev={ev} />)}
           </div>
@@ -390,7 +401,7 @@ export default function Agenda() {
       {eventosFiltrados.length === 0 && (
         <div className="rounded-2xl p-12 text-center bg-transparent shadow-none border border-transparent">
           <Calendar className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-          <p className="text-gray-400">Nenhum evento agendado.</p>
+          <p style={agendaMutedTextStyle}>Nenhum evento agendado.</p>
         </div>
       )}
       </div>

@@ -81,6 +81,7 @@ export default function Configuracoes() {
       nome_fonte: coral.nome_fonte || 'classica',
       topo_texto_cor: coral.topo_texto_cor || '#ffffff',
       bem_vindo_texto_cor: coral.bem_vindo_texto_cor || '#ffffff',
+      agenda_texto_cor: coral.agenda_texto_cor || '#111827',
     });
   }, [loading, canManage, coral, navigate]);
 
@@ -447,9 +448,10 @@ export default function Configuracoes() {
 
           <div className="mt-5">
             <p className="mb-2 text-sm font-medium text-gray-700">Paleta das letras</p>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               {renderPaletaLetras('topo_texto_cor', 'Letra do topo', 'Cor do nome do coral no topo.')}
               {renderPaletaLetras('bem_vindo_texto_cor', 'Letra do Bem-vindo', 'Cor dos textos da area de boas-vindas.')}
+              {renderPaletaLetras('agenda_texto_cor', 'Letra da Agenda', 'Cor dos textos da tela de agenda.')}
             </div>
           </div>
 
