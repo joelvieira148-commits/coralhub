@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { AlertCircle, Download, ExternalLink, FileImage, FileText, Loader2, Minus, Plus } from 'lucide-react';
+import { AlertCircle, Download, ExternalLink, FileImage, FileText, Loader2, Minus, Plus, X } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import pdfjsWorker from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
-import { openExternalUrl } from '@/lib/native-app';
 import { fetchOfflineMedia, getOfflineMediaObjectUrl, revokeOfflineObjectUrl } from '@/lib/offline-media';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -531,9 +530,11 @@ export default function PartituraViewer({
   primary = '#6366f1',
 }) {
   const [forceEmbedded, setForceEmbedded] = useState(false);
+  const [openInApp, setOpenInApp] = useState(false);
 
   useEffect(() => {
     setForceEmbedded(false);
+    setOpenInApp(false);
   }, [url]);
 
   if (!url) return null;
@@ -541,17 +542,22 @@ export default function PartituraViewer({
   const shouldUseOffline = allowOffline ?? canDownload;
 
   const handleOpen = () => {
-    openExternalUrl(url);
+    setOpenInApp(true);
+  };
+
+  const handleViewerClick = (event) => {
+    if (event.target.closest('button, a, input, iframe, [data-viewer-actions]')) return;
+    setOpenInApp(true);
   };
 
   return (
-    <div className="border border-gray-100 rounded-xl overflow-hidden">
+    <div className="border border-gray-100 rounded-xl overflow-hidden" onClick={handleViewerClick}>
       <div className="flex items-center justify-between gap-2 px-3 py-2 bg-gray-50">
         <span className="text-xs font-medium text-gray-600 flex items-center gap-1">
           {isImage ? <FileImage className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
           Partitura
         </span>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" data-viewer-actions>
           {canDownload && (
             <button
               type="button"
@@ -591,6 +597,33 @@ export default function PartituraViewer({
         <ImagePartituraViewer url={url} allowOffline={shouldUseOffline} />
       ) : (
         <PdfDocumentViewer url={url} forceEmbedded={forceEmbedded} allowOffline={shouldUseOffline} />
+      )}
+      {openInApp && (
+        <div className="fixed inset-0 z-[70] bg-black/75 p-3" onClick={() => setOpenInApp(false)}>
+          <div className="mx-auto flex h-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3">
+              <span className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                {isImage ? <FileImage className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+                {isImage ? 'Imagem' : 'PDF'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setOpenInApp(false)}
+                className="rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+                title="Fechar"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-auto bg-slate-100">
+              {isImage ? (
+                <ImagePartituraViewer url={url} allowOffline={shouldUseOffline} />
+              ) : (
+                <PdfDocumentViewer url={url} forceEmbedded={forceEmbedded} allowOffline={shouldUseOffline} />
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
