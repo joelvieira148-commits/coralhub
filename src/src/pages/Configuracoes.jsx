@@ -6,7 +6,6 @@ import CoralLayout from '@/components/coral/CoralLayout';
 import useCoralContext from '@/hooks/useCoralContext';
 import { TEMAS } from '@/utils/coralTheme';
 import { verificarEspaco, formatarBytes } from '@/utils/storage';
-import StorageIndicator from '@/components/coral/StorageIndicator';
 import { publicarCoraisNoCatalogo } from '@/lib/coral-directory';
 import { getUploadErrorMessage, uploadCoralFile } from '@/lib/coral-file-upload';
 import { canManageCoral } from '@/lib/coral-permissions';
@@ -240,9 +239,6 @@ export default function Configuracoes() {
       <h2 className="text-xl font-bold text-gray-800 mb-6">Configurações do Coral</h2>
 
       <form onSubmit={salvar} className="space-y-6">
-        {/* Armazenamento */}
-        <StorageIndicator coral={coral} primary={primary} />
-
         {/* Identidade */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <h3 className="font-semibold text-gray-700 mb-4">Identidade Visual</h3>
