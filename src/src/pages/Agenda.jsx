@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, X, Calendar, Clock, MapPin, Pencil, Trash2, Music, Users, Presentation, HelpCircle, Upload } from 'lucide-react';
+import { Plus, X, Calendar, Clock, MapPin, Pencil, Trash2, Music, Users, Presentation, HelpCircle, Upload, ImageOff } from 'lucide-react';
 import { firebaseClient } from '@/api/firebaseClient';
 import CoralLayout from '@/components/coral/CoralLayout';
 import useCoralContext from '@/hooks/useCoralContext';
@@ -100,12 +100,31 @@ export default function Agenda() {
       const upload = await uploadCoralFile(firebaseClient, file, { kind: 'image' });
       const updated = await firebaseClient.entities.Coral.update(coral.id, {
         agenda_fundo_url: upload.file_url,
+        agenda_sem_fundo: false,
         armazenamento_usado_bytes: (coral.armazenamento_usado_bytes || 0) + upload.file_size,
       });
       setCoral(updated);
     } catch (error) {
       console.error('Erro ao enviar fundo da agenda:', error);
       alert(getUploadErrorMessage(error, 'o fundo da agenda'));
+    } finally {
+      setUploadingFundo(false);
+    }
+  };
+
+  const removerFundoAgenda = async () => {
+    if (!coral || uploadingFundo) return;
+
+    setUploadingFundo(true);
+    try {
+      const updated = await firebaseClient.entities.Coral.update(coral.id, {
+        agenda_fundo_url: '',
+        agenda_sem_fundo: true,
+      });
+      setCoral(updated);
+    } catch (error) {
+      console.error('Erro ao remover fundo da agenda:', error);
+      alert('Nao foi possivel deixar a agenda sem fundo. Tente novamente.');
     } finally {
       setUploadingFundo(false);
     }
@@ -124,7 +143,7 @@ export default function Agenda() {
   if (!coral) return null;
 
   const primary = coral.cor_primaria || '#6366f1';
-  const agendaImageUrl = coral.agenda_fundo_url || coral.pagina_fundo_url;
+  const agendaImageUrl = coral.agenda_sem_fundo ? '' : (coral.agenda_fundo_url || coral.pagina_fundo_url);
   const hasAgendaBackground = Boolean(agendaImageUrl);
   const agendaBackgroundStyle = hasAgendaBackground
     ? {
@@ -229,6 +248,16 @@ export default function Agenda() {
                 onChange={(event) => event.target.files[0] && trocarFundoAgenda(event.target.files[0])}
               />
             </label>
+            <button
+              type="button"
+              onClick={removerFundoAgenda}
+              disabled={uploadingFundo}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-transparent bg-transparent text-gray-700 shadow-none transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              title="Deixar agenda sem fundo"
+            >
+              <ImageOff className="w-4 h-4" />
+              Sem fundo
+            </button>
             <button
               onClick={abrirNovo}
               className="flex items-center gap-2 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-md hover:opacity-90"
