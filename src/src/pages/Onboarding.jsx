@@ -54,6 +54,7 @@ export default function Onboarding() {
   // Maestro form
   const [nomeCoralForm, setNomeCoralForm] = useState('');
   const [cidadeForm, setCidadeForm] = useState('');
+  const [telefoneMaestroForm, setTelefoneMaestroForm] = useState('');
   const [cargoRegente, setCargoRegente] = useState('maestro');
   const [fotoMaestroUrl, setFotoMaestroUrl] = useState('');
   const [uploadingMaestro, setUploadingMaestro] = useState(false);
@@ -333,6 +334,18 @@ export default function Onboarding() {
     setLoading(true);
     setFormError('');
 
+    if (!telefoneMaestroForm.trim()) {
+      setFormError('Informe um numero de telefone para continuar.');
+      setLoading(false);
+      return;
+    }
+
+    if (!fotoMaestroUrl) {
+      setFormError('Envie uma foto de perfil para continuar.');
+      setLoading(false);
+      return;
+    }
+
     try {
       const user = await firebaseClient.auth.me();
       const autorizacao = await verificarAutorizacaoCadastro({
@@ -346,6 +359,7 @@ export default function Onboarding() {
       const coral = await firebaseClient.entities.Coral.create({
         nome: nomeCoralForm,
         cidade: cidadeForm,
+        telefone_contato: telefoneMaestroForm,
         maestro_email: user.email,
         cor_primaria: '#6366f1',
         cor_secundaria: '#a78bfa',
@@ -362,6 +376,7 @@ export default function Onboarding() {
       await firebaseClient.entities.Membro.create({
         nome: user.full_name || user.email,
         email: user.email,
+        telefone: telefoneMaestroForm,
         coral_id: coral.id,
         user_email: user.email,
         cargo: cargoRegente,
@@ -487,6 +502,16 @@ export default function Onboarding() {
   const entrarComoMembro = async (e) => {
     e.preventDefault();
     setFormError('');
+
+    if (!telefoneForm.trim()) {
+      setFormError('Informe um numero de telefone para continuar.');
+      return;
+    }
+
+    if (!fotoMembroUrl) {
+      setFormError('Envie uma foto de perfil para continuar.');
+      return;
+    }
 
     if (!corais.some((coral) => coral.id === coralIdForm)) {
       setFormError('Escolha um coral da lista antes de continuar.');
@@ -633,7 +658,7 @@ export default function Onboarding() {
                 <input type="file" accept="image/*" className="hidden"
                   onChange={e => e.target.files[0] && handleFotoUpload(e.target.files[0], setFotoMaestroUrl, setUploadingMaestro)} />
               </label>
-              <span className="text-xs text-gray-400">Foto de perfil (opcional)</span>
+              <span className="text-xs font-medium text-indigo-600">Foto de perfil obrigatoria</span>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Nome do Coral *</label>
@@ -646,6 +671,12 @@ export default function Onboarding() {
               <input value={cidadeForm} onChange={e => setCidadeForm(e.target.value)}
                 className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-400"
                 placeholder="Ex: São Paulo" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Telefone *</label>
+              <input required value={telefoneMaestroForm} onChange={e => setTelefoneMaestroForm(e.target.value)}
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                placeholder="(11) 99999-9999" />
             </div>
             <button disabled={loading} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition-colors disabled:opacity-60">
               {loading ? 'Criando...' : 'Criar meu Coral'}
@@ -695,7 +726,7 @@ export default function Onboarding() {
                 <input type="file" accept="image/*" className="hidden"
                   onChange={e => e.target.files[0] && handleFotoUpload(e.target.files[0], setFotoMembroUrl, setUploadingMembro)} />
               </label>
-              <span className="text-xs text-gray-400">Foto de perfil (opcional)</span>
+              <span className="text-xs font-medium text-purple-600">Foto de perfil obrigatoria</span>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Seu nome completo *</label>
@@ -704,8 +735,8 @@ export default function Onboarding() {
                 placeholder="João Silva" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
-              <input value={telefoneForm} onChange={e => setTelefoneForm(e.target.value)}
+              <label className="block text-sm font-medium text-gray-700 mb-1">Telefone *</label>
+              <input required value={telefoneForm} onChange={e => setTelefoneForm(e.target.value)}
                 className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-purple-400"
                 placeholder="(11) 99999-9999" />
             </div>
