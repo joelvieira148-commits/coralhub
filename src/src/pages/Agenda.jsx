@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, X, Calendar, Clock, MapPin, Pencil, Trash2, Music, Users, Presentation, HelpCircle, Upload, ImageOff } from 'lucide-react';
+import { Plus, X, Calendar, Clock, MapPin, Pencil, Trash2, Music, Users, Presentation, HelpCircle, Upload, Image, ImageOff } from 'lucide-react';
 import { firebaseClient } from '@/api/firebaseClient';
 import CoralLayout from '@/components/coral/CoralLayout';
 import useCoralContext from '@/hooks/useCoralContext';
@@ -130,6 +130,24 @@ export default function Agenda() {
     }
   };
 
+  const usarFundoGeralAgenda = async () => {
+    if (!coral || uploadingFundo) return;
+
+    setUploadingFundo(true);
+    try {
+      const updated = await firebaseClient.entities.Coral.update(coral.id, {
+        agenda_fundo_url: '',
+        agenda_sem_fundo: false,
+      });
+      setCoral(updated);
+    } catch (error) {
+      console.error('Erro ao usar fundo geral na agenda:', error);
+      alert('Nao foi possivel voltar a usar o fundo geral. Tente novamente.');
+    } finally {
+      setUploadingFundo(false);
+    }
+  };
+
   const hoje = new Date().toISOString().split('T')[0];
 
   const eventosFiltrados = eventos.filter(ev =>
@@ -248,6 +266,16 @@ export default function Agenda() {
                 onChange={(event) => event.target.files[0] && trocarFundoAgenda(event.target.files[0])}
               />
             </label>
+            <button
+              type="button"
+              onClick={usarFundoGeralAgenda}
+              disabled={uploadingFundo}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-transparent bg-transparent text-gray-700 shadow-none transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              title="Usar o fundo geral do coral na agenda"
+            >
+              <Image className="w-4 h-4" />
+              Fundo geral
+            </button>
             <button
               type="button"
               onClick={removerFundoAgenda}
