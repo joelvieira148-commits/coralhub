@@ -15,6 +15,7 @@ import {
   buildAuthorizationMessage,
   getAuthorizedCadastro,
   getBlockedCadastro,
+  isRegenteCadastroBlock,
   markCadastroAuthorizationUsed,
   requestCadastroAuthorization,
 } from '@/lib/cadastro-autorizacao';
@@ -86,7 +87,7 @@ export default function Onboarding() {
           nome: user.full_name || user.email,
         });
 
-        if (!active || !bloqueio) return;
+        if (!active || !bloqueio || !isRegenteCadastroBlock(bloqueio)) return;
 
         const pedido = await requestCadastroAuthorization(firebaseClient, {
           email: user.email,
@@ -162,7 +163,7 @@ export default function Onboarding() {
           nome: user.full_name || user.email,
         }).catch(() => null);
 
-        if (active && bloqueio) {
+        if (active && bloqueio && isRegenteCadastroBlock(bloqueio)) {
           const pedido = await requestCadastroAuthorization(firebaseClient, {
             email: user.email,
             nome: user.full_name || user.email,

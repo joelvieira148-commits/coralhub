@@ -7,6 +7,11 @@ export const AUTORIZACAO_STATUS = {
   used: 'usado',
 };
 
+const REGENTE_PAPEIS = new Set(['maestro', 'maestrina', 'regente']);
+
+export const isRegenteCadastroBlock = (record) =>
+  REGENTE_PAPEIS.has(String(record?.papel || '').trim().toLowerCase());
+
 const normalizeName = (value = '') =>
   String(value || '')
     .normalize('NFD')

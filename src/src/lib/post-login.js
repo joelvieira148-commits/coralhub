@@ -1,5 +1,5 @@
 import { firebaseClient } from '@/api/firebaseClient';
-import { getBlockedCadastro, requestCadastroAuthorization } from '@/lib/cadastro-autorizacao';
+import { getBlockedCadastro, isRegenteCadastroBlock, requestCadastroAuthorization } from '@/lib/cadastro-autorizacao';
 import { isCoralAvailable, isCoralPending } from '@/lib/coral-approval';
 import { clearCoralMembershipFields } from '@/lib/coral-membership';
 import { isAdminUser } from '@/lib/admin-access';
@@ -76,7 +76,7 @@ export const getPostLoginPath = async (preferredPath = '/mural') => {
       nome: user.full_name || user.email,
     }).catch(() => null);
 
-  if (bloqueio) {
+  if (bloqueio && isRegenteCadastroBlock(bloqueio)) {
     await requestCadastroAuthorization(firebaseClient, {
       email: user.email,
       nome: user.full_name || user.email,
