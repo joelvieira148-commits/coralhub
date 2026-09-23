@@ -9,7 +9,7 @@ import { isCoralAvailable, isCoralPending } from '@/lib/coral-approval';
 import { publicarCoraisNoCatalogo } from '@/lib/coral-directory';
 import { getMemberPhotoFields, getMemberPhotoUrl } from '@/lib/member-photo';
 import { getAdminCoralOverride, isAdminUser } from '@/lib/admin-access';
-import { getBlockedCadastro, requestCadastroAuthorization } from '@/lib/cadastro-autorizacao';
+import { getBlockedCadastro, isRegenteCadastroBlock, requestCadastroAuthorization } from '@/lib/cadastro-autorizacao';
 import { canManageCoral, getSafeMemberRole } from '@/lib/coral-permissions';
 
 const CACHE_KEY = 'coralhub_context_cache_v2';
@@ -145,7 +145,7 @@ const carregarContextoCoral = async () => {
       nome: me.full_name || me.email,
     }).catch(() => null);
 
-    if (bloqueio) {
+    if (bloqueio && isRegenteCadastroBlock(bloqueio)) {
       await requestCadastroAuthorization(firebaseClient, {
         email: me.email,
         nome: me.full_name || me.email,
