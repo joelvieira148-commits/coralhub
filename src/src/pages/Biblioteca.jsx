@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { Upload, Music, X, Plus, Pencil, Trash2, Building2, Download } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Upload, Music, X, Plus, Pencil, Trash2, Building2, Download, FolderOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { firebaseClient } from '@/api/firebaseClient';
 import CoralLayout from '@/components/coral/CoralLayout';
@@ -15,6 +15,9 @@ import { NAIPES } from '@/utils/coralTheme';
 import { verificarEspaco, formatarBytes } from '@/utils/storage';
 
 const CATEGORIAS = ['sacra', 'popular', 'classica', 'gospel', 'folclorica', 'outro'];
+const TODAS_AS_PASTAS = '__todas__';
+const PASTA_PADRAO = 'Coral';
+const PASTAS_INICIAIS = [PASTA_PADRAO, 'Outro coral'];
 
 const isImagePartitura = (url = '', fileType = '') => {
   if (/^image\//i.test(fileType || '')) return true;
@@ -85,6 +88,9 @@ const getOfflineItems = (musicas = [], { canManageMusic, naipesPermitidosDoMembr
   return [...new Map(urls.map((item) => [item.url, item])).values()];
 };
 
+const getPastaMusica = (musica = {}) =>
+  String(musica.pasta_musica || musica.pasta || PASTA_PADRAO).trim() || PASTA_PADRAO;
+
 export default function Biblioteca() {
   const navigate = useNavigate();
   const { user, coral, membro, loading, setCoral } = useCoralContext();
@@ -97,8 +103,9 @@ export default function Biblioteca() {
   const [currentTrack, setCurrentTrack] = useState(null);
   const [savingOffline, setSavingOffline] = useState(false);
   const [offlineSync, setOfflineSync] = useState({ running: false, saved: 0, failed: 0, total: 0 });
+  const [pastaSelecionada, setPastaSelecionada] = useState(TODAS_AS_PASTAS);
 
-  const emptyForm = { titulo: '', compositor: '', descricao: '', categoria: 'outro', tom: '', letra: '' };
+  const emptyForm = { titulo: '', compositor: '', descricao: '', categoria: 'outro', tom: '', letra: '', pasta_musica: PASTA_PADRAO };
   const [form, setForm] = useState(emptyForm);
   const [files, setFiles] = useState({});
 
@@ -110,7 +117,20 @@ export default function Biblioteca() {
 
   useEffect(() => {
     if (!coral) return;
-    firebaseClient.entities.Musica.filter({ coral_id: coral.id }).then(setMusicas);
+
+    let active = true;
+    setMusicas([]);
+    setSelecionada(null);
+    setCurrentTrack(null);
+    autoOfflineKeyRef.current = '';
+
+    firebaseClient.entities.Musica.filter({ coral_id: coral.id }).then((data) => {
+      if (active) setMusicas(data);
+    });
+
+    return () => {
+      active = false;
+    };
   }, [coral]);
 
   const canManageMusic = canManageCoral(user, coral);
@@ -120,20 +140,31 @@ export default function Biblioteca() {
     .map((naipe) => (naipe === 'soprano' ? 'Soprano' : NAIPES.find(n => n.value === naipe)?.label))
     .filter(Boolean)
     .join(' + ');
+  const pastasMusica = useMemo(() => {
+    const values = [...PASTAS_INICIAIS, ...musicas.map(getPastaMusica)];
+    return [...new Set(values.map((value) => String(value || '').trim()).filter(Boolean))];
+  }, [musicas]);
+  const musicasDaPasta = useMemo(
+    () => pastaSelecionada === TODAS_AS_PASTAS
+      ? musicas
+      : musicas.filter((musica) => getPastaMusica(musica) === pastaSelecionada),
+    [musicas, pastaSelecionada]
+  );
 
   useEffect(() => {
-    if (loading || !coral || musicas.length === 0) return;
+    if (loading || !coral || musicasDaPasta.length === 0) return;
     if (!canManageMusic) {
       setOfflineSync({ running: false, saved: 0, failed: 0, total: 0 });
       return;
     }
     if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
 
-    const offlineItems = getOfflineItems(musicas, { canManageMusic, naipesPermitidosDoMembro });
+    const offlineItems = getOfflineItems(musicasDaPasta, { canManageMusic, naipesPermitidosDoMembro });
     if (offlineItems.length === 0) return;
 
     const syncKey = [
       coral.id,
+      pastaSelecionada,
       canManageMusic ? 'manager' : naipesPermitidosDoMembro.join(','),
       offlineItems.map((item) => item.url).join('|'),
     ].join(':');
@@ -182,11 +213,12 @@ export default function Biblioteca() {
     return () => {
       cancelled = true;
     };
-  }, [loading, coral, musicas, canManageMusic, naipesPermitidosDoMembro]);
+  }, [loading, coral, musicasDaPasta, pastaSelecionada, canManageMusic, naipesPermitidosDoMembro]);
 
   const abrirNova = () => {
+    const pastaDaNovaMusica = pastaSelecionada === TODAS_AS_PASTAS ? PASTA_PADRAO : pastaSelecionada;
     setEditando(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm, pasta_musica: pastaDaNovaMusica });
     setFiles({});
     setShowForm(true);
   };
@@ -200,6 +232,7 @@ export default function Biblioteca() {
       categoria: m.categoria || 'outro',
       tom: m.tom || '',
       letra: m.letra || '',
+      pasta_musica: getPastaMusica(m),
     });
     setFiles({});
     setShowForm(true);
@@ -255,6 +288,7 @@ export default function Biblioteca() {
     const payload = {
       ...form,
       coral_id: coral.id,
+      pasta_musica: String(form.pasta_musica || '').trim() || PASTA_PADRAO,
       uploaded_by: user.email,
       partitura_url: files.partitura?.file_url || base.partitura_url || '',
       partitura_tipo: files.partitura?.type || base.partitura_tipo || '',
@@ -292,6 +326,7 @@ export default function Biblioteca() {
     setEditando(null);
     setForm(emptyForm);
     setFiles({});
+    setPastaSelecionada(payload.pasta_musica);
     } catch (error) {
       console.error('Erro ao salvar musica:', error);
       alert('Nao foi possivel salvar a musica. Confirme se voce esta como admin ou maestro deste coral e tente novamente.');
@@ -321,7 +356,7 @@ export default function Biblioteca() {
     getAudiosVisiveisDaMusica(m, { canManageMusic, naipesPermitidosDoMembro });
 
   const salvarTudoOffline = async () => {
-    const uniqueUrls = getOfflineItems(musicas, { canManageMusic, naipesPermitidosDoMembro });
+    const uniqueUrls = getOfflineItems(musicasDaPasta, { canManageMusic, naipesPermitidosDoMembro });
 
     if (uniqueUrls.length === 0) {
       alert('Nao ha musicas ou partituras para salvar offline.');
@@ -397,7 +432,8 @@ export default function Biblioteca() {
         <div>
           <h2 className="text-xl font-bold text-gray-800">Música</h2>
           <p className="text-sm text-gray-500">
-            {musicas.length} música{musicas.length !== 1 ? 's' : ''}
+            {musicasDaPasta.length} música{musicasDaPasta.length !== 1 ? 's' : ''}
+            {pastaSelecionada !== TODAS_AS_PASTAS && ` em ${pastaSelecionada}`}
             {!canManageMusic && labelNaipesDoMembro && (
               <span className="ml-2 px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full text-xs font-medium">
                 {labelNaipesDoMembro}
@@ -419,7 +455,7 @@ export default function Biblioteca() {
             <button
               type="button"
               onClick={salvarTudoOffline}
-              disabled={savingOffline || musicas.length === 0}
+              disabled={savingOffline || musicasDaPasta.length === 0}
               className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
               title="Salvar musicas e partituras offline"
             >
@@ -447,6 +483,44 @@ export default function Biblioteca() {
             </button>
           )}
         </div>
+      </div>
+
+      <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
+        <button
+          type="button"
+          onClick={() => setPastaSelecionada(TODAS_AS_PASTAS)}
+          className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold whitespace-nowrap transition-colors ${
+            pastaSelecionada === TODAS_AS_PASTAS
+              ? 'border-gray-800 bg-gray-800 text-white'
+              : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+          }`}
+        >
+          <Music className="w-4 h-4" />
+          Todas
+          <span className="rounded-full bg-black/10 px-2 py-0.5 text-xs">{musicas.length}</span>
+        </button>
+        {pastasMusica.map((pasta) => {
+          const total = musicas.filter((musica) => getPastaMusica(musica) === pasta).length;
+          const active = pastaSelecionada === pasta;
+
+          return (
+            <button
+              key={pasta}
+              type="button"
+              onClick={() => setPastaSelecionada(pasta)}
+              className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold whitespace-nowrap transition-colors ${
+                active
+                  ? 'text-white'
+                  : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+              style={active ? { backgroundColor: primary, borderColor: primary } : undefined}
+            >
+              <FolderOpen className="w-4 h-4" />
+              {pasta}
+              <span className="rounded-full bg-black/10 px-2 py-0.5 text-xs">{total}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Modal de adição/edição (apenas maestro) */}
@@ -482,6 +556,20 @@ export default function Biblioteca() {
                   <input value={form.tom} onChange={e => setForm(p => ({ ...p, tom: e.target.value }))}
                     placeholder="Ex: Dó maior"
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Pasta</label>
+                  <input
+                    required
+                    list="pastas-musica"
+                    value={form.pasta_musica || ''}
+                    onChange={e => setForm(p => ({ ...p, pasta_musica: e.target.value }))}
+                    placeholder="Ex: Coral principal"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                  />
+                  <datalist id="pastas-musica">
+                    {pastasMusica.map((pasta) => <option key={pasta} value={pasta} />)}
+                  </datalist>
                 </div>
               </div>
 
@@ -534,14 +622,14 @@ export default function Biblioteca() {
       )}
 
       {/* Lista de músicas */}
-      {musicas.length === 0 ? (
+      {musicasDaPasta.length === 0 ? (
         <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
           <Music className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-          <p className="text-gray-400">{canManageMusic ? 'Clique em "Nova Música" para começar.' : 'Nenhuma música disponível ainda.'}</p>
+          <p className="text-gray-400">{canManageMusic ? 'Clique em "Nova Música" para começar.' : 'Nenhuma música disponível nesta pasta.'}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {musicas.map(m => {
+          {musicasDaPasta.map(m => {
             const audiosVisiveis = getAudiosVisiveis(m);
             const aberta = selecionada?.id === m.id;
 
