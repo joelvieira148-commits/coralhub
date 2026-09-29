@@ -17,7 +17,7 @@ import { verificarEspaco, formatarBytes } from '@/utils/storage';
 const CATEGORIAS = ['sacra', 'popular', 'classica', 'gospel', 'folclorica', 'outro'];
 const TODAS_AS_PASTAS = '__todas__';
 const PASTA_PADRAO = 'Coral';
-const PASTAS_INICIAIS = [PASTA_PADRAO, 'Outro coral'];
+const PASTA_OUTRO_CORAL_PADRAO = 'Outro coral';
 
 const isImagePartitura = (url = '', fileType = '') => {
   if (/^image\//i.test(fileType || '')) return true;
@@ -88,8 +88,13 @@ const getOfflineItems = (musicas = [], { canManageMusic, naipesPermitidosDoMembr
   return [...new Map(urls.map((item) => [item.url, item])).values()];
 };
 
-const getPastaMusica = (musica = {}) =>
-  String(musica.pasta_musica || musica.pasta || PASTA_PADRAO).trim() || PASTA_PADRAO;
+const getNomePastaOutroCoral = (coral = {}) =>
+  String(coral.musica_outro_coral_nome || '').trim() || PASTA_OUTRO_CORAL_PADRAO;
+
+const getPastaMusica = (musica = {}, nomePastaOutroCoral = PASTA_OUTRO_CORAL_PADRAO) => {
+  const pasta = String(musica.pasta_musica || musica.pasta || PASTA_PADRAO).trim() || PASTA_PADRAO;
+  return pasta === PASTA_OUTRO_CORAL_PADRAO ? nomePastaOutroCoral : pasta;
+};
 
 export default function Biblioteca() {
   const navigate = useNavigate();
@@ -134,6 +139,7 @@ export default function Biblioteca() {
   }, [coral]);
 
   const canManageMusic = canManageCoral(user, coral);
+  const nomePastaOutroCoral = getNomePastaOutroCoral(coral);
   const naipesDoMembro = getMemberNaipes(membro, user);
   const naipesPermitidosDoMembro = expandNaipeAccess(naipesDoMembro);
   const labelNaipesDoMembro = naipesDoMembro
@@ -141,15 +147,21 @@ export default function Biblioteca() {
     .filter(Boolean)
     .join(' + ');
   const pastasMusica = useMemo(() => {
-    const values = [...PASTAS_INICIAIS, ...musicas.map(getPastaMusica)];
+    const values = [PASTA_PADRAO, nomePastaOutroCoral, ...musicas.map((musica) => getPastaMusica(musica, nomePastaOutroCoral))];
     return [...new Set(values.map((value) => String(value || '').trim()).filter(Boolean))];
-  }, [musicas]);
+  }, [musicas, nomePastaOutroCoral]);
   const musicasDaPasta = useMemo(
     () => pastaSelecionada === TODAS_AS_PASTAS
       ? musicas
-      : musicas.filter((musica) => getPastaMusica(musica) === pastaSelecionada),
-    [musicas, pastaSelecionada]
+      : musicas.filter((musica) => getPastaMusica(musica, nomePastaOutroCoral) === pastaSelecionada),
+    [musicas, pastaSelecionada, nomePastaOutroCoral]
   );
+
+  useEffect(() => {
+    if (pastaSelecionada !== TODAS_AS_PASTAS && !pastasMusica.includes(pastaSelecionada)) {
+      setPastaSelecionada(nomePastaOutroCoral);
+    }
+  }, [pastasMusica, pastaSelecionada, nomePastaOutroCoral]);
 
   useEffect(() => {
     if (loading || !coral || musicasDaPasta.length === 0) return;
@@ -232,7 +244,7 @@ export default function Biblioteca() {
       categoria: m.categoria || 'outro',
       tom: m.tom || '',
       letra: m.letra || '',
-      pasta_musica: getPastaMusica(m),
+      pasta_musica: getPastaMusica(m, nomePastaOutroCoral),
     });
     setFiles({});
     setShowForm(true);
@@ -500,7 +512,7 @@ export default function Biblioteca() {
           <span className="rounded-full bg-black/10 px-2 py-0.5 text-xs">{musicas.length}</span>
         </button>
         {pastasMusica.map((pasta) => {
-          const total = musicas.filter((musica) => getPastaMusica(musica) === pasta).length;
+          const total = musicas.filter((musica) => getPastaMusica(musica, nomePastaOutroCoral) === pasta).length;
           const active = pastaSelecionada === pasta;
 
           return (

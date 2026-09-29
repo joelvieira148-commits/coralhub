@@ -81,6 +81,7 @@ export default function Configuracoes() {
       topo_texto_cor: coral.topo_texto_cor || '#ffffff',
       bem_vindo_texto_cor: coral.bem_vindo_texto_cor || '#ffffff',
       agenda_texto_cor: coral.agenda_texto_cor || '#111827',
+      musica_outro_coral_nome: coral.musica_outro_coral_nome || 'Outro coral',
     });
   }, [loading, canManage, coral, navigate]);
 
@@ -165,6 +166,7 @@ export default function Configuracoes() {
     setSalvando(true);
     try {
     const payload = { ...form };
+    payload.musica_outro_coral_nome = String(payload.musica_outro_coral_nome || '').trim() || 'Outro coral';
     if (novosBytes > 0) {
       payload.armazenamento_usado_bytes = (coral.armazenamento_usado_bytes || 0) + novosBytes;
     }
@@ -503,6 +505,15 @@ export default function Configuracoes() {
                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
                 {TEMAS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nome da pasta do outro coral em Música</label>
+              <input
+                value={form.musica_outro_coral_nome || ''}
+                onChange={e => setForm(p => ({ ...p, musica_outro_coral_nome: e.target.value }))}
+                placeholder="Ex: Coral infantil"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+              />
             </div>
           </div>
         </div>
