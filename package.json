@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "scripts": {
+    "build": "cd src && npm run build",
+    "lint": "cd src && npm run lint"
+  },
+  "engines": {
+    "node": "24.x"
+  }
+}
