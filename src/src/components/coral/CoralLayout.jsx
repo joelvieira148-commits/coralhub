@@ -105,10 +105,10 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
               </button>
             )}
             {coral?.logo_url ? (
-              <img src={coral.logo_url} alt="Logo" className="h-14 w-14 rounded-full object-cover border-2 border-white/40 flex-shrink-0" />
+              <img src={coral.logo_url} alt="Logo" className="h-16 w-16 rounded-full object-cover border-2 border-white/40 flex-shrink-0" />
             ) : (
-              <div className="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                <Music className="w-7 h-7" style={{ color: topoTextoStyle.color }} />
+              <div className="h-16 w-16 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                <Music className="w-8 h-8" style={{ color: topoTextoStyle.color }} />
               </div>
             )}
             <div className="min-w-0">
