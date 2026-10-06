@@ -60,6 +60,35 @@ Agradecemos por voce estar conosco na plataforma Coral. E uma alegria ter seu co
 Atenciosamente,
 ADMIN`;
 
+const getAcessoMembro = (membro) =>
+  membro?.ultimo_acesso_em || membro?.ultimo_acesso || membro?.ultimo_login_em || membro?.last_access_at || null;
+
+const formatarAcesso = (value) => {
+  if (!value) return 'Nunca';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Nunca';
+
+  return date.toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+const getResumoAcessoMembros = (membrosDoCoral = []) => {
+  const membrosComAcesso = membrosDoCoral
+    .map((membro) => ({ membro, acesso: getAcessoMembro(membro) }))
+    .filter((item) => item.acesso)
+    .sort((left, right) => new Date(right.acesso).getTime() - new Date(left.acesso).getTime());
+
+  return {
+    totalComAcesso: membrosComAcesso.length,
+    ultimo: membrosComAcesso[0] || null,
+  };
+};
+
 export default function AdminCorais() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -602,7 +631,9 @@ export default function AdminCorais() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {filtered.map((coral) => {
-              const totalMembros = membros.filter((membro) => membro.coral_id === coral.id).length;
+              const membrosDoCoral = membros.filter((membro) => membro.coral_id === coral.id);
+              const totalMembros = membrosDoCoral.length;
+              const resumoAcesso = getResumoAcessoMembros(membrosDoCoral);
               const primary = coral.cor_primaria || '#6366f1';
               const isEditing = editando === coral.id;
               const bloqueado = isCoralBlocked(coral);
@@ -761,6 +792,35 @@ export default function AdminCorais() {
                             <p className="flex items-center gap-2 min-w-0">
                               <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
                               <span className="truncate">{[coral.endereco, coral.cidade].filter(Boolean).join(' · ')}</span>
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                          <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-gray-700">
+                            <Clock className="h-3.5 w-3.5" />
+                            Acessos da plataforma
+                          </div>
+                          <div className="grid grid-cols-1 gap-2 text-xs text-gray-600 sm:grid-cols-2">
+                            <div className="rounded-lg bg-white px-3 py-2">
+                              <p className="font-semibold text-gray-500">Maestro/Maestrina</p>
+                              <p className="mt-0.5 font-bold text-gray-800">
+                                {formatarAcesso(coral.ultimo_acesso_maestro_em)}
+                              </p>
+                            </div>
+                            <div className="rounded-lg bg-white px-3 py-2">
+                              <p className="font-semibold text-gray-500">Membros</p>
+                              <p className="mt-0.5 font-bold text-gray-800">
+                                {resumoAcesso.ultimo ? formatarAcesso(resumoAcesso.ultimo.acesso) : 'Nunca'}
+                              </p>
+                              <p className="mt-0.5 text-[11px] text-gray-400">
+                                {resumoAcesso.totalComAcesso} de {totalMembros} ja entraram
+                              </p>
+                            </div>
+                          </div>
+                          {resumoAcesso.ultimo?.membro?.nome && (
+                            <p className="mt-2 truncate text-xs text-gray-500">
+                              Ultimo membro: {resumoAcesso.ultimo.membro.nome}
                             </p>
                           )}
                         </div>

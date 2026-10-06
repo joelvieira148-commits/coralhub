@@ -539,6 +539,8 @@ export default function Onboarding() {
         user_email: user.email,
         cargo: 'membro',
         ativo: true,
+        ultimo_acesso_em: new Date().toISOString(),
+        ultimo_acesso_email: user.email,
         ...fotoMembroFields,
       });
       const membroCriadoComFoto = { ...membroCriado, ...fotoMembroFields };

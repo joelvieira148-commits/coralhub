@@ -121,6 +121,36 @@ const getCoraisDoMaestro = async (user) => {
   return uniqueById([...porEmail, ...porPendente]);
 };
 
+const registrarAcessoPlataforma = ({ user, coral, membro, role }) => {
+  if (!user?.email || !coral?.id || isAdminUser(user)) return;
+
+  const agora = new Date().toISOString();
+  const updates = [];
+
+  if (role === 'maestro') {
+    updates.push(
+      firebaseClient.entities.Coral.update(coral.id, {
+        ultimo_acesso_maestro_em: agora,
+        ultimo_acesso_maestro_email: user.email,
+        ultimo_acesso_maestro_nome: user.full_name || user.email,
+      })
+    );
+  }
+
+  if (membro?.id && !String(membro.id).startsWith('user-')) {
+    updates.push(
+      firebaseClient.entities.Membro.update(membro.id, {
+        ultimo_acesso_em: agora,
+        ultimo_acesso_email: user.email,
+      })
+    );
+  }
+
+  Promise.all(updates).catch((error) => {
+    console.warn('Falha ao registrar ultimo acesso:', error);
+  });
+};
+
 const carregarContextoCoral = async () => {
   const me = await firebaseClient.auth.me();
   const contexto = { ...emptyContext, user: me };
@@ -182,6 +212,7 @@ const carregarContextoCoral = async () => {
     publicarCoraisNoCatalogo(firebaseClient, [coral]).catch((error) => {
       console.warn('Falha ao publicar coral no catalogo:', error);
     });
+    registrarAcessoPlataforma({ user: me, coral, role: 'maestro' });
     return contexto;
   }
 
@@ -262,6 +293,7 @@ const carregarContextoCoral = async () => {
       member_naipes: getMemberNaipes(membroAtual),
       member_foto_url: getMemberPhotoUrl(membroAtual) || '',
     });
+    registrarAcessoPlataforma({ user: me, coral: coralAtual, membro: membroAtual, role: safeRole });
     return contexto;
   }
 
