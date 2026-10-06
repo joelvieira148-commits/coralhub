@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -13,17 +13,28 @@ import {
   Shield,
   Users,
 } from 'lucide-react';
-import { isUsingLocalFirebase } from '@/api/firebaseClient';
+import { firebaseClient, isUsingLocalFirebase } from '@/api/firebaseClient';
 import { isAdminUser } from '@/lib/admin-access';
 import { logoutToApp } from '@/lib/logout';
 import { getNomeCoralFonteStyle } from '@/lib/coral-fonts';
 import { getReadableTextStyle } from '@/lib/readable-text';
 import TrebleClefIcon from '@/components/coral/TrebleClefIcon';
 
+const PAGE_LABELS = {
+  '/mural': 'Mural',
+  '/dashboard': 'Dashboard',
+  '/membros': 'Membros',
+  '/biblioteca': 'Musica',
+  '/agenda': 'Agenda',
+  '/configuracoes': 'Configuracoes',
+  '/ajuda': 'Ajuda',
+};
+
 export default function CoralLayout({ coral, user, isMaestro, membro, children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [showMore, setShowMore] = useState(false);
+  const lastAccessLogKeyRef = useRef('');
 
   const primary = coral?.cor_primaria || '#6366f1';
   const secondary = coral?.cor_secundaria || '#818cf8';
@@ -74,6 +85,29 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
 
   const bottomMain = allNavItems.slice(0, 4);
   const bottomMore = allNavItems.slice(4);
+
+  useEffect(() => {
+    if (!user?.email || !coral?.id || isAdminUser(user)) return;
+
+    const path = location.pathname || '/mural';
+    const logKey = `${coral.id}:${user.email}:${path}`;
+    if (lastAccessLogKeyRef.current === logKey) return;
+    lastAccessLogKeyRef.current = logKey;
+
+    firebaseClient.entities.AcessoPlataforma.create({
+      coral_id: coral.id,
+      coral_nome: coral.nome || '',
+      user_email: user.email,
+      user_nome: membro?.nome || user.full_name || user.email,
+      membro_id: membro?.id || '',
+      papel: isMaestro ? 'maestro' : membro?.cargo || 'membro',
+      pagina: path,
+      pagina_nome: PAGE_LABELS[path] || path.replace('/', '') || 'Plataforma',
+      acessado_em: new Date().toISOString(),
+    }).catch((error) => {
+      console.warn('Falha ao registrar acesso da plataforma:', error);
+    });
+  }, [coral?.id, coral?.nome, isMaestro, location.pathname, membro?.cargo, membro?.id, membro?.nome, user?.email, user?.full_name]);
 
   return (
     <div className="min-h-screen app-background flex flex-col" style={pageBackgroundStyle}>

@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Search,
   Send,
+  Settings,
   Trash2,
   Unlock,
   Users,
@@ -89,6 +90,48 @@ const getResumoAcessoMembros = (membrosDoCoral = []) => {
   };
 };
 
+const getAcessoKey = (acesso) =>
+  normalizeEmail(acesso?.user_email) || acesso?.membro_id || acesso?.user_nome || 'usuario';
+
+const getAcessosDoCoral = (acessos = [], coralId) =>
+  acessos
+    .filter((acesso) => acesso.coral_id === coralId)
+    .sort((left, right) => new Date(right.acessado_em || right.created_date || 0).getTime() - new Date(left.acessado_em || left.created_date || 0).getTime());
+
+const getResumoAcessosPorPessoa = (acessos = []) => {
+  const records = new Map();
+
+  acessos.forEach((acesso) => {
+    const key = getAcessoKey(acesso);
+    const current = records.get(key) || {
+      key,
+      nome: acesso.user_nome || acesso.user_email || 'Usuario',
+      email: acesso.user_email || '',
+      papel: acesso.papel || 'membro',
+      total: 0,
+      ultimo: null,
+      paginas: new Map(),
+    };
+    const dataAcesso = acesso.acessado_em || acesso.created_date || '';
+    const pagina = acesso.pagina_nome || acesso.pagina || 'Plataforma';
+
+    current.total += 1;
+    current.ultimo = !current.ultimo || new Date(dataAcesso).getTime() > new Date(current.ultimo).getTime()
+      ? dataAcesso
+      : current.ultimo;
+    current.paginas.set(pagina, (current.paginas.get(pagina) || 0) + 1);
+    records.set(key, current);
+  });
+
+  return [...records.values()].sort((left, right) => new Date(right.ultimo || 0).getTime() - new Date(left.ultimo || 0).getTime());
+};
+
+const formatarPaginas = (paginas) =>
+  [...paginas.entries()]
+    .sort((left, right) => right[1] - left[1])
+    .map(([pagina, total]) => `${pagina} (${total})`)
+    .join(', ');
+
 export default function AdminCorais() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -104,6 +147,8 @@ export default function AdminCorais() {
   const [aprovando, setAprovando] = useState(null);
   const [bloqueando, setBloqueando] = useState(null);
   const [autorizacoes, setAutorizacoes] = useState([]);
+  const [acessos, setAcessos] = useState([]);
+  const [coralAcessos, setCoralAcessos] = useState(null);
 
   useEffect(() => {
     async function load() {
@@ -115,15 +160,17 @@ export default function AdminCorais() {
         return;
       }
 
-      const [allCorais, allMembros, allAutorizacoes] = await Promise.all([
+      const [allCorais, allMembros, allAutorizacoes, allAcessos] = await Promise.all([
         firebaseClient.entities.Coral.list(),
         firebaseClient.entities.Membro.list(),
         firebaseClient.entities.AutorizacaoCadastro.list(),
+        firebaseClient.entities.AcessoPlataforma.list('-created_date', 1000).catch(() => []),
       ]);
 
       setCorais(allCorais);
       setMembros(allMembros);
       setAutorizacoes(allAutorizacoes);
+      setAcessos(allAcessos);
       publicarCoraisNoCatalogo(firebaseClient, allCorais.filter(isCoralAvailable)).catch((error) => {
         console.warn('Falha ao sincronizar catalogo de corais:', error);
       });
@@ -450,6 +497,13 @@ export default function AdminCorais() {
     );
   }
 
+  const acessosDoCoralSelecionado = coralAcessos
+    ? getAcessosDoCoral(acessos, coralAcessos.id)
+    : [];
+  const resumoPessoasAcesso = getResumoAcessosPorPessoa(acessosDoCoralSelecionado);
+  const totalAcessosMaestro = acessosDoCoralSelecionado.filter((acesso) => acesso.papel === 'maestro').length;
+  const totalAcessosMembros = acessosDoCoralSelecionado.length - totalAcessosMaestro;
+
   return (
     <AdminPasswordGate user={user} backPath="/mural">
     <div className="min-h-screen app-background">
@@ -755,6 +809,13 @@ export default function AdminCorais() {
                             )}
                           </button>
                           <button
+                            onClick={() => setCoralAcessos(coral)}
+                            className="p-1.5 text-gray-400 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors flex-shrink-0"
+                            title="Ver detalhes de acessos"
+                          >
+                            <Settings className="w-4 h-4" />
+                          </button>
+                          <button
                             onClick={() => iniciarEdicao(coral)}
                             className="p-1.5 text-gray-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors flex-shrink-0"
                             title="Editar coral"
@@ -830,6 +891,106 @@ export default function AdminCorais() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {coralAcessos && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center sm:p-6">
+            <div className="flex max-h-[88vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+              <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3">
+                <div className="min-w-0">
+                  <h3 className="truncate text-base font-bold text-gray-900">
+                    Acessos - {coralAcessos.nome || 'Plataforma'}
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    {acessosDoCoralSelecionado.length} acesso{acessosDoCoralSelecionado.length !== 1 ? 's' : ''} registrado{acessosDoCoralSelecionado.length !== 1 ? 's' : ''}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCoralAcessos(null)}
+                  className="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                  title="Fechar"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="overflow-y-auto p-4">
+                <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                    <p className="text-xs font-semibold text-gray-500">Total</p>
+                    <p className="mt-1 text-2xl font-bold text-gray-900">{acessosDoCoralSelecionado.length}</p>
+                  </div>
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                    <p className="text-xs font-semibold text-gray-500">Maestro/Maestrina</p>
+                    <p className="mt-1 text-2xl font-bold text-gray-900">{totalAcessosMaestro}</p>
+                  </div>
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                    <p className="text-xs font-semibold text-gray-500">Membros</p>
+                    <p className="mt-1 text-2xl font-bold text-gray-900">{totalAcessosMembros}</p>
+                  </div>
+                </div>
+
+                {acessosDoCoralSelecionado.length === 0 ? (
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 p-8 text-center">
+                    <Clock className="mx-auto mb-2 h-8 w-8 text-gray-300" />
+                    <p className="text-sm text-gray-500">Ainda nao ha acessos registrados para esta plataforma.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    <div>
+                      <h4 className="mb-2 text-sm font-bold text-gray-800">Resumo por pessoa</h4>
+                      <div className="space-y-2">
+                        {resumoPessoasAcesso.map((pessoa) => (
+                          <div key={pessoa.key} className="rounded-xl border border-gray-100 p-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold text-gray-800">{pessoa.nome}</p>
+                                <p className="truncate text-xs text-gray-400">{pessoa.email || pessoa.papel}</p>
+                              </div>
+                              <span className="rounded-full bg-indigo-50 px-2 py-1 text-xs font-bold text-indigo-700">
+                                {pessoa.total}x
+                              </span>
+                            </div>
+                            <p className="mt-2 text-xs text-gray-500">Ultimo: {formatarAcesso(pessoa.ultimo)}</p>
+                            <p className="mt-1 break-words text-xs text-gray-500">
+                              Acessou: {formatarPaginas(pessoa.paginas)}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="mb-2 text-sm font-bold text-gray-800">Ultimos acessos</h4>
+                      <div className="space-y-2">
+                        {acessosDoCoralSelecionado.slice(0, 50).map((acesso) => (
+                          <div key={acesso.id} className="rounded-xl border border-gray-100 p-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold text-gray-800">
+                                  {acesso.user_nome || acesso.user_email || 'Usuario'}
+                                </p>
+                                <p className="truncate text-xs text-gray-500">
+                                  {acesso.pagina_nome || acesso.pagina || 'Plataforma'}
+                                </p>
+                              </div>
+                              <span className="rounded-full bg-gray-100 px-2 py-1 text-[11px] font-semibold text-gray-600">
+                                {acesso.papel === 'maestro' ? 'Maestro' : 'Membro'}
+                              </span>
+                            </div>
+                            <p className="mt-2 text-xs text-gray-400">
+                              {formatarAcesso(acesso.acessado_em || acesso.created_date)}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </main>
