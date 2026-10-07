@@ -149,6 +149,7 @@ export default function AdminCorais() {
   const [autorizacoes, setAutorizacoes] = useState([]);
   const [acessos, setAcessos] = useState([]);
   const [coralAcessos, setCoralAcessos] = useState(null);
+  const [removendoHistorico, setRemovendoHistorico] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -196,6 +197,32 @@ export default function AdminCorais() {
       coral.maestro_email,
     ].some((value) => String(value || '').toLowerCase().includes(termo));
   });
+
+  const removerHistoricoAcessos = async () => {
+    if (!coralAcessos?.id) return;
+
+    const registros = acessos.filter((acesso) => acesso.coral_id === coralAcessos.id);
+    if (registros.length === 0) return;
+
+    const confirmado = confirm(
+      `Remover historico de acessos de ${coralAcessos.nome || 'esta plataforma'}?\n\nIsso apaga somente o historico da engrenagem.`
+    );
+
+    if (!confirmado) return;
+
+    setRemovendoHistorico(true);
+
+    try {
+      await Promise.all(registros.map((acesso) => firebaseClient.entities.AcessoPlataforma.delete(acesso.id)));
+      setAcessos((prev) => prev.filter((acesso) => acesso.coral_id !== coralAcessos.id));
+      alert('Historico removido com sucesso.');
+    } catch (error) {
+      console.error('Falha ao remover historico de acessos:', error);
+      alert('Nao foi possivel remover o historico. Tente novamente.');
+    } finally {
+      setRemovendoHistorico(false);
+    }
+  };
 
   const iniciarEdicao = (coral) => {
     setEditando(coral.id);
@@ -906,14 +933,26 @@ export default function AdminCorais() {
                     {acessosDoCoralSelecionado.length} acesso{acessosDoCoralSelecionado.length !== 1 ? 's' : ''} registrado{acessosDoCoralSelecionado.length !== 1 ? 's' : ''}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setCoralAcessos(null)}
-                  className="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-                  title="Fechar"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+                <div className="flex flex-shrink-0 items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={removerHistoricoAcessos}
+                    disabled={removendoHistorico || acessosDoCoralSelecionado.length === 0}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    title="Remover historico"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    {removendoHistorico ? 'Removendo...' : 'Remover historico'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCoralAcessos(null)}
+                    className="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                    title="Fechar"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
 
               <div className="overflow-y-auto p-4">
