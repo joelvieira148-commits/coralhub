@@ -50,6 +50,7 @@ const emptyForm = {
 };
 
 const AVISO_USO_PLATAFORMA_ASSUNTO = 'Aviso importante - Plataforma Maestro Coral';
+const ULTIMO_LIBERADO_HIDDEN_KEY = 'coralhub_admin_ultimo_liberado_oculto_v1';
 
 const AVISO_USO_PLATAFORMA_MENSAGEM = `Ola, Maestro/Maestrina!
 
@@ -171,6 +172,10 @@ export default function AdminCorais() {
   const [senhaAdminForm, setSenhaAdminForm] = useState({ atual: '', nova: '', confirmar: '' });
   const [salvandoSenhaAdmin, setSalvandoSenhaAdmin] = useState(false);
   const [erroSenhaAdmin, setErroSenhaAdmin] = useState('');
+  const [ocultarUltimoLiberado, setOcultarUltimoLiberado] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(ULTIMO_LIBERADO_HIDDEN_KEY) === '1';
+  });
 
   useEffect(() => {
     async function load() {
@@ -218,6 +223,20 @@ export default function AdminCorais() {
       coral.maestro_email,
     ].some((value) => String(value || '').toLowerCase().includes(termo));
   });
+
+  const alternarUltimoLiberado = (ocultar) => {
+    setOcultarUltimoLiberado(ocultar);
+
+    try {
+      if (ocultar) {
+        window.localStorage.setItem(ULTIMO_LIBERADO_HIDDEN_KEY, '1');
+      } else {
+        window.localStorage.removeItem(ULTIMO_LIBERADO_HIDDEN_KEY);
+      }
+    } catch {
+      // Se o navegador bloquear localStorage, o botao ainda funciona nesta sessao.
+    }
+  };
 
   const removerHistoricoAcessos = async () => {
     if (!coralAcessos?.id) return;
@@ -651,44 +670,68 @@ export default function AdminCorais() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-6 pb-16">
-        <section className="mb-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 shadow-sm">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <div className="mb-1 flex items-center gap-2 text-sm font-bold text-emerald-800">
-                <Check className="h-4 w-4" />
-                Ultima plataforma liberada
-              </div>
-              {ultimoCoralLiberado ? (
-                <>
-                  <p className="truncate text-lg font-bold text-gray-900">
-                    {ultimoCoralLiberado.nome || 'Coral sem nome'}
-                  </p>
-                  <p className="mt-1 text-sm text-gray-600">
-                    {getTipoLiberacaoCoral(ultimoCoralLiberado)} em {formatarAcesso(getDataLiberacaoCoral(ultimoCoralLiberado))}
-                  </p>
-                  <p className="mt-1 truncate text-xs text-gray-500">
-                    {[ultimoCoralLiberado.cidade, ultimoCoralLiberado.maestro_email].filter(Boolean).join(' · ') || 'Sem cidade ou e-mail informado'}
-                  </p>
-                </>
-              ) : (
-                <p className="text-sm text-gray-600">
-                  Nenhuma plataforma liberada encontrada.
-                </p>
-              )}
-            </div>
-            {ultimoCoralLiberado && (
-              <button
-                type="button"
-                onClick={() => entrarNaPlataformaDoCoral(ultimoCoralLiberado)}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
-                title="Entrar na ultima plataforma liberada"
-              >
-                <LogIn className="h-4 w-4" />
-                Entrar
-              </button>
-            )}
+        {ocultarUltimoLiberado ? (
+          <div className="mb-6 flex justify-end">
+            <button
+              type="button"
+              onClick={() => alternarUltimoLiberado(false)}
+              className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-600 shadow-sm hover:bg-gray-50"
+            >
+              <Check className="h-4 w-4 text-emerald-600" />
+              Mostrar ultima liberacao
+            </button>
           </div>
-        </section>
+        ) : (
+          <section className="mb-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <div className="mb-1 flex items-center gap-2 text-sm font-bold text-emerald-800">
+                  <Check className="h-4 w-4" />
+                  Ultima plataforma liberada
+                </div>
+                {ultimoCoralLiberado ? (
+                  <>
+                    <p className="truncate text-lg font-bold text-gray-900">
+                      {ultimoCoralLiberado.nome || 'Coral sem nome'}
+                    </p>
+                    <p className="mt-1 text-sm text-gray-600">
+                      {getTipoLiberacaoCoral(ultimoCoralLiberado)} em {formatarAcesso(getDataLiberacaoCoral(ultimoCoralLiberado))}
+                    </p>
+                    <p className="mt-1 truncate text-xs text-gray-500">
+                      {[ultimoCoralLiberado.cidade, ultimoCoralLiberado.maestro_email].filter(Boolean).join(' · ') || 'Sem cidade ou e-mail informado'}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-600">
+                    Nenhuma plataforma liberada encontrada.
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                {ultimoCoralLiberado && (
+                  <button
+                    type="button"
+                    onClick={() => entrarNaPlataformaDoCoral(ultimoCoralLiberado)}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                    title="Entrar na ultima plataforma liberada"
+                  >
+                    <LogIn className="h-4 w-4" />
+                    Entrar
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => alternarUltimoLiberado(true)}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-white px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100"
+                  title="Tirar a ultima liberacao da tela"
+                >
+                  <X className="h-4 w-4" />
+                  Tirar
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
 
         {coraisPendentes.length > 0 && (
           <section className="mb-6">
