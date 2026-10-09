@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { firebaseClient } from '@/api/firebaseClient';
 import AdminPasswordGate from '@/components/coral/AdminPasswordGate';
-import { isAdminUser, setAdminCoralOverride } from '@/lib/admin-access';
+import { isAdminUser, setAdminCoralOverride, updateAdminPassword } from '@/lib/admin-access';
 import { clearCoralContextCache, saveCoralContextCache } from '@/hooks/useCoralContext';
 import {
   getApprovalFields,
@@ -166,6 +166,10 @@ export default function AdminCorais() {
   const [acessos, setAcessos] = useState([]);
   const [coralAcessos, setCoralAcessos] = useState(null);
   const [removendoHistorico, setRemovendoHistorico] = useState(false);
+  const [showTrocarSenha, setShowTrocarSenha] = useState(false);
+  const [senhaAdminForm, setSenhaAdminForm] = useState({ atual: '', nova: '', confirmar: '' });
+  const [salvandoSenhaAdmin, setSalvandoSenhaAdmin] = useState(false);
+  const [erroSenhaAdmin, setErroSenhaAdmin] = useState('');
 
   useEffect(() => {
     async function load() {
@@ -237,6 +241,32 @@ export default function AdminCorais() {
       alert('Nao foi possivel remover o historico. Tente novamente.');
     } finally {
       setRemovendoHistorico(false);
+    }
+  };
+
+  const trocarSenhaAdmin = async (event) => {
+    event.preventDefault();
+    setErroSenhaAdmin('');
+
+    if (senhaAdminForm.nova !== senhaAdminForm.confirmar) {
+      setErroSenhaAdmin('A confirmacao da nova senha nao confere.');
+      return;
+    }
+
+    setSalvandoSenhaAdmin(true);
+
+    try {
+      await updateAdminPassword(firebaseClient, user, {
+        senhaAtual: senhaAdminForm.atual,
+        novaSenha: senhaAdminForm.nova,
+      });
+      setSenhaAdminForm({ atual: '', nova: '', confirmar: '' });
+      setShowTrocarSenha(false);
+      alert('Senha do admin alterada com sucesso.');
+    } catch (error) {
+      setErroSenhaAdmin(error?.message || 'Nao foi possivel trocar a senha.');
+    } finally {
+      setSalvandoSenhaAdmin(false);
     }
   };
 
@@ -585,6 +615,12 @@ export default function AdminCorais() {
               className="hidden sm:flex items-center gap-1.5 text-white/75 hover:text-white text-xs transition-colors"
             >
               <TrebleClefIcon className="w-4 h-4 text-base" /> Música
+            </button>
+            <button
+              onClick={() => setShowTrocarSenha(true)}
+              className="flex items-center gap-1.5 text-white/75 hover:text-white text-xs transition-colors"
+            >
+              <Lock className="w-4 h-4" /> Senha
             </button>
             <button
               onClick={() => navigate('/mural')}
@@ -1086,6 +1122,82 @@ export default function AdminCorais() {
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {showTrocarSenha && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center sm:p-6">
+            <form onSubmit={trocarSenhaAdmin} className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
+              <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+                <div>
+                  <h3 className="font-bold text-gray-900">Trocar senha do Admin</h3>
+                  <p className="text-xs text-gray-500">Use para criar uma senha temporaria quando precisar.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowTrocarSenha(false);
+                    setErroSenhaAdmin('');
+                    setSenhaAdminForm({ atual: '', nova: '', confirmar: '' });
+                  }}
+                  className="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                  title="Fechar"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4 p-4">
+                {erroSenhaAdmin && (
+                  <div className="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    {erroSenhaAdmin}
+                  </div>
+                )}
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Senha atual</label>
+                  <input
+                    type="password"
+                    value={senhaAdminForm.atual}
+                    onChange={(event) => setSenhaAdminForm((prev) => ({ ...prev, atual: event.target.value }))}
+                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Nova senha</label>
+                  <input
+                    type="password"
+                    value={senhaAdminForm.nova}
+                    onChange={(event) => setSenhaAdminForm((prev) => ({ ...prev, nova: event.target.value }))}
+                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
+                    minLength={4}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Confirmar nova senha</label>
+                  <input
+                    type="password"
+                    value={senhaAdminForm.confirmar}
+                    onChange={(event) => setSenhaAdminForm((prev) => ({ ...prev, confirmar: event.target.value }))}
+                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
+                    minLength={4}
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={salvandoSenhaAdmin}
+                  className="w-full rounded-xl bg-gray-900 py-3 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-60"
+                >
+                  {salvandoSenhaAdmin ? 'Salvando...' : 'Salvar nova senha'}
+                </button>
+              </div>
+            </form>
           </div>
         )}
       </main>

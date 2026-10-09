@@ -1,29 +1,39 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Lock, Shield } from 'lucide-react';
+import { firebaseClient } from '@/api/firebaseClient';
 import { isAdminUnlocked, isAdminUser, unlockAdmin } from '@/lib/admin-access';
 
 export default function AdminPasswordGate({ user, children, backPath = '/mural' }) {
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [checking, setChecking] = useState(false);
   const [unlocked, setUnlocked] = useState(() => isAdminUnlocked(user));
 
   useEffect(() => {
     setUnlocked(isAdminUnlocked(user));
   }, [user]);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
+    setChecking(true);
 
-    if (unlockAdmin(user, password)) {
-      setUnlocked(true);
-      setPassword('');
-      return;
+    try {
+      if (await unlockAdmin(user, password, firebaseClient)) {
+        setUnlocked(true);
+        setPassword('');
+        return;
+      }
+
+      setError('Senha do admin incorreta.');
+    } catch (error) {
+      console.warn('Falha ao validar senha do admin:', error);
+      setError('Nao foi possivel validar a senha agora.');
+    } finally {
+      setChecking(false);
     }
-
-    setError('Senha do admin incorreta.');
   };
 
   if (!isAdminUser(user)) {
@@ -78,8 +88,11 @@ export default function AdminPasswordGate({ user, children, backPath = '/mural' 
           />
         </div>
 
-        <button className="mt-4 w-full rounded-xl bg-gray-900 hover:bg-gray-800 text-white py-3 text-sm font-semibold transition-colors">
-          Entrar no Admin
+        <button
+          disabled={checking}
+          className="mt-4 w-full rounded-xl bg-gray-900 hover:bg-gray-800 text-white py-3 text-sm font-semibold transition-colors disabled:opacity-60"
+        >
+          {checking ? 'Validando...' : 'Entrar no Admin'}
         </button>
 
         <button
