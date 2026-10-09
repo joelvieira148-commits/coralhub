@@ -132,6 +132,22 @@ const formatarPaginas = (paginas) =>
     .map(([pagina, total]) => `${pagina} (${total})`)
     .join(', ');
 
+const getDataLiberacaoCoral = (coral) =>
+  coral?.desbloqueado_em || coral?.aprovado_em || coral?.updated_date || coral?.created_date || null;
+
+const getTipoLiberacaoCoral = (coral) => {
+  if (coral?.desbloqueado_em) return 'Desbloqueado';
+  if (coral?.aprovado_em) return 'Aprovado';
+  return 'Liberado';
+};
+
+const getUltimoCoralLiberado = (coraisDisponiveis = []) =>
+  [...coraisDisponiveis]
+    .filter((coral) => getDataLiberacaoCoral(coral))
+    .sort((left, right) =>
+      new Date(getDataLiberacaoCoral(right)).getTime() - new Date(getDataLiberacaoCoral(left)).getTime()
+    )[0] || null;
+
 export default function AdminCorais() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -530,6 +546,7 @@ export default function AdminCorais() {
   const resumoPessoasAcesso = getResumoAcessosPorPessoa(acessosDoCoralSelecionado);
   const totalAcessosMaestro = acessosDoCoralSelecionado.filter((acesso) => acesso.papel === 'maestro').length;
   const totalAcessosMembros = acessosDoCoralSelecionado.length - totalAcessosMaestro;
+  const ultimoCoralLiberado = getUltimoCoralLiberado(coraisDisponiveis);
 
   return (
     <AdminPasswordGate user={user} backPath="/mural">
@@ -580,6 +597,45 @@ export default function AdminCorais() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-6 pb-16">
+        <section className="mb-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 shadow-sm">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <div className="mb-1 flex items-center gap-2 text-sm font-bold text-emerald-800">
+                <Check className="h-4 w-4" />
+                Ultima plataforma liberada
+              </div>
+              {ultimoCoralLiberado ? (
+                <>
+                  <p className="truncate text-lg font-bold text-gray-900">
+                    {ultimoCoralLiberado.nome || 'Coral sem nome'}
+                  </p>
+                  <p className="mt-1 text-sm text-gray-600">
+                    {getTipoLiberacaoCoral(ultimoCoralLiberado)} em {formatarAcesso(getDataLiberacaoCoral(ultimoCoralLiberado))}
+                  </p>
+                  <p className="mt-1 truncate text-xs text-gray-500">
+                    {[ultimoCoralLiberado.cidade, ultimoCoralLiberado.maestro_email].filter(Boolean).join(' · ') || 'Sem cidade ou e-mail informado'}
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-gray-600">
+                  Nenhuma plataforma liberada encontrada.
+                </p>
+              )}
+            </div>
+            {ultimoCoralLiberado && (
+              <button
+                type="button"
+                onClick={() => entrarNaPlataformaDoCoral(ultimoCoralLiberado)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                title="Entrar na ultima plataforma liberada"
+              >
+                <LogIn className="h-4 w-4" />
+                Entrar
+              </button>
+            )}
+          </div>
+        </section>
+
         {coraisPendentes.length > 0 && (
           <section className="mb-6">
             <div className="mb-3 flex items-center gap-2">
