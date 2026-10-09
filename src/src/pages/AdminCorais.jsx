@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { firebaseClient } from '@/api/firebaseClient';
 import AdminPasswordGate from '@/components/coral/AdminPasswordGate';
+import { notifyAdminSecurityEvent } from '@/lib/admin-alerts';
 import { isAdminUser, setAdminCoralOverride, updateAdminPassword } from '@/lib/admin-access';
 import { clearCoralContextCache, saveCoralContextCache } from '@/hooks/useCoralContext';
 import {
@@ -254,16 +255,33 @@ export default function AdminCorais() {
     }
 
     setSalvandoSenhaAdmin(true);
+    notifyAdminSecurityEvent({
+      event: 'admin_password_change_started',
+      user,
+      page: 'admin-configuracao',
+    });
 
     try {
       await updateAdminPassword(firebaseClient, user, {
         senhaAtual: senhaAdminForm.atual,
         novaSenha: senhaAdminForm.nova,
       });
+      notifyAdminSecurityEvent({
+        event: 'admin_password_change_success',
+        user,
+        success: true,
+        page: 'admin-configuracao',
+      });
       setSenhaAdminForm({ atual: '', nova: '', confirmar: '' });
       setShowTrocarSenha(false);
       alert('Senha do admin alterada com sucesso.');
     } catch (error) {
+      notifyAdminSecurityEvent({
+        event: 'admin_password_change_failed',
+        user,
+        success: false,
+        page: 'admin-configuracao',
+      });
       setErroSenhaAdmin(error?.message || 'Nao foi possivel trocar a senha.');
     } finally {
       setSalvandoSenhaAdmin(false);

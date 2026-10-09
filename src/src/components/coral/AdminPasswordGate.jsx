@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Lock, Shield } from 'lucide-react';
 import { firebaseClient } from '@/api/firebaseClient';
+import { notifyAdminSecurityEvent } from '@/lib/admin-alerts';
 import { isAdminUnlocked, isAdminUser, unlockAdmin } from '@/lib/admin-access';
 
 export default function AdminPasswordGate({ user, children, backPath = '/mural' }) {
@@ -22,11 +23,23 @@ export default function AdminPasswordGate({ user, children, backPath = '/mural' 
 
     try {
       if (await unlockAdmin(user, password, firebaseClient)) {
+        notifyAdminSecurityEvent({
+          event: 'admin_login_success',
+          user,
+          success: true,
+          page: 'admin',
+        });
         setUnlocked(true);
         setPassword('');
         return;
       }
 
+      notifyAdminSecurityEvent({
+        event: 'admin_login_failed',
+        user,
+        success: false,
+        page: 'admin',
+      });
       setError('Senha do admin incorreta.');
     } catch (error) {
       console.warn('Falha ao validar senha do admin:', error);
