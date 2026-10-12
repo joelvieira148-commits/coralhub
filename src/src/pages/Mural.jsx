@@ -495,6 +495,7 @@ export default function Mural() {
   const muralWelcomeText = coral.mural_boas_vindas || 'Bem-vindo!';
   const muralTitle = coral.mural_titulo || 'Mural do Coral';
   const muralDescription = String(coral.mural_descricao || '').trim();
+  const heroTypeLabel = /^vocal\b/i.test(String(coral.nome || '').trim()) ? 'Vocal' : 'Coral';
   const videos = avisos.filter((aviso) => getPublicationType(aviso) === 'video');
   const fotos = avisos.filter((aviso) => getPublicationType(aviso) === 'foto');
   const avisosTexto = avisos.filter((aviso) => getPublicationType(aviso) === 'aviso');
@@ -534,7 +535,7 @@ export default function Mural() {
             </div>
             <div className="min-w-0">
               <p className="text-lg font-semibold leading-tight" style={{ color: muralHeroTextStyle.color }}>
-                {coral.descricao || 'Coral'}
+                {heroTypeLabel}
               </p>
               <h1 className="break-words text-3xl font-black leading-tight sm:text-4xl" style={{ color: muralHeroTextStyle.color }}>
                 {coral.nome}
@@ -607,7 +608,7 @@ export default function Mural() {
               </div>
 
               {canManage && (
-                <div className="relative">
+                <div className="space-y-2">
                   <button
                     type="button"
                     onClick={() => setShowAdicionar((value) => !value)}
@@ -617,7 +618,7 @@ export default function Mural() {
                     <Plus className="h-5 w-5" /> Adicionar
                   </button>
                   {showAdicionar && (
-                    <div className="absolute right-0 z-20 mt-2 w-full min-w-52 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-xl sm:w-56">
+                    <div className="w-full overflow-hidden rounded-xl border border-gray-100 bg-white shadow-xl sm:w-56">
                       <button
                         type="button"
                         onClick={() => abrirNovo('video')}
