@@ -41,7 +41,16 @@ export default function Agenda() {
   const [salvando, setSalvando] = useState(false);
   const [uploadingFundo, setUploadingFundo] = useState(false);
   const [showFundoMenu, setShowFundoMenu] = useState(false);
-  const emptyForm = { titulo: '', descricao: '', data: '', hora: '', local: '', tipo: 'ensaio' };
+  const emptyForm = {
+    agenda_nome: '',
+    titulo: '',
+    descricao: '',
+    observacoes: '',
+    data: '',
+    hora: '',
+    local: '',
+    tipo: 'ensaio',
+  };
   const [form, setForm] = useState(emptyForm);
 
   const canManage = canManageCoral(user, coral);
@@ -69,7 +78,16 @@ export default function Agenda() {
 
   const abrirEdicao = (ev) => {
     setEditando(ev);
-    setForm({ titulo: ev.titulo, descricao: ev.descricao || '', data: ev.data, hora: ev.hora || '', local: ev.local || '', tipo: ev.tipo });
+    setForm({
+      agenda_nome: ev.agenda_nome || '',
+      titulo: ev.titulo,
+      descricao: ev.descricao || '',
+      observacoes: ev.observacoes || '',
+      data: ev.data,
+      hora: ev.hora || '',
+      local: ev.local || '',
+      tipo: ev.tipo,
+    });
     setShowForm(true);
   };
 
@@ -219,7 +237,7 @@ export default function Agenda() {
           <div className="mb-6 text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.32em] text-sky-700">Musica • Comunhao • Proposito</p>
             <h3 className="mt-2 bg-gradient-to-r from-blue-800 via-sky-600 to-emerald-600 bg-clip-text text-3xl font-black text-transparent sm:text-5xl">
-              Agenda Coral
+              {ev.agenda_nome || 'Agenda Coral'}
             </h3>
             <div className="mx-auto mt-2 h-1 w-32 rounded-full bg-gradient-to-r from-blue-700 to-emerald-500" />
             <p className="mt-3 break-words text-sm font-semibold text-slate-600">{coral?.nome || 'Meu Coral'}</p>
@@ -263,7 +281,7 @@ export default function Agenda() {
           </div>
 
           <AgendaInfoCard icon={FileText} label="Observacoes" className="mt-3" accent="#0f5fa8" iconBg="#dbeafe">
-            {ev.descricao || 'Sem observacoes.'}
+            {ev.observacoes || 'Sem observacoes.'}
           </AgendaInfoCard>
 
           <div className="mt-5 h-2 rounded-full bg-gradient-to-r from-sky-300 via-emerald-300 to-sky-200" />
@@ -423,6 +441,15 @@ export default function Agenda() {
             </div>
             <form onSubmit={salvar} className="p-5 space-y-4">
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nome da agenda</label>
+                <input
+                  value={form.agenda_nome}
+                  onChange={e => setForm(p => ({ ...p, agenda_nome: e.target.value }))}
+                  placeholder="Ex: Agenda Coral"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                />
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Título *</label>
                 <input required value={form.titulo} onChange={e => setForm(p => ({ ...p, titulo: e.target.value }))}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
@@ -456,6 +483,16 @@ export default function Agenda() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
                 <textarea value={form.descricao} onChange={e => setForm(p => ({ ...p, descricao: e.target.value }))}
                   rows={3} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Observacoes</label>
+                <textarea
+                  value={form.observacoes}
+                  onChange={e => setForm(p => ({ ...p, observacoes: e.target.value }))}
+                  placeholder="Ex: Trazer pasta, garrafa de agua e chegar com antecedencia."
+                  rows={3}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none"
+                />
               </div>
               <button type="submit" disabled={salvando}
                 className="w-full text-white font-semibold py-3 rounded-xl disabled:opacity-60"
