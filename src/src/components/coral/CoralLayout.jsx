@@ -126,12 +126,12 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
             {coral?.nome || 'Meu Coral'}
           </span>
         </div>
-        <div className="relative z-10 max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0">
+        <div className="relative z-10 mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-3 sm:px-4 sm:py-4">
+          <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
             {location.pathname !== '/mural' && (
               <button
                 onClick={() => navigate(-1)}
-                className="mr-1 p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors flex-shrink-0"
+                className="mr-0 flex-shrink-0 rounded-full bg-white/10 p-1.5 text-white transition-colors hover:bg-white/20 sm:mr-1"
                 style={topoTextoStyle}
                 title="Voltar"
               >
@@ -139,28 +139,29 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
               </button>
             )}
             {coral?.logo_url ? (
-              <img src={coral.logo_url} alt="Logo" className="h-16 w-16 rounded-full object-cover border-2 border-white/40 flex-shrink-0" />
+              <img src={coral.logo_url} alt="Logo" className="h-12 w-12 flex-shrink-0 rounded-full border-2 border-white/40 object-cover sm:h-16 sm:w-16" />
             ) : (
-              <div className="h-16 w-16 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                <Music className="w-8 h-8" style={{ color: topoTextoStyle.color }} />
+              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-white/20 sm:h-16 sm:w-16">
+                <Music className="h-6 w-6 sm:h-8 sm:w-8" style={{ color: topoTextoStyle.color }} />
               </div>
             )}
             <div className="min-w-0">
               <h1
-                className="text-lg sm:text-xl leading-tight truncate max-w-[190px] sm:max-w-none"
+                className="max-w-[44vw] truncate text-base leading-tight sm:max-w-none sm:text-xl"
                 style={{ ...nomeCoralFonteStyle, ...topoTextoStyle }}
               >
                 {coral?.nome || 'Meu Coral'}
               </h1>
-              <p className="text-xs font-semibold" style={topoTextoStyle}>{isMaestro ? 'Maestro' : membro?.cargo ? 'Membro' : 'Membro'}</p>
+              <p className="truncate text-[11px] font-semibold sm:text-xs" style={topoTextoStyle}>{isMaestro ? 'Maestro' : membro?.cargo ? 'Membro' : 'Membro'}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-shrink-0 items-center gap-1.5 sm:gap-3">
             <Link
               to="/ajuda"
-              className="flex items-center gap-1 text-sm transition-colors"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm transition-colors hover:bg-white/20 sm:h-auto sm:w-auto sm:justify-start sm:rounded-none sm:bg-transparent"
               style={topoTextoStyle}
+              title="Ajuda"
             >
               <HelpCircle className="w-4 h-4" />
               <span className="hidden sm:inline text-xs">Ajuda</span>
@@ -176,8 +177,9 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
                 }
                 logoutToApp('/');
               }}
-              className="flex items-center gap-1 text-sm transition-colors"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm transition-colors hover:bg-white/20 sm:h-auto sm:w-auto sm:justify-start sm:rounded-none sm:bg-transparent"
               style={topoTextoStyle}
+              title="Sair"
             >
               <LogOut className="w-4 h-4" />
               <span className="hidden sm:inline text-xs">Sair</span>
