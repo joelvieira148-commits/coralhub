@@ -59,6 +59,33 @@ service cloud.firestore {
       return isAdmin() || isCoralMaestro(recordData.data.coral_id);
     }
 
+    function isSelfMemberUpdate(recordData) {
+      return signedIn()
+        && recordData.entity == "Membro"
+        && request.resource.data.entity == "Membro"
+        && request.resource.data.owner_id == resource.data.owner_id
+        && (
+          recordData.data.user_email == request.auth.token.email
+          || recordData.data.email == request.auth.token.email
+        )
+        && request.resource.data.data.diff(resource.data.data).affectedKeys().hasOnly([
+          "nome",
+          "telefone",
+          "endereco",
+          "foto_url",
+          "photo_url",
+          "avatar_url",
+          "imagem_url",
+          "picture_url",
+          "foto_zoom",
+          "photo_zoom",
+          "foto_pos_x",
+          "photo_pos_x",
+          "foto_pos_y",
+          "photo_pos_y"
+        ]);
+    }
+
     function canCreateRecord(recordData) {
       return (
         !(recordData.entity in ["Coral", "Membro", "Musica", "Aviso", "Evento"])
@@ -68,7 +95,17 @@ service cloud.firestore {
       );
     }
 
-    function canUpdateOrDeleteRecord(recordData, recordId) {
+    function canUpdateRecord(recordData, recordId) {
+      return (
+        !(recordData.entity in ["Coral", "Membro", "Musica", "Aviso", "Evento"])
+        || (recordData.entity == "Coral" && (isAdmin() || isCoralOwnerRecord(recordData) || isCoralMaestro(recordId)))
+        || (recordData.entity == "Membro" && isSelfMemberUpdate(recordData))
+        || (recordData.entity == "Membro" && canWriteCoralContent(recordData))
+        || (recordData.entity in ["Musica", "Aviso", "Evento"] && canWriteCoralContent(recordData))
+      );
+    }
+
+    function canDeleteRecord(recordData, recordId) {
       return (
         !(recordData.entity in ["Coral", "Membro", "Musica", "Aviso", "Evento"])
         || (recordData.entity == "Coral" && (isAdmin() || isCoralOwnerRecord(recordData) || isCoralMaestro(recordId)))
@@ -86,8 +123,10 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.owner_id == request.auth.uid
         && canCreateRecord(request.resource.data);
-      allow update, delete: if signedIn()
-        && canUpdateOrDeleteRecord(resource.data, recordId);
+      allow update: if signedIn()
+        && canUpdateRecord(resource.data, recordId);
+      allow delete: if signedIn()
+        && canDeleteRecord(resource.data, recordId);
     }
   }
 }
