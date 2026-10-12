@@ -40,6 +40,20 @@ const emptyForm = {
 
 const MEDIA_MARKER_REGEX = /\s*\[\[CORALHUB_MEDIA:([^\]]+)\]\]\s*$/;
 
+const clarearHex = (value, amount = 0.72) => {
+  const hex = String(value || '').replace('#', '').trim();
+  const normalized = hex.length === 3
+    ? hex.split('').map((char) => `${char}${char}`).join('')
+    : hex;
+
+  if (!/^[0-9a-f]{6}$/i.test(normalized)) return '#ffffff';
+
+  const channels = normalized.match(/.{2}/g).map((channel) => parseInt(channel, 16));
+  const light = channels.map((channel) => Math.round(channel + (255 - channel) * amount));
+
+  return `#${light.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
+};
+
 function getTipo(value) {
   return TIPOS.find((tipo) => tipo.value === value) || TIPOS[0];
 }
@@ -480,9 +494,10 @@ export default function Mural() {
   const secondary = coral.cor_secundaria || '#a78bfa';
   const muralTextColor = coral.mural_texto_cor || '#111827';
   const muralBackgroundColor = coral.mural_fundo_cor || '#ffffff';
+  const muralSoftBackgroundColor = clarearHex(muralBackgroundColor);
   const muralWelcomeBackground = coral.mural_fundo_url
-    ? `linear-gradient(90deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.68)), url("${coral.mural_fundo_url}")`
-    : `linear-gradient(135deg, ${muralBackgroundColor}, #ffffff)`;
+    ? `linear-gradient(90deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.84)), url("${coral.mural_fundo_url}")`
+    : `linear-gradient(135deg, ${muralSoftBackgroundColor}, #ffffff)`;
   const muralWelcomeText = coral.mural_boas_vindas || 'Bem-vindo!';
   const muralTitle = coral.mural_titulo || 'Mural do Coral';
   const muralDescription = String(coral.mural_descricao || '').trim();
