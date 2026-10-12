@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, X, Calendar, Clock, MapPin, Pencil, Trash2, Music, Users, Presentation, HelpCircle, Upload, Image, ImageOff } from 'lucide-react';
+import { Plus, X, Calendar, Clock, MapPin, Pencil, Trash2, Music, Users, Presentation, HelpCircle, Upload, Image, ImageOff, FileText } from 'lucide-react';
 import { firebaseClient } from '@/api/firebaseClient';
 import CoralLayout from '@/components/coral/CoralLayout';
 import useCoralContext from '@/hooks/useCoralContext';
@@ -19,6 +19,18 @@ const TIPOS_EVENTO = [
 function getTipoEvento(value) {
   return TIPOS_EVENTO.find(t => t.value === value) || TIPOS_EVENTO[0];
 }
+
+const formatarDataLonga = (value) => {
+  if (!value) return 'Data nao informada';
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
+};
 
 export default function Agenda() {
   const navigate = useNavigate();
@@ -175,13 +187,93 @@ export default function Agenda() {
       }
     : {};
 
+  const AgendaInfoCard = ({ icon: Icon, label, children, className = '', accent = '#0f6fbb', iconBg = '#e0f2fe' }) => (
+    <div className={`rounded-2xl border border-white/70 bg-white/90 p-4 shadow-sm backdrop-blur-sm ${className}`}>
+      <div className="flex min-w-0 items-start gap-3">
+        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: iconBg }}>
+          <Icon className="h-6 w-6" style={{ color: accent }} />
+        </div>
+        <div className="min-w-0 border-l border-sky-200 pl-3">
+          <p className="text-sm font-bold text-sky-950">{label}</p>
+          <div className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-700 sm:text-base">
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const EventoCard = ({ ev }) => {
     const tipo = getTipoEvento(ev.tipo);
     const Icon = tipo.icon;
     const dataObj = new Date(ev.data + 'T00:00:00');
     const passado = ev.data < hoje;
+    const poster = (
+      <div
+        className={`relative overflow-hidden rounded-[2rem] border border-white/70 bg-gradient-to-br from-white/95 via-sky-50/95 to-emerald-50/90 p-4 shadow-xl shadow-sky-900/10 sm:p-6 ${passado ? 'opacity-75' : ''}`}
+      >
+        <div className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-emerald-200/40" />
+        <div className="pointer-events-none absolute -left-12 bottom-0 h-28 w-48 rounded-full bg-sky-200/50" />
+        <Music className="pointer-events-none absolute left-5 top-8 h-10 w-10 text-sky-300/70" />
+        <Music className="pointer-events-none absolute bottom-8 right-5 h-9 w-9 text-emerald-300/70" />
 
-    return (
+        <div className="relative">
+          <div className="mb-6 text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-sky-700">Musica • Comunhao • Proposito</p>
+            <h3 className="mt-2 bg-gradient-to-r from-blue-800 via-sky-600 to-emerald-600 bg-clip-text text-3xl font-black text-transparent sm:text-5xl">
+              Agenda Coral
+            </h3>
+            <div className="mx-auto mt-2 h-1 w-32 rounded-full bg-gradient-to-r from-blue-700 to-emerald-500" />
+            <p className="mt-3 break-words text-sm font-semibold text-slate-600">{coral?.nome || 'Meu Coral'}</p>
+            {passado && <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Encerrado</p>}
+          </div>
+
+          {canManage && (
+            <div className="absolute right-0 top-0 flex gap-1">
+              <button onClick={() => abrirEdicao(ev)}
+                className="rounded-full bg-white/80 p-2 text-slate-500 shadow-sm transition-colors hover:bg-indigo-50 hover:text-indigo-600"
+                title="Editar evento">
+                <Pencil className="h-4 w-4" />
+              </button>
+              <button onClick={() => excluir(ev.id)}
+                className="rounded-full bg-white/80 p-2 text-slate-500 shadow-sm transition-colors hover:bg-red-50 hover:text-red-600"
+                title="Excluir evento">
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+
+          <div className="grid gap-3 md:grid-cols-3">
+            <AgendaInfoCard icon={Calendar} label="Data" accent="#0f5fa8" iconBg="#dbeafe">
+              {formatarDataLonga(ev.data)}
+            </AgendaInfoCard>
+            <AgendaInfoCard icon={Clock} label="Horario" accent="#047857" iconBg="#d1fae5">
+              {ev.hora || 'Horario a definir'}
+            </AgendaInfoCard>
+            <AgendaInfoCard icon={MapPin} label="Local" accent="#0f5fa8" iconBg="#dbeafe">
+              {ev.local || 'Local a definir'}
+            </AgendaInfoCard>
+          </div>
+
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <AgendaInfoCard icon={Icon} label={tipo.label} accent={tipo.color} iconBg={tipo.bg}>
+              {ev.titulo || 'Atividade a definir'}
+            </AgendaInfoCard>
+            <AgendaInfoCard icon={Presentation} label="Informacoes" accent="#0f5fa8" iconBg="#dbeafe">
+              {ev.descricao || 'Sem informacoes adicionais.'}
+            </AgendaInfoCard>
+          </div>
+
+          <AgendaInfoCard icon={FileText} label="Observacoes" className="mt-3" accent="#0f5fa8" iconBg="#dbeafe">
+            {ev.descricao || 'Sem observacoes.'}
+          </AgendaInfoCard>
+
+          <div className="mt-5 h-2 rounded-full bg-gradient-to-r from-sky-300 via-emerald-300 to-sky-200" />
+        </div>
+      </div>
+    );
+
+    return poster || (
       <div
         className={`rounded-2xl overflow-hidden bg-transparent shadow-none border border-transparent ${passado ? 'opacity-60' : ''}`}
         style={{ background: 'transparent', backgroundColor: 'transparent' }}
