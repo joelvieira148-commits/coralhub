@@ -256,6 +256,8 @@ export default function Mural() {
   const [uploadingMidia, setUploadingMidia] = useState(false);
   const [novosBytes, setNovosBytes] = useState(0);
   const [fotoAberta, setFotoAberta] = useState(null);
+  const [filtroMural, setFiltroMural] = useState('video');
+  const [showAdicionar, setShowAdicionar] = useState(false);
   const [form, setForm] = useState(emptyForm);
 
   const canManage = canManageCoral(user, coral);
@@ -285,6 +287,7 @@ export default function Mural() {
 
   const abrirNovo = (tipo = 'aviso') => {
     setEditando(null);
+    setShowAdicionar(false);
     setNovosBytes(0);
     setForm({
       ...emptyForm,
@@ -430,6 +433,7 @@ export default function Mural() {
       setCoral(updatedCoral);
     }
 
+    setFiltroMural(form.publicacao_tipo);
     fecharForm();
     } catch (error) {
       console.error('Erro ao salvar publicacao:', error);
@@ -494,6 +498,18 @@ export default function Mural() {
   const videos = avisos.filter((aviso) => getPublicationType(aviso) === 'video');
   const fotos = avisos.filter((aviso) => getPublicationType(aviso) === 'foto');
   const avisosTexto = avisos.filter((aviso) => getPublicationType(aviso) === 'aviso');
+  const filtrosMural = [
+    { value: 'video', label: 'Video', icon: Video, count: videos.length },
+    { value: 'foto', label: 'Foto', icon: Image, count: fotos.length },
+    { value: 'aviso', label: 'Aviso', icon: Megaphone, count: avisosTexto.length },
+  ];
+  const filtroAtual = filtrosMural.find((filtro) => filtro.value === filtroMural) || filtrosMural[0];
+  const FiltroAtualIcon = filtroAtual.icon;
+  const itensFiltrados = filtroMural === 'video'
+    ? videos
+    : filtroMural === 'foto'
+      ? fotos
+      : avisosTexto;
 
   return (
     <CoralLayout coral={coral} user={user} isMaestro={canManage} membro={membro}>
@@ -561,34 +577,73 @@ export default function Mural() {
                 {videos.length} video{videos.length !== 1 ? 's' : ''} - {fotos.length} foto{fotos.length !== 1 ? 's' : ''} - {avisosTexto.length} aviso{avisosTexto.length !== 1 ? 's' : ''}
               </p>
             </div>
-            {canManage && (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <button
-                  type="button"
-                  onClick={() => abrirNovo('video')}
-                  className="flex min-h-14 items-center justify-center gap-3 rounded-xl px-4 py-3 text-base font-extrabold text-white shadow-md transition-opacity hover:opacity-90"
-                  style={{ background: `linear-gradient(135deg, ${primary}, #0144b8)` }}
-                >
-                  <Video className="h-6 w-6" /> Video
-                </button>
-                <button
-                  type="button"
-                  onClick={() => abrirNovo('foto')}
-                  className="flex min-h-14 items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-base font-extrabold shadow-sm transition-colors hover:bg-gray-50"
-                  style={{ color: primary }}
-                >
-                  <Image className="h-6 w-6" /> Foto
-                </button>
-                <button
-                  type="button"
-                  onClick={() => abrirNovo('aviso')}
-                  className="flex min-h-14 items-center justify-center gap-3 rounded-xl border px-4 py-3 text-base font-extrabold shadow-sm transition-colors hover:bg-amber-50"
-                  style={{ borderColor: secondary, color: '#9a6400' }}
-                >
-                  <Plus className="h-6 w-6" /> Aviso
-                </button>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto]">
+              <div className="grid grid-cols-3 gap-2">
+                {filtrosMural.map((filtro) => {
+                  const Icon = filtro.icon;
+                  const active = filtroMural === filtro.value;
+
+                  return (
+                    <button
+                      key={filtro.value}
+                      type="button"
+                      onClick={() => {
+                        setFiltroMural(filtro.value);
+                        setShowAdicionar(false);
+                      }}
+                      className={`flex min-h-14 items-center justify-center gap-2 rounded-xl border px-3 py-3 text-sm font-extrabold shadow-sm transition-all ${
+                        active ? 'text-white' : 'border-gray-200 bg-white hover:bg-gray-50'
+                      }`}
+                      style={active ? { background: `linear-gradient(135deg, ${primary}, ${secondary})` } : { color: primary }}
+                    >
+                      <Icon className="h-5 w-5 flex-shrink-0" />
+                      <span>{filtro.label}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs ${active ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                        {filtro.count}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
-            )}
+
+              {canManage && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowAdicionar((value) => !value)}
+                    className="flex min-h-14 w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-base font-extrabold text-white shadow-md transition-opacity hover:opacity-90 sm:w-auto"
+                    style={{ background: `linear-gradient(135deg, ${primary}, #0144b8)` }}
+                  >
+                    <Plus className="h-5 w-5" /> Adicionar
+                  </button>
+                  {showAdicionar && (
+                    <div className="absolute right-0 z-20 mt-2 w-full min-w-52 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-xl sm:w-56">
+                      <button
+                        type="button"
+                        onClick={() => abrirNovo('video')}
+                        className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                      >
+                        <Video className="h-5 w-5 text-indigo-600" /> Adicionar video
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => abrirNovo('foto')}
+                        className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                      >
+                        <Image className="h-5 w-5 text-indigo-600" /> Adicionar foto
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => abrirNovo('aviso')}
+                        className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                      >
+                        <Megaphone className="h-5 w-5 text-amber-600" /> Adicionar aviso
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -627,7 +682,7 @@ export default function Mural() {
         )}
       </div>
 
-      {videos.length > 0 && (
+      {filtroMural === 'video' && videos.length > 0 && (
         <section className="mb-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold text-gray-800">Vídeos</h3>
@@ -648,7 +703,7 @@ export default function Mural() {
         </section>
       )}
 
-      {fotos.length > 0 && (
+      {filtroMural === 'foto' && fotos.length > 0 && (
         <section className="mb-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold text-gray-800">Fotos</h3>
@@ -822,7 +877,7 @@ export default function Mural() {
           <Megaphone className="w-12 h-12 text-gray-200 mx-auto mb-3" />
           <p className="text-gray-400">Nenhuma publicacao ainda.</p>
         </div>
-      ) : avisosTexto.length > 0 ? (
+      ) : filtroMural === 'aviso' && avisosTexto.length > 0 ? (
         <section>
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold text-gray-800">Avisos</h3>
@@ -890,6 +945,21 @@ export default function Mural() {
           })}
         </div>
         </section>
+      ) : itensFiltrados.length === 0 ? (
+        <div className="bg-white rounded-2xl p-10 text-center shadow-sm border border-gray-100">
+          <FiltroAtualIcon className="w-11 h-11 text-gray-200 mx-auto mb-3" />
+          <p className="text-sm font-semibold text-gray-500">Nenhum {filtroAtual.label.toLowerCase()} publicado ainda.</p>
+          {canManage && (
+            <button
+              type="button"
+              onClick={() => abrirNovo(filtroAtual.value)}
+              className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white"
+              style={{ backgroundColor: primary }}
+            >
+              <Plus className="h-4 w-4" /> Adicionar {filtroAtual.label.toLowerCase()}
+            </button>
+          )}
+        </div>
       ) : null}
     </CoralLayout>
   );
