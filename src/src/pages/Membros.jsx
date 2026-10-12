@@ -34,6 +34,8 @@ const emptyForm = {
   cargo: 'membro',
   foto_url: '',
   foto_zoom: 1,
+  foto_pos_x: 0,
+  foto_pos_y: 0,
 };
 
 const getMemberPhotoZoom = (item) => {
@@ -42,8 +44,19 @@ const getMemberPhotoZoom = (item) => {
   return Math.min(2.5, Math.max(0.8, value));
 };
 
-const getPhotoStyle = (zoom) => ({
-  transform: `scale(${getMemberPhotoZoom({ foto_zoom: zoom })})`,
+const getMemberPhotoPosition = (item, axis) => {
+  const keys = axis === 'x'
+    ? ['foto_pos_x', 'photo_pos_x', 'member_foto_pos_x']
+    : ['foto_pos_y', 'photo_pos_y', 'member_foto_pos_y'];
+  const value = Number(keys.map((key) => item?.[key]).find((candidate) => candidate !== undefined && candidate !== null) ?? 0);
+
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(35, Math.max(-35, value));
+};
+
+const getPhotoStyle = (item) => ({
+  transform: `translate(${getMemberPhotoPosition(item, 'x')}%, ${getMemberPhotoPosition(item, 'y')}%) scale(${getMemberPhotoZoom(item)})`,
+  transformOrigin: 'center center',
 });
 
 const getMemberNaipes = (member) => {
@@ -183,6 +196,8 @@ export default function Membros() {
       cargo: item.cargo || 'membro',
       foto_url: getMemberPhotoUrl(item),
       foto_zoom: getMemberPhotoZoom(item),
+      foto_pos_x: getMemberPhotoPosition(item, 'x'),
+      foto_pos_y: getMemberPhotoPosition(item, 'y'),
     });
   };
 
@@ -204,7 +219,7 @@ export default function Membros() {
         return;
       }
 
-      setEditForm((prev) => ({ ...prev, foto_url: url }));
+      setEditForm((prev) => ({ ...prev, foto_url: url, foto_zoom: 1, foto_pos_x: 0, foto_pos_y: 0 }));
       setNovosBytes((bytes) => bytes + size);
     } catch (error) {
       console.error('Erro ao enviar foto do membro:', error);
@@ -245,13 +260,26 @@ export default function Membros() {
         naipes: naipesSelecionados,
         foto_zoom: getMemberPhotoZoom(editForm),
         photo_zoom: getMemberPhotoZoom(editForm),
+        foto_pos_x: getMemberPhotoPosition(editForm, 'x'),
+        photo_pos_x: getMemberPhotoPosition(editForm, 'x'),
+        foto_pos_y: getMemberPhotoPosition(editForm, 'y'),
+        photo_pos_y: getMemberPhotoPosition(editForm, 'y'),
         ...getMemberPhotoFields(editForm.foto_url),
         email: editForm.user_email,
         user_email: editForm.user_email,
       };
 
       const updated = await firebaseClient.entities.Membro.update(editando, payload);
-      const updatedWithPhoto = { ...updated, foto_zoom: payload.foto_zoom, photo_zoom: payload.photo_zoom, ...getMemberPhotoFields(editForm.foto_url) };
+      const updatedWithPhoto = {
+        ...updated,
+        foto_zoom: payload.foto_zoom,
+        photo_zoom: payload.photo_zoom,
+        foto_pos_x: payload.foto_pos_x,
+        photo_pos_x: payload.photo_pos_x,
+        foto_pos_y: payload.foto_pos_y,
+        photo_pos_y: payload.photo_pos_y,
+        ...getMemberPhotoFields(editForm.foto_url),
+      };
       setMembros((prev) => prev.map((item) => (item.id === editando ? updatedWithPhoto : item)));
 
       const coralUpdates = {};
@@ -276,6 +304,8 @@ export default function Membros() {
           member_naipes: getMemberNaipes(updatedWithPhoto),
           member_foto_url: getMemberPhotoUrl(updatedWithPhoto) || '',
           member_foto_zoom: getMemberPhotoZoom(updatedWithPhoto),
+          member_foto_pos_x: getMemberPhotoPosition(updatedWithPhoto, 'x'),
+          member_foto_pos_y: getMemberPhotoPosition(updatedWithPhoto, 'y'),
         };
         await firebaseClient.auth.updateMe(userUpdate);
         saveCoralContextCache({
@@ -405,7 +435,6 @@ export default function Membros() {
           {filtered.map((item) => {
             const isEditing = editando === item.id;
             const fotoUrl = getMemberPhotoUrl(item);
-            const fotoZoom = getMemberPhotoZoom(item);
 
             return (
               <div key={item.id}>
@@ -421,7 +450,7 @@ export default function Membros() {
                               src={editForm.foto_url}
                               alt={editForm.nome}
                               className="w-full h-full object-cover transition-transform"
-                              style={getPhotoStyle(editForm.foto_zoom)}
+                              style={getPhotoStyle(editForm)}
                             />
                           ) : (
                             <Camera className="w-6 h-6 text-gray-400" />
@@ -458,7 +487,46 @@ export default function Membros() {
                             onChange={(event) => setEditForm((prev) => ({ ...prev, foto_zoom: Number(event.target.value) }))}
                             className="w-full accent-indigo-600"
                           />
-                          <p className="mt-1 text-xs text-gray-400">Deslize para diminuir ou aproximar a foto no círculo.</p>
+                          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <div>
+                              <div className="mb-1 flex items-center justify-between gap-2">
+                                <label className="block text-xs font-medium text-gray-600">Mover lado</label>
+                                <span className="text-xs font-semibold text-gray-500">{getMemberPhotoPosition(editForm, 'x')}</span>
+                              </div>
+                              <input
+                                type="range"
+                                min="-35"
+                                max="35"
+                                step="1"
+                                value={getMemberPhotoPosition(editForm, 'x')}
+                                onChange={(event) => setEditForm((prev) => ({ ...prev, foto_pos_x: Number(event.target.value) }))}
+                                className="w-full accent-indigo-600"
+                              />
+                            </div>
+                            <div>
+                              <div className="mb-1 flex items-center justify-between gap-2">
+                                <label className="block text-xs font-medium text-gray-600">Mover cima/baixo</label>
+                                <span className="text-xs font-semibold text-gray-500">{getMemberPhotoPosition(editForm, 'y')}</span>
+                              </div>
+                              <input
+                                type="range"
+                                min="-35"
+                                max="35"
+                                step="1"
+                                value={getMemberPhotoPosition(editForm, 'y')}
+                                onChange={(event) => setEditForm((prev) => ({ ...prev, foto_pos_y: Number(event.target.value) }))}
+                                className="w-full accent-indigo-600"
+                              />
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setEditForm((prev) => ({ ...prev, foto_zoom: 1, foto_pos_x: 0, foto_pos_y: 0 }))}
+                            className="mt-3 rounded-lg bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-200"
+                          >
+                            Centralizar foto
+                          </button>
+                          <p className="mt-1 text-xs text-gray-400">Use o zoom e mova para os lados ou para cima/baixo ate enquadrar.</p>
                         </div>
                       )}
 
@@ -582,7 +650,7 @@ export default function Membros() {
                           src={fotoUrl}
                           alt={item.nome}
                           className="h-full w-full object-cover"
-                          style={getPhotoStyle(fotoZoom)}
+                          style={getPhotoStyle(item)}
                         />
                       ) : (
                         <User className="h-8 w-8 text-gray-400" />
