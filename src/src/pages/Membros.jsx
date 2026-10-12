@@ -33,7 +33,18 @@ const emptyForm = {
   naipes: [],
   cargo: 'membro',
   foto_url: '',
+  foto_zoom: 1,
 };
+
+const getMemberPhotoZoom = (item) => {
+  const value = Number(item?.foto_zoom || item?.photo_zoom || item?.member_foto_zoom || 1);
+  if (!Number.isFinite(value)) return 1;
+  return Math.min(2.5, Math.max(0.8, value));
+};
+
+const getPhotoStyle = (zoom) => ({
+  transform: `scale(${getMemberPhotoZoom({ foto_zoom: zoom })})`,
+});
 
 const getMemberNaipes = (member) => {
   const values = Array.isArray(member?.naipes) && member.naipes.length > 0
@@ -171,6 +182,7 @@ export default function Membros() {
       naipes: getMemberNaipes(item),
       cargo: item.cargo || 'membro',
       foto_url: getMemberPhotoUrl(item),
+      foto_zoom: getMemberPhotoZoom(item),
     });
   };
 
@@ -231,13 +243,15 @@ export default function Membros() {
         ...editForm,
         naipe: naipesSelecionados[0] || '',
         naipes: naipesSelecionados,
+        foto_zoom: getMemberPhotoZoom(editForm),
+        photo_zoom: getMemberPhotoZoom(editForm),
         ...getMemberPhotoFields(editForm.foto_url),
         email: editForm.user_email,
         user_email: editForm.user_email,
       };
 
       const updated = await firebaseClient.entities.Membro.update(editando, payload);
-      const updatedWithPhoto = { ...updated, ...getMemberPhotoFields(editForm.foto_url) };
+      const updatedWithPhoto = { ...updated, foto_zoom: payload.foto_zoom, photo_zoom: payload.photo_zoom, ...getMemberPhotoFields(editForm.foto_url) };
       setMembros((prev) => prev.map((item) => (item.id === editando ? updatedWithPhoto : item)));
 
       const coralUpdates = {};
@@ -261,6 +275,7 @@ export default function Membros() {
           member_naipe: updatedWithPhoto.naipe || '',
           member_naipes: getMemberNaipes(updatedWithPhoto),
           member_foto_url: getMemberPhotoUrl(updatedWithPhoto) || '',
+          member_foto_zoom: getMemberPhotoZoom(updatedWithPhoto),
         };
         await firebaseClient.auth.updateMe(userUpdate);
         saveCoralContextCache({
@@ -390,6 +405,7 @@ export default function Membros() {
           {filtered.map((item) => {
             const isEditing = editando === item.id;
             const fotoUrl = getMemberPhotoUrl(item);
+            const fotoZoom = getMemberPhotoZoom(item);
 
             return (
               <div key={item.id}>
@@ -397,11 +413,16 @@ export default function Membros() {
                   <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
                     <div className="space-y-3">
                       <div className="flex items-center gap-3">
-                        <label className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center cursor-pointer flex-shrink-0">
+                        <label className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center cursor-pointer flex-shrink-0">
                           {uploadingFoto ? (
                             <div className="w-5 h-5 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin" />
                           ) : editForm.foto_url ? (
-                            <img src={editForm.foto_url} alt={editForm.nome} className="w-full h-full object-cover" />
+                            <img
+                              src={editForm.foto_url}
+                              alt={editForm.nome}
+                              className="w-full h-full object-cover transition-transform"
+                              style={getPhotoStyle(editForm.foto_zoom)}
+                            />
                           ) : (
                             <Camera className="w-6 h-6 text-gray-400" />
                           )}
@@ -421,6 +442,25 @@ export default function Membros() {
                           />
                         </div>
                       </div>
+
+                      {editForm.foto_url && (
+                        <div>
+                          <div className="mb-1 flex items-center justify-between gap-2">
+                            <label className="block text-xs font-medium text-gray-600">Ajustar foto</label>
+                            <span className="text-xs font-semibold text-gray-500">{Math.round(getMemberPhotoZoom(editForm) * 100)}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0.8"
+                            max="2.5"
+                            step="0.05"
+                            value={getMemberPhotoZoom(editForm)}
+                            onChange={(event) => setEditForm((prev) => ({ ...prev, foto_zoom: Number(event.target.value) }))}
+                            className="w-full accent-indigo-600"
+                          />
+                          <p className="mt-1 text-xs text-gray-400">Deslize para diminuir ou aproximar a foto no círculo.</p>
+                        </div>
+                      )}
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div>
@@ -536,14 +576,19 @@ export default function Membros() {
                     onClick={() => iniciarEdicao(item)}
                     className="flex w-full items-center gap-3 rounded-full px-1 py-1.5 text-left transition-colors hover:bg-white/70 focus:outline-none focus:ring-2 focus:ring-indigo-300"
                   >
-                    <span className="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-100 ring-2 ring-white shadow-sm">
+                    <span className="flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-100 ring-2 ring-white shadow-sm">
                       {fotoUrl ? (
-                        <img src={fotoUrl} alt={item.nome} className="h-full w-full object-cover" />
+                        <img
+                          src={fotoUrl}
+                          alt={item.nome}
+                          className="h-full w-full object-cover"
+                          style={getPhotoStyle(fotoZoom)}
+                        />
                       ) : (
-                        <User className="h-6 w-6 text-gray-400" />
+                        <User className="h-8 w-8 text-gray-400" />
                       )}
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-base font-semibold text-gray-800">
+                    <span className="min-w-0 flex-1 truncate text-lg font-semibold text-gray-800">
                       {item.nome || 'Membro'}
                     </span>
                   </button>
