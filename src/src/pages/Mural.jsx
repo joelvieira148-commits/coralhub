@@ -479,35 +479,121 @@ export default function Mural() {
   const welcomeImagePosition = coral.bem_vindo_url
     ? coral.bem_vindo_posicao || 'center center'
     : coral.capa_posicao || 'center center';
-  const welcomeBackgroundImage = welcomeImageUrl
-    ? `url("${welcomeImageUrl}")`
+  const muralImageUrl = coral.mural_fundo_url || welcomeImageUrl;
+  const muralImagePosition = coral.mural_fundo_url
+    ? coral.mural_fundo_posicao || 'center center'
+    : welcomeImagePosition;
+  const muralBackgroundImage = muralImageUrl
+    ? `linear-gradient(90deg, rgba(7, 18, 46, 0.84), rgba(7, 18, 46, 0.36)), url("${muralImageUrl}")`
     : `linear-gradient(135deg, ${primary}, ${secondary})`;
-  const welcomeTextStyle = getReadableTextStyle(coral.bem_vindo_texto_cor || '#ffffff');
+  const muralTextColor = coral.mural_texto_cor || '#111827';
+  const muralHeroTextStyle = getReadableTextStyle(coral.mural_texto_cor || coral.bem_vindo_texto_cor || '#ffffff');
+  const muralWelcomeText = coral.mural_boas_vindas || 'Bem-vindo!';
+  const muralTitle = coral.mural_titulo || 'Mural do Coral';
+  const muralDescription = String(coral.mural_descricao || '').trim();
   const videos = avisos.filter((aviso) => getPublicationType(aviso) === 'video');
   const fotos = avisos.filter((aviso) => getPublicationType(aviso) === 'foto');
   const avisosTexto = avisos.filter((aviso) => getPublicationType(aviso) === 'aviso');
 
   return (
     <CoralLayout coral={coral} user={user} isMaestro={canManage} membro={membro}>
-      <div
-        className="rounded-2xl p-5 mb-6 min-h-[124px] text-white shadow-lg overflow-hidden bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: welcomeBackgroundImage,
-          backgroundPosition: welcomeImageUrl ? welcomeImagePosition : undefined,
-          color: welcomeTextStyle.color,
-          textShadow: welcomeTextStyle.textShadow,
-        }}
-      >
-        <p className="text-sm font-semibold mb-0.5" style={{ color: welcomeTextStyle.color }}>
-          {canManage ? 'Bem-vindo!' : `Bem-vindo, ${membro?.nome?.split(' ')[0] || 'Membro'}!`}
-        </p>
-        <h2 className="text-xl font-extrabold" style={{ color: welcomeTextStyle.color }}>{coral.nome}</h2>
-        <p className="text-sm font-medium mt-1" style={{ color: welcomeTextStyle.color }}>
-          {canManage ? 'Publique avisos, fotos e videos para o coral.' : 'Confira avisos, fotos e videos do coral.'}
-        </p>
-      </div>
+      <section className="mb-6 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
+        <div
+          className="relative min-h-[150px] bg-cover bg-center px-5 py-6 sm:px-7"
+          style={{
+            backgroundImage: muralBackgroundImage,
+            backgroundPosition: muralImageUrl ? muralImagePosition : undefined,
+            color: muralHeroTextStyle.color,
+            textShadow: muralHeroTextStyle.textShadow,
+          }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-black/25 via-transparent to-black/10" />
+          <div className="relative flex min-h-[104px] items-center gap-4">
+            <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-amber-200 bg-white/95 shadow-lg">
+              {coral.logo_url ? (
+                <img src={coral.logo_url} alt="Logo do coral" className="h-full w-full object-cover" />
+              ) : (
+                <Megaphone className="h-9 w-9 text-amber-600" />
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="text-lg font-semibold leading-tight" style={{ color: muralHeroTextStyle.color }}>
+                {coral.descricao || 'Coral'}
+              </p>
+              <h1 className="break-words text-3xl font-black leading-tight sm:text-4xl" style={{ color: muralHeroTextStyle.color }}>
+                {coral.nome}
+              </h1>
+              <p className="mt-2 max-w-md text-sm font-semibold uppercase tracking-[0.32em]" style={{ color: muralHeroTextStyle.color }}>
+                Coral
+              </p>
+            </div>
+          </div>
+        </div>
 
-      <div className="flex items-center justify-between mb-5">
+        <div className="p-4 sm:p-5">
+          <div className="rounded-2xl border border-amber-100 bg-white p-4 shadow-sm">
+            <div className="flex items-center gap-4">
+              <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+                <Megaphone className="h-8 w-8" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-base font-extrabold" style={{ color: primary }}>
+                  {canManage ? muralWelcomeText : `Bem-vindo, ${membro?.nome?.split(' ')[0] || 'Membro'}!`}
+                </p>
+                <h2 className="mt-1 break-words text-2xl font-black leading-tight" style={{ color: muralTextColor }}>
+                  {coral.nome}
+                </h2>
+                {muralDescription && (
+                  <p className="mt-2 whitespace-pre-wrap text-sm font-medium text-gray-600">
+                    {muralDescription}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <div className="mb-4">
+              <h2 className="border-l-4 pl-3 text-2xl font-black leading-tight" style={{ color: muralTextColor, borderColor: secondary }}>
+                {muralTitle}
+              </h2>
+              <p className="mt-1 text-sm text-gray-500">
+                {videos.length} video{videos.length !== 1 ? 's' : ''} - {fotos.length} foto{fotos.length !== 1 ? 's' : ''} - {avisosTexto.length} aviso{avisosTexto.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+            {canManage && (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <button
+                  type="button"
+                  onClick={() => abrirNovo('video')}
+                  className="flex min-h-14 items-center justify-center gap-3 rounded-xl px-4 py-3 text-base font-extrabold text-white shadow-md transition-opacity hover:opacity-90"
+                  style={{ background: `linear-gradient(135deg, ${primary}, #0144b8)` }}
+                >
+                  <Video className="h-6 w-6" /> Video
+                </button>
+                <button
+                  type="button"
+                  onClick={() => abrirNovo('foto')}
+                  className="flex min-h-14 items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-base font-extrabold shadow-sm transition-colors hover:bg-gray-50"
+                  style={{ color: primary }}
+                >
+                  <Image className="h-6 w-6" /> Foto
+                </button>
+                <button
+                  type="button"
+                  onClick={() => abrirNovo('aviso')}
+                  className="flex min-h-14 items-center justify-center gap-3 rounded-xl border px-4 py-3 text-base font-extrabold shadow-sm transition-colors hover:bg-amber-50"
+                  style={{ borderColor: secondary, color: '#9a6400' }}
+                >
+                  <Plus className="h-6 w-6" /> Aviso
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <div className="hidden">
         <div>
           <h2 className="text-xl font-bold text-gray-800">Mural do Coral</h2>
           <p className="text-sm text-gray-500">

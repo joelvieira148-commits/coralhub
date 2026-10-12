@@ -51,6 +51,7 @@ export default function Configuracoes() {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingCapa, setUploadingCapa] = useState(false);
   const [uploadingBemVindo, setUploadingBemVindo] = useState(false);
+  const [uploadingMuralFundo, setUploadingMuralFundo] = useState(false);
   const [uploadingFundoPaginas, setUploadingFundoPaginas] = useState(false);
   const [senhaAtual, setSenhaAtual] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
@@ -75,11 +76,17 @@ export default function Configuracoes() {
       capa_posicao: coral.capa_posicao || 'center center',
       bem_vindo_url: coral.bem_vindo_url || '',
       bem_vindo_posicao: coral.bem_vindo_posicao || 'center center',
+      mural_boas_vindas: coral.mural_boas_vindas || 'Bem-vindo!',
+      mural_titulo: coral.mural_titulo || 'Mural do Coral',
+      mural_descricao: coral.mural_descricao || '',
+      mural_fundo_url: coral.mural_fundo_url || '',
+      mural_fundo_posicao: coral.mural_fundo_posicao || 'center center',
       pagina_fundo_url: coral.pagina_fundo_url || '',
       pagina_fundo_posicao: coral.pagina_fundo_posicao || 'center center',
       nome_fonte: coral.nome_fonte || 'classica',
       topo_texto_cor: coral.topo_texto_cor || '#ffffff',
       bem_vindo_texto_cor: coral.bem_vindo_texto_cor || '#ffffff',
+      mural_texto_cor: coral.mural_texto_cor || '#111827',
       agenda_texto_cor: coral.agenda_texto_cor || '#111827',
       musica_outro_coral_nome: coral.musica_outro_coral_nome || 'Outro coral',
     });
@@ -139,6 +146,25 @@ export default function Configuracoes() {
       alert(getUploadErrorMessage(error, 'a imagem de boas-vindas'));
     } finally {
       setUploadingBemVindo(false);
+    }
+  };
+
+  const handleMuralFundo = async (file) => {
+    const espaco = verificarEspaco(coral, file.size);
+    if (!espaco.ok) {
+      alert(`Limite de armazenamento atingido (1 TB). Espaco restante: ${formatarBytes(espaco.restante)}.`);
+      return;
+    }
+    setUploadingMuralFundo(true);
+    try {
+      const upload = await uploadCoralFile(firebaseClient, file, { kind: 'image' });
+      setForm(p => ({ ...p, mural_fundo_url: upload.file_url, mural_fundo_posicao: 'center center' }));
+      setNovosBytes(b => b + upload.file_size);
+    } catch (error) {
+      console.error('Erro ao enviar fundo do mural:', error);
+      alert(getUploadErrorMessage(error, 'o fundo do mural'));
+    } finally {
+      setUploadingMuralFundo(false);
     }
   };
 
@@ -353,6 +379,54 @@ export default function Configuracoes() {
               )}
             </div>
 
+            {/* Mural/Inicio */}
+            <div className="flex-1">
+              <p className="mb-2 text-xs font-medium text-gray-600">Fundo do Mural/Inicio</p>
+              <div
+                className="w-full h-28 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden bg-gray-50 cursor-pointer hover:border-indigo-300 transition-colors relative"
+              >
+                {form.mural_fundo_url
+                  ? (
+                    <img
+                      src={form.mural_fundo_url}
+                      className="w-full h-full object-cover"
+                      style={{ objectPosition: form.mural_fundo_posicao || 'center center' }}
+                      alt="Fundo do Mural/Inicio"
+                    />
+                  )
+                  : <span className="px-3 text-center text-gray-400 text-sm">Clique para trocar so o fundo do Mural/Inicio</span>}
+                <label className="absolute inset-0 cursor-pointer">
+                  <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && handleMuralFundo(e.target.files[0])} />
+                </label>
+              </div>
+              {form.mural_fundo_url && (
+                <div className="mt-3">
+                  <p className="mb-2 text-xs font-medium text-gray-600">Ajuste do fundo do Mural/Inicio</p>
+                  <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
+                    {POSICOES_CAPA.map((posicao) => (
+                      <button
+                        key={posicao.value}
+                        type="button"
+                        onClick={() => setForm(p => ({ ...p, mural_fundo_posicao: posicao.value }))}
+                        className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+                          (form.mural_fundo_posicao || 'center center') === posicao.value
+                            ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                            : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        {posicao.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {uploadingMuralFundo ? (
+                <p className="text-xs text-gray-400 mt-1">Enviando fundo do Mural/Inicio...</p>
+              ) : (
+                <p className="text-xs text-gray-400 mt-1">Essa imagem aparece so na tela inicial do mural.</p>
+              )}
+            </div>
+
             {/* Fundo das paginas */}
             <div className="flex-1">
               <p className="mb-2 text-xs font-medium text-gray-600">Fundo das paginas</p>
@@ -446,9 +520,10 @@ export default function Configuracoes() {
 
           <div className="mt-5">
             <p className="mb-2 text-sm font-medium text-gray-700">Paleta das letras</p>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
               {renderPaletaLetras('topo_texto_cor', 'Letra do topo', 'Cor do nome do coral no topo.')}
               {renderPaletaLetras('bem_vindo_texto_cor', 'Letra do Bem-vindo', 'Cor dos textos da area de boas-vindas.')}
+              {renderPaletaLetras('mural_texto_cor', 'Letra do Mural', 'Cor dos textos do Mural/Inicio.')}
               {renderPaletaLetras('agenda_texto_cor', 'Letra da Agenda', 'Cor dos textos da tela de agenda.')}
             </div>
           </div>
@@ -515,6 +590,34 @@ export default function Configuracoes() {
                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Texto de boas-vindas do Mural</label>
+              <input
+                value={form.mural_boas_vindas || ''}
+                onChange={e => setForm(p => ({ ...p, mural_boas_vindas: e.target.value }))}
+                placeholder="Ex: Bem-vindo!"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nome da area do Mural</label>
+              <input
+                value={form.mural_titulo || ''}
+                onChange={e => setForm(p => ({ ...p, mural_titulo: e.target.value }))}
+                placeholder="Ex: Mural do Coral"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Frase opcional do Mural</label>
+              <textarea
+                value={form.mural_descricao || ''}
+                onChange={e => setForm(p => ({ ...p, mural_descricao: e.target.value }))}
+                rows={2}
+                placeholder="Deixe vazio para nao aparecer frase."
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none"
+              />
+            </div>
           </div>
         </div>
 
@@ -574,7 +677,7 @@ export default function Configuracoes() {
 
         <button
           type="submit"
-          disabled={salvando || uploadingLogo || uploadingCapa || uploadingBemVindo || uploadingFundoPaginas}
+          disabled={salvando || uploadingLogo || uploadingCapa || uploadingBemVindo || uploadingMuralFundo || uploadingFundoPaginas}
           className="w-full flex items-center justify-center gap-2 text-white font-semibold py-3 rounded-xl transition-opacity disabled:opacity-60"
           style={{ backgroundColor: primary }}
         >
