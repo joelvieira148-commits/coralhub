@@ -34,7 +34,11 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
   const location = useLocation();
   const navigate = useNavigate();
   const [showMore, setShowMore] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
   const lastAccessLogKeyRef = useRef('');
+  const touchStartYRef = useRef(0);
+  const pullStartedRef = useRef(false);
 
   const primary = coral?.cor_primaria || '#6366f1';
   const secondary = coral?.cor_secundaria || '#818cf8';
@@ -109,8 +113,62 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
     });
   }, [coral?.id, coral?.nome, isMaestro, location.pathname, membro?.cargo, membro?.id, membro?.nome, user?.email, user?.full_name]);
 
+  const handleTouchStart = (event) => {
+    if (refreshing || window.scrollY > 2) return;
+    touchStartYRef.current = event.touches[0]?.clientY || 0;
+    pullStartedRef.current = true;
+  };
+
+  const handleTouchMove = (event) => {
+    if (!pullStartedRef.current || refreshing) return;
+
+    const currentY = event.touches[0]?.clientY || 0;
+    const diff = currentY - touchStartYRef.current;
+
+    if (window.scrollY > 2 || diff <= 0) {
+      setPullDistance(0);
+      pullStartedRef.current = false;
+      return;
+    }
+
+    setPullDistance(Math.min(120, Math.round(diff * 0.45)));
+  };
+
+  const handleTouchEnd = () => {
+    if (!pullStartedRef.current) return;
+
+    pullStartedRef.current = false;
+    if (pullDistance >= 70) {
+      setRefreshing(true);
+      setPullDistance(90);
+      window.setTimeout(() => window.location.reload(), 120);
+      return;
+    }
+
+    setPullDistance(0);
+  };
+
   return (
-    <div className="min-h-screen app-background flex flex-col" style={pageBackgroundStyle}>
+    <div
+      className="min-h-screen app-background flex flex-col"
+      style={pageBackgroundStyle}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
+    >
+      {(pullDistance > 0 || refreshing) && (
+        <div
+          className="fixed left-1/2 top-3 z-[70] flex -translate-x-1/2 items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-semibold text-gray-700 shadow-lg ring-1 ring-gray-100"
+          style={{ transform: `translate(-50%, ${Math.max(0, pullDistance - 45)}px)` }}
+        >
+          <span
+            className={`h-4 w-4 rounded-full border-2 border-gray-200 ${refreshing ? 'animate-spin border-t-transparent' : ''}`}
+            style={{ borderTopColor: refreshing ? 'transparent' : primary, borderRightColor: primary }}
+          />
+          {refreshing ? 'Atualizando...' : pullDistance >= 70 ? 'Solte para atualizar' : 'Puxe para atualizar'}
+        </div>
+      )}
       <header
         className="text-white shadow-lg sticky top-0 z-40 overflow-hidden"
         style={headerStyle}
