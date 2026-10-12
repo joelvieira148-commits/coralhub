@@ -40,7 +40,7 @@ const emptyForm = {
 
 const MEDIA_MARKER_REGEX = /\s*\[\[CORALHUB_MEDIA:([^\]]+)\]\]\s*$/;
 
-const clarearHex = (value, amount = 0.72) => {
+const clarearHex = (value, amount = 0.45) => {
   const hex = String(value || '').replace('#', '').trim();
   const normalized = hex.length === 3
     ? hex.split('').map((char) => `${char}${char}`).join('')
@@ -496,7 +496,7 @@ export default function Mural() {
   const muralBackgroundColor = coral.mural_fundo_cor || '#ffffff';
   const muralSoftBackgroundColor = clarearHex(muralBackgroundColor);
   const muralWelcomeBackground = coral.mural_fundo_url
-    ? `linear-gradient(90deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.84)), url("${coral.mural_fundo_url}")`
+    ? `linear-gradient(90deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.62)), url("${coral.mural_fundo_url}")`
     : `linear-gradient(135deg, ${muralSoftBackgroundColor}, #ffffff)`;
   const muralWelcomeText = coral.mural_boas_vindas || 'Bem-vindo!';
   const muralTitle = coral.mural_titulo || 'Mural do Coral';
