@@ -188,7 +188,7 @@ export default function Agenda() {
       >
         <div className="flex bg-transparent" style={{ background: 'transparent', backgroundColor: 'transparent' }}>
           {/* Data */}
-          <div className="w-16 flex-shrink-0 flex flex-col items-center justify-center py-4 text-white rounded-l-2xl"
+          <div className="w-16 flex-shrink-0 flex flex-col items-center justify-start py-4 text-white rounded-l-2xl"
             style={{ backgroundColor: passado ? '#94a3b8' : tipo.color }}>
             <span className="text-xs font-medium uppercase">
               {dataObj.toLocaleDateString('pt-BR', { month: 'short' })}
@@ -199,32 +199,38 @@ export default function Agenda() {
           </div>
           {/* Conteúdo */}
           <div className="flex-1 p-3 min-w-0 bg-transparent" style={{ background: 'transparent', backgroundColor: 'transparent' }}>
-            <div className="flex items-start justify-between gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5 mb-0.5">
+                <div className="flex flex-wrap items-center gap-1.5 mb-1">
                   <span className="text-xs px-2 py-0.5 rounded-full font-medium"
                     style={{ backgroundColor: tipo.bg, color: tipo.color }}>
                     {tipo.label}
                   </span>
                   {passado && <span className="text-xs" style={agendaMutedTextStyle}>Encerrado</span>}
                 </div>
-                <h3 className="font-semibold truncate" style={agendaTextStyle}>{ev.titulo}</h3>
-                {ev.descricao && <p className="text-xs mt-0.5 truncate" style={agendaMutedTextStyle}>{ev.descricao}</p>}
-                <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                <h3 className="break-words text-base font-semibold leading-snug" style={agendaTextStyle}>{ev.titulo}</h3>
+                {ev.descricao && (
+                  <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed" style={agendaMutedTextStyle}>
+                    {ev.descricao}
+                  </p>
+                )}
+                <div className="mt-2 flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
                   {ev.hora && (
-                    <span className="flex items-center gap-1 text-xs" style={agendaMutedTextStyle}>
-                      <Clock className="w-3 h-3" />{ev.hora}
+                    <span className="flex min-w-0 items-center gap-1 text-xs" style={agendaMutedTextStyle}>
+                      <Clock className="h-3 w-3 flex-shrink-0" />
+                      <span className="break-words">{ev.hora}</span>
                     </span>
                   )}
                   {ev.local && (
-                    <span className="flex items-center gap-1 text-xs" style={agendaMutedTextStyle}>
-                      <MapPin className="w-3 h-3" />{ev.local}
+                    <span className="flex min-w-0 items-start gap-1 text-xs" style={agendaMutedTextStyle}>
+                      <MapPin className="mt-0.5 h-3 w-3 flex-shrink-0" />
+                      <span className="break-words">{ev.local}</span>
                     </span>
                   )}
                 </div>
               </div>
               {canManage && (
-                <div className="flex gap-1 flex-shrink-0">
+                <div className="flex flex-shrink-0 justify-end gap-1 sm:justify-start">
                   <button onClick={() => abrirEdicao(ev)}
                     className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
                     <Pencil className="w-3.5 h-3.5" />
