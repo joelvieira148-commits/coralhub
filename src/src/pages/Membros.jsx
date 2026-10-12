@@ -4,14 +4,10 @@ import {
   Camera,
   Check,
   Copy,
-  Mail,
-  MapPin,
   MessageCircle,
-  Pencil,
   Phone,
   Search,
   Send,
-  Shield,
   Trash2,
   User,
   X,
@@ -37,14 +33,6 @@ const emptyForm = {
   naipes: [],
   cargo: 'membro',
   foto_url: '',
-};
-
-const cargoLabel = {
-  membro: 'Membro',
-  secretaria: 'Secretaria',
-  vice_secretaria: 'Vice-Secretaria',
-  maestro: 'Maestro',
-  maestrina: 'Maestrina',
 };
 
 const getMemberNaipes = (member) => {
@@ -400,14 +388,13 @@ export default function Membros() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((item) => {
-            const vozes = getMemberNaipes(item).map((naipe) => getNaipeInfo(naipe));
             const isEditing = editando === item.id;
             const fotoUrl = getMemberPhotoUrl(item);
 
             return (
-              <div key={item.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-4">
-                  {isEditing ? (
+              <div key={item.id}>
+                {isEditing ? (
+                  <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
                     <div className="space-y-3">
                       <div className="flex items-center gap-3">
                         <label className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center cursor-pointer flex-shrink-0">
@@ -532,83 +519,35 @@ export default function Membros() {
                           <X className="w-4 h-4" /> Cancelar
                         </button>
                       </div>
+                      {canManage && (
+                        <button
+                          type="button"
+                          onClick={() => excluir(item)}
+                          className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-red-50 py-2 text-sm font-medium text-red-600 hover:bg-red-100"
+                        >
+                          <Trash2 className="w-4 h-4" /> Excluir membro
+                        </button>
+                      )}
                     </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="flex items-start gap-3">
-                        <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center flex-shrink-0">
-                          {fotoUrl ? (
-                            <img src={fotoUrl} alt={item.nome} className="w-full h-full object-cover" />
-                          ) : (
-                            <User className="w-7 h-7 text-gray-400" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-gray-800 truncate">{item.nome}</h3>
-                          <div className="flex flex-wrap gap-1.5 mt-1">
-                            {vozes.map((voz) => (
-                              <span
-                                key={voz.label}
-                                className="text-xs px-2 py-0.5 rounded-full font-medium"
-                                style={{ backgroundColor: `${voz.cor}20`, color: voz.cor }}
-                              >
-                                {voz.label}
-                              </span>
-                            ))}
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">
-                              {cargoLabel[item.cargo || 'membro'] || item.cargo}
-                            </span>
-                          </div>
-                        </div>
-                        {canManage && (
-                          <div className="flex items-center gap-1 flex-shrink-0">
-                            <button
-                              onClick={() => iniciarEdicao(item)}
-                              className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                              title="Editar"
-                            >
-                              <Pencil className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => excluir(item)}
-                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Excluir"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="space-y-1.5 text-sm text-gray-500">
-                        {(item.user_email || item.email) && (
-                          <p className="flex items-center gap-2 min-w-0">
-                            <Mail className="w-3.5 h-3.5 flex-shrink-0" />
-                            <span className="truncate">{item.user_email || item.email}</span>
-                          </p>
-                        )}
-                        {item.telefone && (
-                          <p className="flex items-center gap-2">
-                            <Phone className="w-3.5 h-3.5 flex-shrink-0" />
-                            <span>{item.telefone}</span>
-                          </p>
-                        )}
-                        {item.endereco && (
-                          <p className="flex items-center gap-2 min-w-0">
-                            <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-                            <span className="truncate">{item.endereco}</span>
-                          </p>
-                        )}
-                        {item.senha && canManage && (
-                          <p className="flex items-center gap-2 min-w-0">
-                            <Shield className="w-3.5 h-3.5 flex-shrink-0" />
-                            <span className="truncate">{item.senha}</span>
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => iniciarEdicao(item)}
+                    className="flex w-full items-center gap-3 rounded-full px-1 py-1.5 text-left transition-colors hover:bg-white/70 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                  >
+                    <span className="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-100 ring-2 ring-white shadow-sm">
+                      {fotoUrl ? (
+                        <img src={fotoUrl} alt={item.nome} className="h-full w-full object-cover" />
+                      ) : (
+                        <User className="h-6 w-6 text-gray-400" />
+                      )}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-base font-semibold text-gray-800">
+                      {item.nome || 'Membro'}
+                    </span>
+                  </button>
+                )}
               </div>
             );
           })}
