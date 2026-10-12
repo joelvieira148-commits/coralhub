@@ -76,6 +76,9 @@ const getWhatsappUrl = (telefone, mensagem) => {
   return `https://wa.me/${phone}?text=${encodeURIComponent(mensagem || '')}`;
 };
 
+const getWhatsappShareUrl = (mensagem) =>
+  `https://wa.me/?text=${encodeURIComponent(mensagem || '')}`;
+
 const getNextManagerEmails = (coral, previousMember, updatedMember) => {
   const previousEmail = getMemberEmail(previousMember);
   const updatedEmail = getMemberEmail(updatedMember);
@@ -164,18 +167,7 @@ export default function Membros() {
       return;
     }
 
-    const confirmado = confirm(
-      `Abrir WhatsApp para ${membrosComTelefone.length} componente${membrosComTelefone.length !== 1 ? 's' : ''}?\n\nO navegador pode pedir permissao para abrir varias abas.`
-    );
-
-    if (!confirmado) return;
-
-    membrosComTelefone.forEach((item, index) => {
-      const url = getWhatsappUrl(item.telefone, mensagemComponentes);
-      window.setTimeout(() => {
-        window.open(url, '_blank', 'noopener,noreferrer');
-      }, index * 400);
-    });
+    window.open(getWhatsappShareUrl(mensagemComponentes), '_blank', 'noopener,noreferrer');
   };
 
   const iniciarEdicao = (item) => {
