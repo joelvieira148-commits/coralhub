@@ -10,6 +10,7 @@ import {
   Pencil,
   Phone,
   Search,
+  Send,
   Shield,
   Trash2,
   User,
@@ -155,6 +156,26 @@ export default function Membros() {
       .join('\n');
 
     copiarTexto(contatos, 'Contatos copiados.');
+  };
+
+  const enviarParaTodos = () => {
+    if (membrosComTelefone.length === 0) {
+      alert('Nenhum telefone cadastrado para enviar.');
+      return;
+    }
+
+    const confirmado = confirm(
+      `Abrir WhatsApp para ${membrosComTelefone.length} componente${membrosComTelefone.length !== 1 ? 's' : ''}?\n\nO navegador pode pedir permissao para abrir varias abas.`
+    );
+
+    if (!confirmado) return;
+
+    membrosComTelefone.forEach((item, index) => {
+      const url = getWhatsappUrl(item.telefone, mensagemComponentes);
+      window.setTimeout(() => {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }, index * 400);
+    });
   };
 
   const iniciarEdicao = (item) => {
@@ -635,6 +656,15 @@ export default function Membros() {
               </div>
 
               <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={enviarParaTodos}
+                  disabled={membrosComTelefone.length === 0}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+                >
+                  <Send className="h-4 w-4" />
+                  Enviar para todos
+                </button>
                 <button
                   type="button"
                   onClick={() => copiarTexto(mensagemComponentes, 'Mensagem copiada.')}
