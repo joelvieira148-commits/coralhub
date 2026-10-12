@@ -40,7 +40,6 @@ export default function Agenda() {
   const [editando, setEditando] = useState(null);
   const [salvando, setSalvando] = useState(false);
   const [uploadingFundo, setUploadingFundo] = useState(false);
-  const [filtroTipo, setFiltroTipo] = useState('todos');
   const emptyForm = { titulo: '', descricao: '', data: '', hora: '', local: '', tipo: 'ensaio' };
   const [form, setForm] = useState(emptyForm);
 
@@ -163,9 +162,7 @@ export default function Agenda() {
 
   const hoje = new Date().toISOString().split('T')[0];
 
-  const eventosFiltrados = eventos.filter(ev =>
-    filtroTipo === 'todos' || ev.tipo === filtroTipo
-  );
+  const eventosFiltrados = eventos;
 
   const proximos = eventosFiltrados.filter(ev => ev.data >= hoje);
   const passados = eventosFiltrados.filter(ev => ev.data < hoje);
@@ -346,13 +343,8 @@ export default function Agenda() {
         className={hasAgendaBackground ? 'rounded-3xl p-4 -mx-2 -mt-2' : ''}
         style={agendaBackgroundStyle}
       >
-      <div className="flex items-center justify-between gap-3 mb-4">
-        <div>
-          <h2 className="text-xl font-bold" style={agendaTextStyle}>Agenda do Coral</h2>
-          <p className="text-sm" style={agendaMutedTextStyle}>{proximos.length} próximo{proximos.length !== 1 ? 's' : ''}</p>
-        </div>
-        {canManage && (
-          <div className="flex flex-wrap justify-end gap-2">
+      {canManage && (
+          <div className="mb-4 flex flex-wrap justify-end gap-2">
             <label
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-transparent bg-transparent shadow-none cursor-pointer transition-colors hover:bg-transparent"
               style={agendaTextStyle}
@@ -399,28 +391,6 @@ export default function Agenda() {
             </button>
           </div>
         )}
-      </div>
-
-      {/* Filtros */}
-      <div className="flex gap-2 flex-wrap mb-6">
-        {[{ value: 'todos', label: 'Todos' }, ...TIPOS_EVENTO].map(t => (
-          <button
-            key={t.value}
-            onClick={() => setFiltroTipo(t.value)}
-            className="text-xs px-3 py-1.5 rounded-full font-medium transition-all border"
-            style={filtroTipo === t.value
-              ? { backgroundColor: primary, color: '#fff', borderColor: primary }
-              : {
-                  backgroundColor: 'transparent',
-                  color: agendaTextStyle.color,
-                  borderColor: 'transparent',
-                  textShadow: agendaTextStyle.textShadow,
-                }}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
 
       {/* Modal */}
       {showForm && canManage && (
