@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import {
   Camera,
   Check,
+  Copy,
   Mail,
   MapPin,
+  MessageCircle,
   Pencil,
   Phone,
   Search,
@@ -54,6 +56,25 @@ const getMemberNaipes = (member) => {
 
 const getCargoRole = (cargo) => (isRegenteRole(cargo) ? 'maestro' : 'membro');
 
+const onlyDigits = (value = '') => String(value || '').replace(/\D/g, '');
+
+const normalizeWhatsappPhone = (telefone = '') => {
+  const digits = onlyDigits(telefone);
+  if (!digits) return '';
+  if (digits.startsWith('55')) return digits;
+  if (digits.length === 10 || digits.length === 11) return `55${digits}`;
+  return digits;
+};
+
+const getMensagemPadrao = (coral) =>
+  `Ola! Mensagem do ${coral?.nome || 'coral'}:`;
+
+const getWhatsappUrl = (telefone, mensagem) => {
+  const phone = normalizeWhatsappPhone(telefone);
+  if (!phone) return '';
+  return `https://wa.me/${phone}?text=${encodeURIComponent(mensagem || '')}`;
+};
+
 const getNextManagerEmails = (coral, previousMember, updatedMember) => {
   const previousEmail = getMemberEmail(previousMember);
   const updatedEmail = getMemberEmail(updatedMember);
@@ -80,6 +101,8 @@ export default function Membros() {
   const [salvando, setSalvando] = useState(false);
   const [uploadingFoto, setUploadingFoto] = useState(false);
   const [novosBytes, setNovosBytes] = useState(0);
+  const [showMensagem, setShowMensagem] = useState(false);
+  const [mensagemComponentes, setMensagemComponentes] = useState('');
 
   const canManage = canManageCoral(user, coral);
 
@@ -107,6 +130,32 @@ export default function Membros() {
       voz,
     ].some((value) => String(value || '').toLowerCase().includes(termo));
   });
+
+  const membrosComTelefone = membros
+    .filter((item) => normalizeWhatsappPhone(item.telefone))
+    .sort((left, right) => String(left.nome || '').localeCompare(String(right.nome || ''), 'pt-BR'));
+
+  const abrirMensagemComponentes = () => {
+    setMensagemComponentes((value) => value || getMensagemPadrao(coral));
+    setShowMensagem(true);
+  };
+
+  const copiarTexto = async (texto, aviso) => {
+    try {
+      await navigator.clipboard.writeText(texto);
+      alert(aviso);
+    } catch {
+      alert('Nao foi possivel copiar agora.');
+    }
+  };
+
+  const copiarContatos = () => {
+    const contatos = membrosComTelefone
+      .map((item) => `${item.nome || 'Membro'} - ${item.telefone}`)
+      .join('\n');
+
+    copiarTexto(contatos, 'Contatos copiados.');
+  };
 
   const iniciarEdicao = (item) => {
     setEditando(item.id);
@@ -309,6 +358,16 @@ export default function Membros() {
             {membros.length} membro{membros.length !== 1 ? 's' : ''} registrado{membros.length !== 1 ? 's' : ''}
           </p>
         </div>
+        {canManage && (
+          <button
+            type="button"
+            onClick={abrirMensagemComponentes}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-green-700"
+          >
+            <MessageCircle className="h-4 w-4" />
+            Mensagem
+          </button>
+        )}
       </div>
 
       <div className="relative mb-5">
@@ -540,6 +599,88 @@ export default function Membros() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {showMensagem && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center sm:p-6">
+          <div className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+              <div>
+                <h3 className="font-bold text-gray-900">Mensagem para componentes</h3>
+                <p className="text-xs text-gray-500">
+                  {membrosComTelefone.length} telefone{membrosComTelefone.length !== 1 ? 's' : ''} cadastrado{membrosComTelefone.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMensagem(false)}
+                className="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                title="Fechar"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 p-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Mensagem</label>
+                <textarea
+                  value={mensagemComponentes}
+                  onChange={(event) => setMensagemComponentes(event.target.value)}
+                  rows={4}
+                  className="w-full resize-none rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
+                  placeholder="Digite a mensagem para enviar aos componentes..."
+                />
+              </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => copiarTexto(mensagemComponentes, 'Mensagem copiada.')}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                >
+                  <Copy className="h-4 w-4" />
+                  Copiar mensagem
+                </button>
+                <button
+                  type="button"
+                  onClick={copiarContatos}
+                  disabled={membrosComTelefone.length === 0}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  <Phone className="h-4 w-4" />
+                  Copiar contatos
+                </button>
+              </div>
+
+              <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                {membrosComTelefone.length === 0 ? (
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-4 text-center text-sm text-gray-500">
+                    Nenhum telefone cadastrado.
+                  </div>
+                ) : (
+                  membrosComTelefone.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between gap-3 rounded-xl border border-gray-100 px-3 py-2">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-gray-800">{item.nome || 'Membro'}</p>
+                        <p className="text-xs text-gray-500">{item.telefone}</p>
+                      </div>
+                      <a
+                        href={getWhatsappUrl(item.telefone, mensagemComponentes)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex flex-shrink-0 items-center justify-center gap-2 rounded-xl bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-700"
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                        WhatsApp
+                      </a>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </CoralLayout>
