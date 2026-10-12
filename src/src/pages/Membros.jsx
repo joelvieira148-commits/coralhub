@@ -151,6 +151,18 @@ export default function Membros() {
     .filter((item) => normalizeWhatsappPhone(item.telefone))
     .sort((left, right) => String(left.nome || '').localeCompare(String(right.nome || ''), 'pt-BR'));
 
+  const isMeuCadastro = (item) => {
+    const itemEmail = normalizeEmail(getMemberEmail(item));
+    const userEmail = normalizeEmail(user?.email);
+
+    return Boolean(
+      (item?.id && (item.id === membro?.id || item.id === user?.active_member_id)) ||
+      (itemEmail && userEmail && itemEmail === userEmail)
+    );
+  };
+
+  const podeEditarMembro = (item) => canManage || isMeuCadastro(item);
+
   const abrirMensagemComponentes = () => {
     setMensagemComponentes((value) => value || getMensagemPadrao(coral));
     setShowMensagem(true);
@@ -183,6 +195,8 @@ export default function Membros() {
   };
 
   const iniciarEdicao = (item) => {
+    if (!podeEditarMembro(item)) return;
+
     setEditando(item.id);
     setNovosBytes(0);
     setEditForm({
@@ -253,11 +267,15 @@ export default function Membros() {
 
     try {
       const membroAnterior = membros.find((item) => item.id === editando) || null;
+      const editingSelf = isMeuCadastro(membroAnterior);
+
+      if (!canManage && !editingSelf) {
+        alert('Voce so pode alterar o seu proprio cadastro.');
+        return;
+      }
+
       const naipesSelecionados = getMemberNaipes(editForm).slice(0, 2);
-      const payload = {
-        ...editForm,
-        naipe: naipesSelecionados[0] || '',
-        naipes: naipesSelecionados,
+      const photoPayload = {
         foto_zoom: getMemberPhotoZoom(editForm),
         photo_zoom: getMemberPhotoZoom(editForm),
         foto_pos_x: getMemberPhotoPosition(editForm, 'x'),
@@ -265,8 +283,22 @@ export default function Membros() {
         foto_pos_y: getMemberPhotoPosition(editForm, 'y'),
         photo_pos_y: getMemberPhotoPosition(editForm, 'y'),
         ...getMemberPhotoFields(editForm.foto_url),
+      };
+      const dadosPessoais = {
+        nome: editForm.nome,
+        telefone: editForm.telefone,
+        endereco: editForm.endereco,
+      };
+      const payload = canManage ? {
+        ...editForm,
+        naipe: naipesSelecionados[0] || '',
+        naipes: naipesSelecionados,
+        ...photoPayload,
         email: editForm.user_email,
         user_email: editForm.user_email,
+      } : {
+        ...dadosPessoais,
+        ...photoPayload,
       };
 
       const updated = await firebaseClient.entities.Membro.update(editando, payload);
@@ -283,15 +315,17 @@ export default function Membros() {
       setMembros((prev) => prev.map((item) => (item.id === editando ? updatedWithPhoto : item)));
 
       const coralUpdates = {};
-      const nextManagerEmails = getNextManagerEmails(coral, membroAnterior, updatedWithPhoto);
-      const currentManagerEmails = getCoralManagerEmails(coral);
-      const managersChanged =
-        nextManagerEmails.length !== currentManagerEmails.length ||
-        nextManagerEmails.some((email) => !currentManagerEmails.includes(email));
+      if (canManage) {
+        const nextManagerEmails = getNextManagerEmails(coral, membroAnterior, updatedWithPhoto);
+        const currentManagerEmails = getCoralManagerEmails(coral);
+        const managersChanged =
+          nextManagerEmails.length !== currentManagerEmails.length ||
+          nextManagerEmails.some((email) => !currentManagerEmails.includes(email));
 
-      if (managersChanged) {
-        coralUpdates.maestro_emails = nextManagerEmails;
-        coralUpdates.regente_emails = nextManagerEmails;
+        if (managersChanged) {
+          coralUpdates.maestro_emails = nextManagerEmails;
+          coralUpdates.regente_emails = nextManagerEmails;
+        }
       }
 
       const emailAtualizado = getMemberEmail(updatedWithPhoto);
@@ -319,8 +353,13 @@ export default function Membros() {
       }
 
       if (Object.keys(coralUpdates).length > 0) {
-        const updatedCoral = await firebaseClient.entities.Coral.update(coral.id, coralUpdates);
-        setCoral(updatedCoral);
+        try {
+          const updatedCoral = await firebaseClient.entities.Coral.update(coral.id, coralUpdates);
+          setCoral(updatedCoral);
+        } catch (error) {
+          if (canManage) throw error;
+          console.warn('Nao foi possivel atualizar o uso de armazenamento do coral:', error);
+        }
       }
 
       cancelarEdicao();
@@ -435,6 +474,7 @@ export default function Membros() {
           {filtered.map((item) => {
             const isEditing = editando === item.id;
             const fotoUrl = getMemberPhotoUrl(item);
+            const canEditItem = podeEditarMembro(item);
 
             return (
               <div key={item.id}>
@@ -545,7 +585,8 @@ export default function Membros() {
                             type="email"
                             value={editForm.user_email}
                             onChange={(event) => setEditForm((prev) => ({ ...prev, user_email: event.target.value }))}
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                            disabled={!canManage}
+                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 disabled:bg-gray-50 disabled:text-gray-500"
                           />
                         </div>
                       </div>
@@ -559,58 +600,62 @@ export default function Membros() {
                         />
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Senha</label>
-                          <input
-                            value={editForm.senha}
-                            onChange={(event) => setEditForm((prev) => ({ ...prev, senha: event.target.value }))}
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Vozes (ate 2)</label>
-                          <div className="grid grid-cols-1 gap-1.5">
-                            {NAIPES.map((naipe) => {
-                              const checked = getMemberNaipes(editForm).includes(naipe.value);
+                      {canManage && (
+                        <>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">Senha</label>
+                              <input
+                                value={editForm.senha}
+                                onChange={(event) => setEditForm((prev) => ({ ...prev, senha: event.target.value }))}
+                                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">Vozes (ate 2)</label>
+                              <div className="grid grid-cols-1 gap-1.5">
+                                {NAIPES.map((naipe) => {
+                                  const checked = getMemberNaipes(editForm).includes(naipe.value);
 
-                              return (
-                                <label
-                                  key={naipe.value}
-                                  className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 text-xs font-medium cursor-pointer transition-colors ${
-                                    checked
-                                      ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
-                                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-                                  }`}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={checked}
-                                    onChange={() => alternarVoz(naipe.value)}
-                                    className="h-4 w-4 rounded border-gray-300 text-indigo-600"
-                                  />
-                                  <span>{naipe.label}</span>
-                                </label>
-                              );
-                            })}
+                                  return (
+                                    <label
+                                      key={naipe.value}
+                                      className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 text-xs font-medium cursor-pointer transition-colors ${
+                                        checked
+                                          ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
+                                          : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                                      }`}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={checked}
+                                        onChange={() => alternarVoz(naipe.value)}
+                                        className="h-4 w-4 rounded border-gray-300 text-indigo-600"
+                                      />
+                                      <span>{naipe.label}</span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
 
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Funcao</label>
-                        <select
-                          value={editForm.cargo || 'membro'}
-                          onChange={(event) => setEditForm((prev) => ({ ...prev, cargo: event.target.value }))}
-                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                        >
-                          <option value="membro">Membro</option>
-                          <option value="secretaria">Secretaria</option>
-                          <option value="vice_secretaria">Vice-Secretaria</option>
-                          <option value="maestro">Maestro</option>
-                          <option value="maestrina">Maestrina</option>
-                        </select>
-                      </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Funcao</label>
+                            <select
+                              value={editForm.cargo || 'membro'}
+                              onChange={(event) => setEditForm((prev) => ({ ...prev, cargo: event.target.value }))}
+                              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                            >
+                              <option value="membro">Membro</option>
+                              <option value="secretaria">Secretaria</option>
+                              <option value="vice_secretaria">Vice-Secretaria</option>
+                              <option value="maestro">Maestro</option>
+                              <option value="maestrina">Maestrina</option>
+                            </select>
+                          </div>
+                        </>
+                      )}
 
                       <div className="grid grid-cols-2 gap-2 pt-1">
                         <button
@@ -641,8 +686,11 @@ export default function Membros() {
                 ) : (
                   <button
                     type="button"
+                    disabled={!canEditItem}
                     onClick={() => iniciarEdicao(item)}
-                    className="flex w-full items-center gap-3 rounded-full px-1 py-1.5 text-left transition-colors hover:bg-white/70 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                    className={`flex w-full items-center gap-3 rounded-full px-1 py-1.5 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-300 ${
+                      canEditItem ? 'hover:bg-white/70' : 'cursor-default'
+                    }`}
                   >
                     <span className="flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-100 ring-2 ring-white shadow-sm">
                       {fotoUrl ? (
