@@ -79,6 +79,7 @@ export default function Configuracoes() {
       mural_boas_vindas: coral.mural_boas_vindas || 'Bem-vindo!',
       mural_titulo: coral.mural_titulo || 'Mural do Coral',
       mural_descricao: coral.mural_descricao || '',
+      mural_fundo_cor: coral.mural_fundo_cor || '#ffffff',
       mural_fundo_url: coral.mural_fundo_url || '',
       mural_fundo_posicao: coral.mural_fundo_posicao || 'center center',
       pagina_fundo_url: coral.pagina_fundo_url || '',
@@ -382,8 +383,25 @@ export default function Configuracoes() {
             {/* Mural/Inicio */}
             <div className="flex-1">
               <p className="mb-2 text-xs font-medium text-gray-600">Fundo do Mural/Inicio</p>
+              <div className="mb-3 flex items-center gap-2">
+                <input
+                  type="color"
+                  value={form.mural_fundo_cor || '#ffffff'}
+                  onChange={e => setForm(p => ({ ...p, mural_fundo_cor: e.target.value }))}
+                  className="h-10 w-10 flex-shrink-0 cursor-pointer rounded-lg border border-gray-200 p-0.5"
+                />
+                <input
+                  value={form.mural_fundo_cor || ''}
+                  onChange={e => setForm(p => ({ ...p, mural_fundo_cor: e.target.value }))}
+                  placeholder="#ffffff"
+                  className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                />
+              </div>
               <div
                 className="w-full h-28 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden bg-gray-50 cursor-pointer hover:border-indigo-300 transition-colors relative"
+                style={{
+                  background: form.mural_fundo_url ? undefined : `linear-gradient(135deg, ${form.mural_fundo_cor || '#ffffff'}, #ffffff)`,
+                }}
               >
                 {form.mural_fundo_url
                   ? (

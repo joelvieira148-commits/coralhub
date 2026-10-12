@@ -479,6 +479,10 @@ export default function Mural() {
   const primary = coral.cor_primaria || '#6366f1';
   const secondary = coral.cor_secundaria || '#a78bfa';
   const muralTextColor = coral.mural_texto_cor || '#111827';
+  const muralBackgroundColor = coral.mural_fundo_cor || '#ffffff';
+  const muralWelcomeBackground = coral.mural_fundo_url
+    ? `linear-gradient(90deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.68)), url("${coral.mural_fundo_url}")`
+    : `linear-gradient(135deg, ${muralBackgroundColor}, #ffffff)`;
   const muralWelcomeText = coral.mural_boas_vindas || 'Bem-vindo!';
   const muralTitle = coral.mural_titulo || 'Mural do Coral';
   const muralDescription = String(coral.mural_descricao || '').trim();
@@ -502,24 +506,25 @@ export default function Mural() {
     <CoralLayout coral={coral} user={user} isMaestro={canManage} membro={membro}>
       <section className="mb-6 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
         <div className="p-4 sm:p-5">
-          <div className="rounded-2xl border border-amber-100 bg-white p-4 shadow-sm">
-            <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600">
-                <Megaphone className="h-8 w-8" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-base font-extrabold" style={{ color: primary }}>
-                  {canManage ? muralWelcomeText : `Bem-vindo, ${membro?.nome?.split(' ')[0] || 'Membro'}!`}
+          <div
+            className="rounded-2xl border border-amber-100 bg-cover bg-center p-4 shadow-sm"
+            style={{
+              backgroundImage: muralWelcomeBackground,
+              backgroundPosition: coral.mural_fundo_posicao || 'center center',
+            }}
+          >
+            <div className="min-w-0">
+              <p className="text-base font-extrabold" style={{ color: muralTextColor }}>
+                {canManage ? muralWelcomeText : `Bem-vindo, ${membro?.nome?.split(' ')[0] || 'Membro'}!`}
+              </p>
+              <h2 className="mt-1 break-words text-2xl font-black leading-tight" style={{ color: muralTextColor }}>
+                {coral.nome}
+              </h2>
+              {muralDescription && (
+                <p className="mt-2 whitespace-pre-wrap text-sm font-medium" style={{ color: muralTextColor }}>
+                  {muralDescription}
                 </p>
-                <h2 className="mt-1 break-words text-2xl font-black leading-tight" style={{ color: muralTextColor }}>
-                  {coral.nome}
-                </h2>
-                {muralDescription && (
-                  <p className="mt-2 whitespace-pre-wrap text-sm font-medium text-gray-600">
-                    {muralDescription}
-                  </p>
-                )}
-              </div>
+              )}
             </div>
           </div>
 
