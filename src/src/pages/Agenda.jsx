@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, X, Calendar, Clock, MapPin, Pencil, Trash2, Music, Users, Presentation, HelpCircle, Upload, Image, ImageOff, FileText } from 'lucide-react';
+import { Plus, X, Calendar, Clock, MapPin, Pencil, Trash2, Music, Users, Presentation, HelpCircle, Upload, Image, ImageOff, FileText, ChevronDown } from 'lucide-react';
 import { firebaseClient } from '@/api/firebaseClient';
 import CoralLayout from '@/components/coral/CoralLayout';
 import useCoralContext from '@/hooks/useCoralContext';
@@ -40,6 +40,7 @@ export default function Agenda() {
   const [editando, setEditando] = useState(null);
   const [salvando, setSalvando] = useState(false);
   const [uploadingFundo, setUploadingFundo] = useState(false);
+  const [showFundoMenu, setShowFundoMenu] = useState(false);
   const emptyForm = { titulo: '', descricao: '', data: '', hora: '', local: '', tipo: 'ensaio' };
   const [form, setForm] = useState(emptyForm);
 
@@ -345,43 +346,63 @@ export default function Agenda() {
       >
       {canManage && (
           <div className="mb-4 flex flex-wrap justify-end gap-2">
-            <label
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-transparent bg-transparent shadow-none cursor-pointer transition-colors hover:bg-transparent"
-              style={agendaTextStyle}
-              title="Trocar fundo da agenda"
-            >
-              <Upload className="w-4 h-4" />
-              {uploadingFundo ? 'Enviando...' : 'Trocar fundo'}
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowFundoMenu((value) => !value)}
                 disabled={uploadingFundo}
-                onChange={(event) => event.target.files[0] && trocarFundoAgenda(event.target.files[0])}
-              />
-            </label>
-            <button
-              type="button"
-              onClick={usarFundoGeralAgenda}
-              disabled={uploadingFundo}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-transparent bg-transparent shadow-none transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-              style={agendaTextStyle}
-              title="Usar o fundo geral do coral na agenda"
-            >
-              <Image className="w-4 h-4" />
-              Fundo geral
-            </button>
-            <button
-              type="button"
-              onClick={removerFundoAgenda}
-              disabled={uploadingFundo}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-transparent bg-transparent shadow-none transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-              style={agendaTextStyle}
-              title="Deixar agenda sem fundo"
-            >
-              <ImageOff className="w-4 h-4" />
-              Sem fundo
-            </button>
+                className="flex items-center gap-2 rounded-xl border border-transparent bg-white/70 px-4 py-2 text-sm font-semibold shadow-sm transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+                style={agendaTextStyle}
+                title="Opcoes de fundo da agenda"
+              >
+                <Image className="w-4 h-4" />
+                {uploadingFundo ? 'Enviando...' : 'Fundo'}
+                <ChevronDown className="w-4 h-4" />
+              </button>
+
+              {showFundoMenu && (
+                <div className="absolute right-0 top-full z-30 mt-2 w-52 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl">
+                  <label className="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                    <Upload className="w-4 h-4" />
+                    Trocar fundo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploadingFundo}
+                      onChange={(event) => {
+                        setShowFundoMenu(false);
+                        event.target.files[0] && trocarFundoAgenda(event.target.files[0]);
+                      }}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowFundoMenu(false);
+                      usarFundoGeralAgenda();
+                    }}
+                    disabled={uploadingFundo}
+                    className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    <Image className="w-4 h-4" />
+                    Fundo geral
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowFundoMenu(false);
+                      removerFundoAgenda();
+                    }}
+                    disabled={uploadingFundo}
+                    className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    <ImageOff className="w-4 h-4" />
+                    Sem fundo
+                  </button>
+                </div>
+              )}
+            </div>
             <button
               onClick={abrirNovo}
               className="flex items-center gap-2 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-md hover:opacity-90"
