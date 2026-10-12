@@ -18,7 +18,6 @@ import CoralLayout from '@/components/coral/CoralLayout';
 import useCoralContext from '@/hooks/useCoralContext';
 import { canManageCoral } from '@/lib/coral-permissions';
 import { getUploadErrorMessage, isFileKind, uploadCoralFile } from '@/lib/coral-file-upload';
-import { getReadableTextStyle } from '@/lib/readable-text';
 import { formatarBytes, verificarEspaco } from '@/utils/storage';
 
 const TIPOS = [
@@ -479,23 +478,10 @@ export default function Mural() {
 
   const primary = coral.cor_primaria || '#6366f1';
   const secondary = coral.cor_secundaria || '#a78bfa';
-  const welcomeImageUrl = coral.bem_vindo_url || coral.capa_url;
-  const welcomeImagePosition = coral.bem_vindo_url
-    ? coral.bem_vindo_posicao || 'center center'
-    : coral.capa_posicao || 'center center';
-  const muralImageUrl = coral.mural_fundo_url || welcomeImageUrl;
-  const muralImagePosition = coral.mural_fundo_url
-    ? coral.mural_fundo_posicao || 'center center'
-    : welcomeImagePosition;
-  const muralBackgroundImage = muralImageUrl
-    ? `linear-gradient(90deg, rgba(7, 18, 46, 0.84), rgba(7, 18, 46, 0.36)), url("${muralImageUrl}")`
-    : `linear-gradient(135deg, ${primary}, ${secondary})`;
   const muralTextColor = coral.mural_texto_cor || '#111827';
-  const muralHeroTextStyle = getReadableTextStyle(coral.mural_texto_cor || coral.bem_vindo_texto_cor || '#ffffff');
   const muralWelcomeText = coral.mural_boas_vindas || 'Bem-vindo!';
   const muralTitle = coral.mural_titulo || 'Mural do Coral';
   const muralDescription = String(coral.mural_descricao || '').trim();
-  const heroTypeLabel = /^vocal\b/i.test(String(coral.nome || '').trim()) ? 'Vocal' : 'Coral';
   const videos = avisos.filter((aviso) => getPublicationType(aviso) === 'video');
   const fotos = avisos.filter((aviso) => getPublicationType(aviso) === 'foto');
   const avisosTexto = avisos.filter((aviso) => getPublicationType(aviso) === 'aviso');
@@ -515,38 +501,6 @@ export default function Mural() {
   return (
     <CoralLayout coral={coral} user={user} isMaestro={canManage} membro={membro}>
       <section className="mb-6 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-        <div
-          className="relative min-h-[150px] bg-cover bg-center px-5 py-6 sm:px-7"
-          style={{
-            backgroundImage: muralBackgroundImage,
-            backgroundPosition: muralImageUrl ? muralImagePosition : undefined,
-            color: muralHeroTextStyle.color,
-            textShadow: muralHeroTextStyle.textShadow,
-          }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-black/25 via-transparent to-black/10" />
-          <div className="relative flex min-h-[104px] items-center gap-4">
-            <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-amber-200 bg-white/95 shadow-lg">
-              {coral.logo_url ? (
-                <img src={coral.logo_url} alt="Logo do coral" className="h-full w-full object-cover" />
-              ) : (
-                <Megaphone className="h-9 w-9 text-amber-600" />
-              )}
-            </div>
-            <div className="min-w-0">
-              <p className="text-lg font-semibold leading-tight" style={{ color: muralHeroTextStyle.color }}>
-                {heroTypeLabel}
-              </p>
-              <h1 className="break-words text-3xl font-black leading-tight sm:text-4xl" style={{ color: muralHeroTextStyle.color }}>
-                {coral.nome}
-              </h1>
-              <p className="mt-2 max-w-md text-sm font-semibold uppercase tracking-[0.32em]" style={{ color: muralHeroTextStyle.color }}>
-                Coral
-              </p>
-            </div>
-          </div>
-        </div>
-
         <div className="p-4 sm:p-5">
           <div className="rounded-2xl border border-amber-100 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-4">
