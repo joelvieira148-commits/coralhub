@@ -496,8 +496,8 @@ export default function Mural() {
   const muralBackgroundColor = coral.mural_fundo_cor || '#ffffff';
   const muralSoftBackgroundColor = clarearHex(muralBackgroundColor);
   const muralWelcomeBackground = coral.mural_fundo_url
-    ? `linear-gradient(90deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.62)), url("${coral.mural_fundo_url}")`
-    : `linear-gradient(135deg, ${muralSoftBackgroundColor}, #ffffff)`;
+    ? `linear-gradient(90deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04)), url("${coral.mural_fundo_url}")`
+    : `linear-gradient(135deg, ${muralBackgroundColor}, ${muralSoftBackgroundColor})`;
   const muralWelcomeText = coral.mural_boas_vindas || 'Bem-vindo!';
   const muralTitle = coral.mural_titulo || 'Mural do Coral';
   const muralDescription = String(coral.mural_descricao || '').trim();
@@ -519,10 +519,10 @@ export default function Mural() {
 
   return (
     <CoralLayout coral={coral} user={user} isMaestro={canManage} membro={membro}>
-      <section className="mb-6 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
+      <section className="mb-6 overflow-hidden rounded-2xl bg-transparent shadow-none ring-0">
         <div className="p-4 sm:p-5">
           <div
-            className="rounded-2xl border border-amber-100 bg-cover bg-center p-4 shadow-sm"
+            className="rounded-2xl border border-white/25 bg-cover bg-center p-4 shadow-sm"
             style={{
               backgroundImage: muralWelcomeBackground,
               backgroundPosition: coral.mural_fundo_posicao || 'center center',
