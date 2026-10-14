@@ -69,6 +69,18 @@ const getMemberNaipes = (member) => {
 
 const getCargoRole = (cargo) => (isRegenteRole(cargo) ? 'maestro' : 'membro');
 
+const ordenarMembros = (lista = []) =>
+  [...lista].sort((left, right) => {
+    const leftRegente = isRegenteRole(left?.cargo) ? 0 : 1;
+    const rightRegente = isRegenteRole(right?.cargo) ? 0 : 1;
+
+    if (leftRegente !== rightRegente) return leftRegente - rightRegente;
+
+    return String(left?.nome || '').localeCompare(String(right?.nome || ''), 'pt-BR', {
+      sensitivity: 'base',
+    });
+  });
+
 const onlyDigits = (value = '') => String(value || '').replace(/\D/g, '');
 
 const normalizeWhatsappPhone = (telefone = '') => {
@@ -133,7 +145,7 @@ export default function Membros() {
     firebaseClient.entities.Membro.filter({ coral_id: coral.id }).then(setMembros);
   }, [coral]);
 
-  const filtered = membros.filter((item) => {
+  const filtered = ordenarMembros(membros.filter((item) => {
     const termo = search.toLowerCase();
     const voz = getMemberNaipes(item).map((naipe) => getNaipeInfo(naipe)?.label || naipe).join(' ');
 
@@ -145,11 +157,11 @@ export default function Membros() {
       item.cargo,
       voz,
     ].some((value) => String(value || '').toLowerCase().includes(termo));
-  });
+  }));
 
   const membrosComTelefone = membros
     .filter((item) => normalizeWhatsappPhone(item.telefone))
-    .sort((left, right) => String(left.nome || '').localeCompare(String(right.nome || ''), 'pt-BR'));
+    .sort((left, right) => String(left.nome || '').localeCompare(String(right.nome || ''), 'pt-BR', { sensitivity: 'base' }));
 
   const isMeuCadastro = (item) => {
     const itemEmail = normalizeEmail(getMemberEmail(item));
