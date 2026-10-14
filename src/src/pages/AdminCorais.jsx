@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   Building2,
   Check,
+  ClipboardList,
   Clock,
   ClipboardCopy,
   Lock,
@@ -137,6 +138,37 @@ const formatarPaginas = (paginas) =>
 
 const getPapelAcessoLabel = (papel) => (papel === 'maestro' ? 'Maestro/Maestrina' : 'Membro');
 
+const getDataAcessoRelatorio = (acesso) => acesso?.acessado_em || acesso?.created_date || null;
+
+const ordenarAcessosRelatorio = (acessos = []) =>
+  [...acessos].sort((left, right) =>
+    new Date(getDataAcessoRelatorio(right) || 0).getTime() - new Date(getDataAcessoRelatorio(left) || 0).getTime()
+  );
+
+const getResumoAcessosRelatorio = (acessos = []) => {
+  const records = new Map();
+
+  acessos.forEach((acesso) => {
+    const key = normalizeEmail(acesso.user_email) || acesso.user_nome || 'usuario';
+    const current = records.get(key) || {
+      key,
+      nome: acesso.user_nome || acesso.user_email || 'Usuario',
+      email: acesso.user_email || '',
+      total: 0,
+      ultimo: null,
+    };
+    const dataAcesso = getDataAcessoRelatorio(acesso);
+
+    current.total += 1;
+    current.ultimo = !current.ultimo || new Date(dataAcesso).getTime() > new Date(current.ultimo).getTime()
+      ? dataAcesso
+      : current.ultimo;
+    records.set(key, current);
+  });
+
+  return [...records.values()].sort((left, right) => new Date(right.ultimo || 0).getTime() - new Date(left.ultimo || 0).getTime());
+};
+
 const montarRelatorioAcessos = ({
   coral,
   acessos = [],
@@ -220,8 +252,10 @@ export default function AdminCorais() {
   const [bloqueando, setBloqueando] = useState(null);
   const [autorizacoes, setAutorizacoes] = useState([]);
   const [acessos, setAcessos] = useState([]);
+  const [relatorioAcessos, setRelatorioAcessos] = useState([]);
   const [coralAcessos, setCoralAcessos] = useState(null);
   const [removendoHistorico, setRemovendoHistorico] = useState(false);
+  const [showRelatorioAcessos, setShowRelatorioAcessos] = useState(false);
   const [showTrocarSenha, setShowTrocarSenha] = useState(false);
   const [senhaAdminForm, setSenhaAdminForm] = useState({ atual: '', nova: '', confirmar: '' });
   const [salvandoSenhaAdmin, setSalvandoSenhaAdmin] = useState(false);
@@ -241,17 +275,19 @@ export default function AdminCorais() {
         return;
       }
 
-      const [allCorais, allMembros, allAutorizacoes, allAcessos] = await Promise.all([
+      const [allCorais, allMembros, allAutorizacoes, allAcessos, allRelatorioAcessos] = await Promise.all([
         firebaseClient.entities.Coral.list(),
         firebaseClient.entities.Membro.list(),
         firebaseClient.entities.AutorizacaoCadastro.list(),
         firebaseClient.entities.AcessoPlataforma.list('-created_date', 1000).catch(() => []),
+        firebaseClient.entities.AcessoRelatorioAdmin.list('-created_date', 500).catch(() => []),
       ]);
 
       setCorais(allCorais);
       setMembros(allMembros);
       setAutorizacoes(allAutorizacoes);
       setAcessos(allAcessos);
+      setRelatorioAcessos(ordenarAcessosRelatorio(allRelatorioAcessos));
       publicarCoraisNoCatalogo(firebaseClient, allCorais.filter(isCoralAvailable)).catch((error) => {
         console.warn('Falha ao sincronizar catalogo de corais:', error);
       });
@@ -677,6 +713,8 @@ export default function AdminCorais() {
     })
     : '';
   const ultimoCoralLiberado = getUltimoCoralLiberado(coraisDisponiveis);
+  const ultimoAcessoRelatorio = relatorioAcessos[0] || null;
+  const resumoAcessosRelatorio = getResumoAcessosRelatorio(relatorioAcessos);
 
   const copiarRelatorioAcessos = async () => {
     if (!relatorioAcessosTexto.trim()) return;
@@ -736,6 +774,12 @@ export default function AdminCorais() {
               <RefreshCw className={`w-4 h-4 ${sincronizando ? 'animate-spin' : ''}`} /> Publicar nomes
             </button>
             <button
+              onClick={() => setShowRelatorioAcessos(true)}
+              className="hidden sm:flex items-center gap-1.5 text-white/75 hover:text-white text-xs transition-colors"
+            >
+              <ClipboardList className="w-4 h-4" /> Relatorios
+            </button>
+            <button
               onClick={() => navigate('/admin/biblioteca')}
               className="hidden sm:flex items-center gap-1.5 text-white/75 hover:text-white text-xs transition-colors"
             >
@@ -758,6 +802,29 @@ export default function AdminCorais() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-6 pb-16">
+        <section className="mb-6 rounded-2xl border border-indigo-100 bg-white p-4 shadow-sm">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <ClipboardList className="h-5 w-5 text-indigo-600" />
+                <h2 className="font-bold text-gray-900">Acessos ao relatorio</h2>
+              </div>
+              <p className="mt-1 text-sm text-gray-500">
+                {relatorioAcessos.length} entrada{relatorioAcessos.length !== 1 ? 's' : ''} registrada{relatorioAcessos.length !== 1 ? 's' : ''}
+                {ultimoAcessoRelatorio ? ` - ultimo: ${ultimoAcessoRelatorio.user_nome || ultimoAcessoRelatorio.user_email || 'Usuario'} em ${formatarAcesso(getDataAcessoRelatorio(ultimoAcessoRelatorio))}` : ''}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowRelatorioAcessos(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
+            >
+              <ClipboardList className="h-4 w-4" />
+              Ver historico
+            </button>
+          </div>
+        </section>
+
         {ocultarUltimoLiberado ? (
           <div className="mb-6 flex justify-end">
             <button
@@ -1295,6 +1362,92 @@ export default function AdminCorais() {
                             </div>
                             <p className="mt-2 text-xs text-gray-400">
                               {formatarAcesso(acesso.acessado_em || acesso.created_date)}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showRelatorioAcessos && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center sm:p-6">
+            <div className="flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+              <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3">
+                <div className="min-w-0">
+                  <h3 className="truncate text-base font-bold text-gray-900">Quem acessou os relatorios</h3>
+                  <p className="text-xs text-gray-500">
+                    Marta, Andreza e outros usuarios liberados aparecem aqui.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowRelatorioAcessos(false)}
+                  className="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                  title="Fechar"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="overflow-y-auto p-4">
+                <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                    <p className="text-xs font-semibold text-gray-500">Total</p>
+                    <p className="mt-1 text-2xl font-bold text-gray-900">{relatorioAcessos.length}</p>
+                  </div>
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 p-3 sm:col-span-2">
+                    <p className="text-xs font-semibold text-gray-500">Ultimo acesso</p>
+                    <p className="mt-1 truncate text-sm font-bold text-gray-900">
+                      {ultimoAcessoRelatorio
+                        ? `${ultimoAcessoRelatorio.user_nome || ultimoAcessoRelatorio.user_email || 'Usuario'} - ${formatarAcesso(getDataAcessoRelatorio(ultimoAcessoRelatorio))}`
+                        : 'Nenhum acesso registrado'}
+                    </p>
+                  </div>
+                </div>
+
+                {relatorioAcessos.length === 0 ? (
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 p-8 text-center">
+                    <Clock className="mx-auto mb-2 h-8 w-8 text-gray-300" />
+                    <p className="text-sm text-gray-500">Ainda nao ha acessos ao relatorio registrados.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    <div>
+                      <h4 className="mb-2 text-sm font-bold text-gray-800">Resumo por pessoa</h4>
+                      <div className="space-y-2">
+                        {resumoAcessosRelatorio.map((pessoa) => (
+                          <div key={pessoa.key} className="rounded-xl border border-gray-100 p-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold text-gray-800">{pessoa.nome}</p>
+                                <p className="truncate text-xs text-gray-400">{pessoa.email || 'Sem e-mail'}</p>
+                              </div>
+                              <span className="rounded-full bg-indigo-50 px-2 py-1 text-xs font-bold text-indigo-700">
+                                {pessoa.total}x
+                              </span>
+                            </div>
+                            <p className="mt-2 text-xs text-gray-500">Ultimo: {formatarAcesso(pessoa.ultimo)}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="mb-2 text-sm font-bold text-gray-800">Ultimas entradas</h4>
+                      <div className="space-y-2">
+                        {relatorioAcessos.slice(0, 80).map((acesso) => (
+                          <div key={acesso.id} className="rounded-xl border border-gray-100 p-3">
+                            <p className="truncate text-sm font-semibold text-gray-800">
+                              {acesso.user_nome || acesso.user_email || 'Usuario'}
+                            </p>
+                            <p className="truncate text-xs text-gray-500">{acesso.user_email || 'Sem e-mail'}</p>
+                            <p className="mt-2 text-xs text-gray-400">
+                              {formatarAcesso(getDataAcessoRelatorio(acesso))}
                             </p>
                           </div>
                         ))}

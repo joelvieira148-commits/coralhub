@@ -149,6 +149,16 @@ export default function AdminAcessos() {
           return;
         }
 
+        firebaseClient.entities.AcessoRelatorioAdmin.create({
+          user_email: me.email || '',
+          user_nome: me.full_name || me.member_nome || me.email || 'Usuario',
+          pagina: '/admin/acessos',
+          pagina_nome: 'Relatorios de acesso',
+          acessado_em: new Date().toISOString(),
+        }).catch((error) => {
+          console.warn('Falha ao registrar acesso ao relatorio admin:', error);
+        });
+
         setUser(me);
         setCorais(allCorais);
         setAcessos(allAcessos);
