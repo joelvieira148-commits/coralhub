@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   Calendar,
+  ClipboardList,
   HelpCircle,
   Home,
   LogOut,
@@ -14,7 +15,7 @@ import {
   Users,
 } from 'lucide-react';
 import { firebaseClient, isUsingLocalFirebase } from '@/api/firebaseClient';
-import { isAdminUser } from '@/lib/admin-access';
+import { isAccessReportViewer, isAdminUser } from '@/lib/admin-access';
 import { logoutToApp } from '@/lib/logout';
 import { getNomeCoralFonteStyle } from '@/lib/coral-fonts';
 import { getReadableTextStyle } from '@/lib/readable-text';
@@ -85,7 +86,9 @@ export default function CoralLayout({ coral, user, isMaestro, membro, children }
 
   const allNavItems = isAdminUser(user)
     ? [...baseNavItems, { to: '/admin/corais', icon: Shield, label: 'Admin' }]
-    : baseNavItems;
+    : isAccessReportViewer(user)
+      ? [...baseNavItems, { to: '/admin/acessos', icon: ClipboardList, label: 'Acessos' }]
+      : baseNavItems;
 
   const bottomMain = allNavItems.slice(0, 4);
   const bottomMore = allNavItems.slice(4);

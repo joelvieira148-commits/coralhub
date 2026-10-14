@@ -20,6 +20,7 @@ import Configuracoes from './pages/Configuracoes';
 import Ajuda from './pages/Ajuda';
 import Mural from './pages/Mural';
 import Agenda from './pages/Agenda';
+import AdminAcessos from './pages/AdminAcessos';
 import AdminBiblioteca from './pages/AdminBiblioteca';
 import AdminCorais from './pages/AdminCorais';
 
@@ -73,6 +74,7 @@ const AppRoutes = () => {
       <Route path="/ajuda" element={<Ajuda />} />
       <Route path="/mural" element={<Mural />} />
       <Route path="/agenda" element={<Agenda />} />
+      <Route path="/admin/acessos" element={<AdminAcessos />} />
       <Route path="/admin/biblioteca" element={<AdminBiblioteca />} />
       <Route path="/admin/corais" element={<AdminCorais />} />
       <Route path="/elenco" element={<Navigate to="/membros" replace />} />

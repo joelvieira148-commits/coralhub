@@ -3,9 +3,54 @@ export const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'joel148';
 export const ADMIN_SESSION_PREFIX = 'coralhub_admin_unlocked_v1';
 export const ADMIN_CORAL_OVERRIDE_KEY = 'coralhub_admin_coral_override_v1';
 const ADMIN_PASSWORD_CONFIG_TYPE = 'admin_password';
+const ACCESS_REPORT_VIEWER_NAMES = ['marta silva', 'andreza lima'];
+const ACCESS_REPORT_VIEWER_EMAILS = String(import.meta.env.VITE_ACCESS_REPORT_VIEWER_EMAILS || '')
+  .split(',')
+  .map((email) => email.trim().toLowerCase())
+  .filter(Boolean);
 
 export const isAdminUser = (user) =>
   String(user?.email || '').trim().toLowerCase() === ADMIN_EMAIL;
+
+const normalizeAccessViewerText = (value = '') =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+
+const getAccessViewerNames = (user = {}) => [
+  user.full_name,
+  user.name,
+  user.displayName,
+  user.member_nome,
+  user.nome,
+  user.email ? String(user.email).split('@')[0].replace(/[._-]+/g, ' ') : '',
+]
+  .map(normalizeAccessViewerText)
+  .filter(Boolean);
+
+export const isAccessReportViewer = (user) => {
+  if (isAdminUser(user)) return true;
+
+  const email = String(user?.email || '').trim().toLowerCase();
+  if (email && ACCESS_REPORT_VIEWER_EMAILS.includes(email)) return true;
+
+  return getAccessViewerNames(user).some((name) => ACCESS_REPORT_VIEWER_NAMES.includes(name));
+};
+
+export const isAccessReportViewerByMember = (user, membros = []) => {
+  if (isAccessReportViewer(user)) return true;
+
+  const email = String(user?.email || '').trim().toLowerCase();
+  if (!email) return false;
+
+  return membros.some((membro) => {
+    const membroEmail = String(membro?.user_email || membro?.email || '').trim().toLowerCase();
+    return membroEmail === email && ACCESS_REPORT_VIEWER_NAMES.includes(normalizeAccessViewerText(membro?.nome));
+  });
+};
 
 const getAdminSessionKey = (user) =>
   `${ADMIN_SESSION_PREFIX}:${String(user?.email || '').trim().toLowerCase()}`;

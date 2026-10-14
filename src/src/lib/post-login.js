@@ -2,7 +2,7 @@ import { firebaseClient } from '@/api/firebaseClient';
 import { getBlockedCadastro, isRegenteCadastroBlock, requestCadastroAuthorization } from '@/lib/cadastro-autorizacao';
 import { isCoralAvailable, isCoralPending } from '@/lib/coral-approval';
 import { clearCoralMembershipFields } from '@/lib/coral-membership';
-import { isAdminUser } from '@/lib/admin-access';
+import { isAccessReportViewerByMember, isAdminUser } from '@/lib/admin-access';
 import { getSafeMemberRole } from '@/lib/coral-permissions';
 
 const normalizePath = (value = '/mural') => {
@@ -40,6 +40,9 @@ const pathForExistingUser = (preferredPath) => {
 
   return '/mural';
 };
+
+const isDefaultLoginPath = (path) =>
+  ['/', '/mural', '/login', '/onboarding'].includes(normalizePath(path));
 
 const getMemberNaipes = (member) => {
   const values = Array.isArray(member?.naipes) && member.naipes.length > 0
@@ -133,6 +136,10 @@ export const getPostLoginPath = async (preferredPath = '/mural') => {
   }
 
   const membro = membrosPorUserEmail[0] || membrosPorEmail[0];
+  if (isAccessReportViewerByMember(user, [...membrosPorUserEmail, ...membrosPorEmail]) && isDefaultLoginPath(preferredPath)) {
+    return '/admin/acessos';
+  }
+
   if (membro) {
     const coralDoMembro = membro.coral_id
       ? (await safeFilter(firebaseClient.entities.Coral, { id: membro.coral_id }))[0]
