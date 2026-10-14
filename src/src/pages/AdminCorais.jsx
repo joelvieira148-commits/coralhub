@@ -5,6 +5,7 @@ import {
   Building2,
   Check,
   Clock,
+  ClipboardCopy,
   Lock,
   LogIn,
   Mail,
@@ -133,6 +134,59 @@ const formatarPaginas = (paginas) =>
     .sort((left, right) => right[1] - left[1])
     .map(([pagina, total]) => `${pagina} (${total})`)
     .join(', ');
+
+const getPapelAcessoLabel = (papel) => (papel === 'maestro' ? 'Maestro/Maestrina' : 'Membro');
+
+const montarRelatorioAcessos = ({
+  coral,
+  acessos = [],
+  resumoPessoas = [],
+  totalAcessosMaestro = 0,
+  totalAcessosMembros = 0,
+}) => {
+  const linhas = [
+    'RELATORIO DE ACESSO DA PLATAFORMA',
+    `Plataforma: ${coral?.nome || 'Plataforma'}`,
+    `Cidade: ${coral?.cidade || 'Nao informado'}`,
+    `Maestro/Maestrina: ${coral?.maestro_nome || coral?.maestro_email || 'Nao informado'}`,
+    `Gerado em: ${formatarAcesso(new Date().toISOString())}`,
+    '',
+    'TOTAIS',
+    `Total de acessos: ${acessos.length}`,
+    `Acessos de maestro/maestrina: ${totalAcessosMaestro}`,
+    `Acessos de membros: ${totalAcessosMembros}`,
+    '',
+    'RESUMO POR PESSOA',
+  ];
+
+  if (resumoPessoas.length === 0) {
+    linhas.push('Nenhum acesso registrado.');
+  } else {
+    resumoPessoas.forEach((pessoa, index) => {
+      linhas.push(
+        `${index + 1}. ${pessoa.nome || 'Usuario'} - ${getPapelAcessoLabel(pessoa.papel)}`,
+        `   Email: ${pessoa.email || 'Nao informado'}`,
+        `   Total: ${pessoa.total} acesso${pessoa.total !== 1 ? 's' : ''}`,
+        `   Ultimo acesso: ${formatarAcesso(pessoa.ultimo)}`,
+        `   Acessou: ${formatarPaginas(pessoa.paginas) || 'Nao informado'}`
+      );
+    });
+  }
+
+  linhas.push('', 'ULTIMOS ACESSOS');
+
+  if (acessos.length === 0) {
+    linhas.push('Nenhum acesso registrado.');
+  } else {
+    acessos.forEach((acesso, index) => {
+      linhas.push(
+        `${index + 1}. ${formatarAcesso(acesso.acessado_em || acesso.created_date)} - ${acesso.user_nome || acesso.user_email || 'Usuario'} - ${getPapelAcessoLabel(acesso.papel)} - ${acesso.pagina_nome || acesso.pagina || 'Plataforma'}`
+      );
+    });
+  }
+
+  return linhas.join('\n');
+};
 
 const getDataLiberacaoCoral = (coral) =>
   coral?.desbloqueado_em || coral?.aprovado_em || coral?.updated_date || coral?.created_date || null;
@@ -613,7 +667,41 @@ export default function AdminCorais() {
   const resumoPessoasAcesso = getResumoAcessosPorPessoa(acessosDoCoralSelecionado);
   const totalAcessosMaestro = acessosDoCoralSelecionado.filter((acesso) => acesso.papel === 'maestro').length;
   const totalAcessosMembros = acessosDoCoralSelecionado.length - totalAcessosMaestro;
+  const relatorioAcessosTexto = coralAcessos
+    ? montarRelatorioAcessos({
+      coral: coralAcessos,
+      acessos: acessosDoCoralSelecionado,
+      resumoPessoas: resumoPessoasAcesso,
+      totalAcessosMaestro,
+      totalAcessosMembros,
+    })
+    : '';
   const ultimoCoralLiberado = getUltimoCoralLiberado(coraisDisponiveis);
+
+  const copiarRelatorioAcessos = async () => {
+    if (!relatorioAcessosTexto.trim()) return;
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(relatorioAcessosTexto);
+      } else {
+        const area = document.createElement('textarea');
+        area.value = relatorioAcessosTexto;
+        area.setAttribute('readonly', '');
+        area.style.position = 'fixed';
+        area.style.left = '-9999px';
+        document.body.appendChild(area);
+        area.select();
+        document.execCommand('copy');
+        document.body.removeChild(area);
+      }
+
+      alert('Relatorio copiado. Agora voce pode arquivar onde quiser.');
+    } catch (error) {
+      console.error('Falha ao copiar relatorio de acessos:', error);
+      alert('Nao foi possivel copiar automaticamente. Selecione o texto do relatorio e copie manualmente.');
+    }
+  };
 
   return (
     <AdminPasswordGate user={user} backPath="/mural">
@@ -1086,7 +1174,17 @@ export default function AdminCorais() {
                     {acessosDoCoralSelecionado.length} acesso{acessosDoCoralSelecionado.length !== 1 ? 's' : ''} registrado{acessosDoCoralSelecionado.length !== 1 ? 's' : ''}
                   </p>
                 </div>
-                <div className="flex flex-shrink-0 items-center gap-2">
+                <div className="flex flex-shrink-0 flex-wrap items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={copiarRelatorioAcessos}
+                    disabled={acessosDoCoralSelecionado.length === 0}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    title="Copiar relatorio"
+                  >
+                    <ClipboardCopy className="h-3.5 w-3.5" />
+                    Copiar relatorio
+                  </button>
                   <button
                     type="button"
                     onClick={removerHistoricoAcessos}
@@ -1122,6 +1220,29 @@ export default function AdminCorais() {
                     <p className="text-xs font-semibold text-gray-500">Membros</p>
                     <p className="mt-1 text-2xl font-bold text-gray-900">{totalAcessosMembros}</p>
                   </div>
+                </div>
+
+                <div className="mb-4 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <div>
+                      <h4 className="text-sm font-bold text-gray-800">Relatorio para arquivar</h4>
+                      <p className="text-xs text-gray-500">Texto pronto para copiar e guardar.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={copiarRelatorioAcessos}
+                      disabled={acessosDoCoralSelecionado.length === 0}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <ClipboardCopy className="h-3.5 w-3.5" />
+                      Copiar
+                    </button>
+                  </div>
+                  <textarea
+                    readOnly
+                    value={relatorioAcessosTexto}
+                    className="h-44 w-full resize-y rounded-lg border border-indigo-100 bg-white p-3 font-mono text-xs text-gray-700 outline-none focus:border-indigo-300"
+                  />
                 </div>
 
                 {acessosDoCoralSelecionado.length === 0 ? (
